@@ -1,0 +1,155 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { Anime } from '../types';
+import { getAllAnime } from '../lib/data';
+import { AnimeCard } from '../components/AnimeCard';
+import { SkeletonAnimeCard } from '../components/SkeletonAnimeCard';
+import { Search as SearchIcon, X, Tag } from 'lucide-react';
+import { motion } from 'motion/react';
+import { cn } from '../lib/utils';
+
+export const Search = () => {
+  const [query, setQuery] = useState('');
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [allAnime, setAllAnime] = useState<Anime[]>([]);
+  const [results, setResults] = useState<Anime[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      const data = await getAllAnime();
+      setAllAnime(data);
+      setResults(data);
+      setIsLoading(false);
+    }
+    fetchData();
+  }, []);
+
+  const availableGenres = useMemo(() => {
+    const genres = new Set<string>();
+    allAnime.forEach(a => {
+      a.genres?.forEach(g => genres.add(g));
+    });
+    return Array.from(genres).sort();
+  }, [allAnime]);
+
+  const toggleGenre = (genre: string) => {
+    setSelectedGenres(prev => 
+      prev.includes(genre) 
+        ? prev.filter(g => g !== genre)
+        : [...prev, genre]
+    );
+  };
+
+  useEffect(() => {
+    let filtered = allAnime;
+    
+    if (query.trim()) {
+      const lowerQ = query.toLowerCase();
+      filtered = filtered.filter(a => 
+        a.title?.toLowerCase().includes(lowerQ) ||
+        a.nativeTitle?.toLowerCase().includes(lowerQ) ||
+        a.genres?.some(g => g.toLowerCase().includes(lowerQ))
+      );
+    }
+
+    if (selectedGenres.length > 0) {
+      filtered = filtered.filter(a => 
+        selectedGenres.every(g => a.genres?.includes(g))
+      );
+    }
+
+    setResults(filtered);
+  }, [query, selectedGenres, allAnime]);
+
+  return (
+    <div className="min-h-screen bg-yoru-bg pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      
+      {/* Search Header */}
+      <div className="flex flex-col gap-6 mb-12">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="relative w-full max-w-2xl">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <SearchIcon className="h-5 w-5 text-yoru-text-muted" />
+            </div>
+            <input
+              type="text"
+              className="block w-full pl-12 pr-10 py-4 bg-yoru-surface border border-yoru-border rounded-none text-white placeholder-yoru-text-muted focus:outline-none focus:border-yoru-accent focus:ring-1 focus:ring-yoru-accent transition-all text-lg font-bold tracking-wide"
+              placeholder="Search anime, genres, or years..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {query && (
+              <button 
+                onClick={() => setQuery('')}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-yoru-text-muted hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Genre Tags */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 mr-2 text-yoru-text-muted">
+            <Tag className="w-4 h-4" />
+            <span className="text-xs font-bold uppercase tracking-widest">Filter by Genre:</span>
+          </div>
+          {availableGenres.map(genre => (
+            <button
+              key={genre}
+              onClick={() => toggleGenre(genre)}
+              className={cn(
+                "px-4 py-2 text-xs font-bold uppercase tracking-widest border transition-all rounded-none",
+                selectedGenres.includes(genre)
+                  ? "bg-yoru-accent border-yoru-accent text-white"
+                  : "bg-transparent border-yoru-border text-yoru-text-muted hover:border-yoru-accent/50 hover:text-white"
+              )}
+            >
+              {genre}
+            </button>
+          ))}
+          {selectedGenres.length > 0 && (
+            <button
+              onClick={() => setSelectedGenres([])}
+              className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-yoru-error hover:text-yoru-error/80 ml-2"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Results */}
+      {isLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+           {[...Array(12)].map((_, i) => (
+             <SkeletonAnimeCard key={i} />
+           ))}
+        </div>
+      ) : results.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+          {results.map((anime, idx) => (
+            <motion.div
+               key={anime.id}
+               initial={{ opacity: 0, scale: 0.95 }}
+               animate={{ opacity: 1, scale: 1 }}
+               transition={{ duration: 0.3, delay: Math.min(idx * 0.05, 0.5) }}
+            >
+              <AnimeCard anime={anime} />
+            </motion.div>
+          ))}
+        </div>
+      ) : (
+        <div className="py-20 text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-yoru-surface-elevated mb-6">
+            <SearchIcon className="w-10 h-10 text-yoru-text-muted" />
+          </div>
+          <h3 className="text-2xl font-semibold text-white mb-2">No results found</h3>
+          <p className="text-yoru-text-muted">Try adjusting your search or filters to find what you're looking for.</p>
+        </div>
+      )}
+    </div>
+  );
+};

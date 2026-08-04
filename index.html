@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YORU - Enter Your World</title>
+  </head>
+  <body>
+    <script>
+      try {
+        const desc = Object.getOwnPropertyDescriptor(window, 'fetch');
+        if (desc && !desc.set && desc.configurable) {
+          let _fetch = desc.get ? desc.get.call(window) : desc.value;
+          Object.defineProperty(window, 'fetch', {
+            configurable: true,
+            enumerable: true,
+            get() { return _fetch; },
+            set(v) { _fetch = v; }
+          });
+        }
+      } catch (e) { console.error('fetch workaround error:', e); }
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

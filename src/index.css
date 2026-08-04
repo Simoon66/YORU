@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  --color-yoru-bg: #050505;
+  --color-yoru-surface: #080808;
+  --color-yoru-surface-elevated: #1a1a1a;
+  --color-yoru-accent: #4A90E2;
+  --color-yoru-accent-hover: #3A7BC8;
+  --color-yoru-text: #E0E0E0;
+  --color-yoru-text-muted: rgba(255, 255, 255, 0.5);
+  --color-yoru-border: rgba(255, 255, 255, 0.05);
+  --color-yoru-error: #ef4444;
+  --color-yoru-success: #10b981;
+}
+
+@layer base {
+  :root {
+    background-color: var(--color-yoru-bg);
+    color: var(--color-yoru-text);
+    font-family: "Inter", system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-yoru-bg text-yoru-text antialiased selection:bg-yoru-accent/30 selection:text-yoru-text;
+  }
+
+  /* Custom Scrollbar for a premium feel */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-yoru-bg;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-yoru-border rounded-full hover:bg-yoru-text-muted transition-colors;
+  }
+}
+
+@layer utilities {
+  .text-shadow-sm {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+  .text-shadow-md {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  .text-shadow-lg {
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+  }
+}
+
