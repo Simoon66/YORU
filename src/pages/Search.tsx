@@ -3,13 +3,16 @@ import { Anime } from '../types';
 import { getAllAnime } from '../lib/data';
 import { AnimeCard } from '../components/AnimeCard';
 import { SkeletonAnimeCard } from '../components/SkeletonAnimeCard';
-import { Search as SearchIcon, X, Tag } from 'lucide-react';
+import { Search as SearchIcon, X, Tag, SlidersHorizontal } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
+
+type SortOption = 'relevance' | 'score' | 'newest' | 'release';
 
 export const Search = () => {
   const [query, setQuery] = useState('');
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<SortOption>('relevance');
   const [allAnime, setAllAnime] = useState<Anime[]>([]);
   const [results, setResults] = useState<Anime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +45,7 @@ export const Search = () => {
   };
 
   useEffect(() => {
-    let filtered = allAnime;
+    let filtered = [...allAnime];
     
     if (query.trim()) {
       const lowerQ = query.toLowerCase();
@@ -59,8 +62,24 @@ export const Search = () => {
       );
     }
 
+    if (sortBy === 'score') {
+      filtered.sort((a, b) => {
+        const scoreA = parseInt(a.averageScore?.replace('%', '') || '0');
+        const scoreB = parseInt(b.averageScore?.replace('%', '') || '0');
+        return scoreB - scoreA;
+      });
+    } else if (sortBy === 'newest') {
+      filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    } else if (sortBy === 'release') {
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.startDate || '2000-01-01').getTime();
+        const dateB = new Date(b.startDate || '2000-01-01').getTime();
+        return dateB - dateA;
+      });
+    }
+
     setResults(filtered);
-  }, [query, selectedGenres, allAnime]);
+  }, [query, selectedGenres, sortBy, allAnime]);
 
   return (
     <div className="min-h-screen bg-yoru-bg pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -87,6 +106,20 @@ export const Search = () => {
                 <X className="h-5 w-5" />
               </button>
             )}
+          </div>
+          
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <SlidersHorizontal className="w-5 h-5 text-yoru-text-muted" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="bg-yoru-surface border border-yoru-border text-white text-sm font-bold uppercase tracking-widest py-3 px-4 focus:outline-none focus:border-yoru-accent flex-1 md:flex-none appearance-none"
+            >
+              <option value="relevance">Sort by Relevance</option>
+              <option value="score">Highest Rated</option>
+              <option value="newest">Recently Added</option>
+              <option value="release">Release Date</option>
+            </select>
           </div>
         </div>
 
@@ -131,18 +164,18 @@ export const Search = () => {
       ) : results.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
           {results.map((anime, idx) => (
-            <motion.div
-               key={anime.id}
-               initial={{ opacity: 0, scale: 0.95 }}
-               animate={{ opacity: 1, scale: 1 }}
-               transition={{ duration: 0.3, delay: Math.min(idx * 0.05, 0.5) }}
+            <motion.div 
+              key={anime.id} 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: Math.min(idx * 0.05, 0.5) }}
             >
               <AnimeCard anime={anime} />
             </motion.div>
           ))}
         </div>
       ) : (
-        <div className="py-20 text-center">
+        <div className="py-20 text-center flex flex-col items-center">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-yoru-surface-elevated mb-6">
             <SearchIcon className="w-10 h-10 text-yoru-text-muted" />
           </div>

@@ -7,17 +7,20 @@ import { AnimeDetail } from './pages/AnimeDetail';
 import { Watch } from './pages/Watch';
 import { Search } from './pages/Search';
 import { Watchlist } from './pages/Watchlist';
+import { DownloadsPage, SettingsPage, ProfilePage } from './pages/Placeholders';
 import { AdminLayout } from './pages/Admin/AdminLayout';
 import { Dashboard } from './pages/Admin/Dashboard';
 import { AnimeList } from './pages/Admin/AnimeList';
 import { AnimeEditor } from './pages/Admin/AnimeEditor';
 import { EpisodeManager } from './pages/Admin/EpisodeManager';
 import ScrollToTop from './components/ScrollToTop';
+import { ShortcutsModal } from './components/ShortcutsModal';
 
 function AppLayout() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navigation />
+      <ShortcutsModal />
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -27,6 +30,9 @@ function AppLayout() {
           <Route path="/anime/:slug" element={<AnimeDetail />} />
           <Route path="/watch/:slug/:episodeNum" element={<Watch />} />
           <Route path="/watchlist" element={<Watchlist />} />
+          <Route path="/downloads" element={<DownloadsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </main>
       <Footer />

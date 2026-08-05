@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Hero } from '../components/Hero';
 import { AnimeCard } from '../components/AnimeCard';
 import { ContinueWatchingCard } from '../components/ContinueWatchingCard';
+import { SkeletonAnimeCard } from '../components/SkeletonAnimeCard';
 import { Anime } from '../types';
 import { getTrendingAnime, getAllAnime } from '../lib/data';
 import { ChevronRight } from 'lucide-react';
@@ -60,7 +61,27 @@ export const Home = () => {
   );
 
   if (isLoading) {
-    return <div className="min-h-screen bg-yoru-bg animate-pulse" />;
+    return (
+      <div className="min-h-screen bg-yoru-bg pb-20">
+         <div className="aspect-[16/9] sm:aspect-[21/9] md:aspect-auto md:h-[85vh] bg-yoru-surface-elevated flex items-center justify-center border-b border-yoru-border">
+            <div className="shuriken-loader"></div>
+         </div>
+         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 space-y-20">
+            <section>
+              <div className="h-4 w-32 bg-yoru-surface-elevated mb-6 animate-pulse" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                {[...Array(6)].map((_, i) => <SkeletonAnimeCard key={i} />)}
+              </div>
+            </section>
+            <section>
+              <div className="h-4 w-48 bg-yoru-surface-elevated mb-6 animate-pulse" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                {[...Array(6)].map((_, i) => <SkeletonAnimeCard key={i} />)}
+              </div>
+            </section>
+         </div>
+      </div>
+    );
   }
 
   return (

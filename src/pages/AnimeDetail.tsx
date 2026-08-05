@@ -90,7 +90,11 @@ export const AnimeDetail = () => {
     setIsWatchlistLoading(false);
   };
 
-  if (isLoading) return <div className="min-h-screen bg-yoru-bg animate-pulse" />;
+  if (isLoading) return (
+    <div className="min-h-screen bg-yoru-bg flex items-center justify-center">
+      <div className="shuriken-loader"></div>
+    </div>
+  );
   
   if (!anime) return (
     <div className="min-h-screen flex items-center justify-center bg-yoru-bg text-yoru-text-muted">

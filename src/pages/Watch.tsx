@@ -140,7 +140,11 @@ export const Watch = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  if (isLoading) return <div className="min-h-screen bg-yoru-bg animate-pulse" />;
+  if (isLoading) return (
+    <div className="min-h-screen bg-yoru-bg pt-20 flex items-center justify-center">
+      <div className="shuriken-loader"></div>
+    </div>
+  );
   if (!anime || !currentEpisode) return <div className="min-h-screen bg-yoru-bg text-white flex items-center justify-center">Episode Not Found</div>;
 
   const seasonEpisodes = episodes.filter(e => e.seasonId === currentSeasonId);

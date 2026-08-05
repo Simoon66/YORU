@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { Anime } from '../types';
 import { Link } from 'react-router-dom';
 import { Play, Plus } from 'lucide-react';
@@ -6,10 +6,16 @@ import { Button } from './ui/Button';
 import useEmblaCarousel from 'embla-carousel-react';
 import Autoplay from 'embla-carousel-autoplay';
 import clsx from 'clsx';
+import { EmblaCarouselType } from 'embla-carousel';
 
 interface HeroProps {
   featured: Anime[];
 }
+
+const TWEEN_FACTOR_BASE = 0.52;
+
+const numberWithinRange = (number: number, min: number, max: number): number =>
+  Math.min(Math.max(number, min), max);
 
 export const Hero: React.FC<HeroProps> = ({ featured }) => {
   const [emblaRef, emblaApi] = useEmblaCarousel(
@@ -17,7 +23,61 @@ export const Hero: React.FC<HeroProps> = ({ featured }) => {
     [Autoplay({ delay: 6000, stopOnInteraction: true })]
   );
   
+  const tweenFactor = useRef(0);
+  const tweenNodes = useRef<HTMLElement[]>([]);
+
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const setTweenNodes = useCallback((emblaApi: EmblaCarouselType): void => {
+    tweenNodes.current = emblaApi.slideNodes().map((slideNode) => {
+      return slideNode.querySelector('.embla__parallax__layer') as HTMLElement;
+    });
+  }, []);
+
+  const setTweenFactor = useCallback((emblaApi: EmblaCarouselType) => {
+    tweenFactor.current = TWEEN_FACTOR_BASE * emblaApi.scrollSnapList().length;
+  }, []);
+
+  const tweenParallax = useCallback(
+    (emblaApi: EmblaCarouselType, eventName?: string) => {
+      const engine = emblaApi.internalEngine();
+      const scrollProgress = emblaApi.scrollProgress();
+      const slidesInView = emblaApi.slidesInView();
+      const isScrollEvent = eventName === 'scroll';
+
+      emblaApi.scrollSnapList().forEach((scrollSnap, snapIndex) => {
+        let diffToTarget = scrollSnap - scrollProgress;
+        const slidesInSnap = engine.slideRegistry[snapIndex];
+
+        slidesInSnap.forEach((slideIndex) => {
+          if (isScrollEvent && !slidesInView.includes(slideIndex)) return;
+
+          if (engine.options.loop) {
+            engine.slideLooper.loopPoints.forEach((loopItem) => {
+              const target = loopItem.target();
+
+              if (slideIndex === loopItem.index && target !== 0) {
+                const sign = Math.sign(target);
+                if (sign === -1) {
+                  diffToTarget = scrollSnap - (1 + scrollProgress);
+                }
+                if (sign === 1) {
+                  diffToTarget = scrollSnap + (1 - scrollProgress);
+                }
+              }
+            });
+          }
+
+          const translate = diffToTarget * (-1 * tweenFactor.current) * 100;
+          const tweenNode = tweenNodes.current[slideIndex];
+          if (tweenNode) {
+            tweenNode.style.transform = `translateX(${translate}%)`;
+          }
+        });
+      });
+    },
+    []
+  );
 
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
@@ -26,16 +86,28 @@ export const Hero: React.FC<HeroProps> = ({ featured }) => {
 
   useEffect(() => {
     if (!emblaApi) return;
-    onSelect();
+    setTweenNodes(emblaApi);
+    setTweenFactor(emblaApi);
+    tweenParallax(emblaApi);
+    
     emblaApi.on('select', onSelect);
     emblaApi.on('reInit', onSelect);
+    emblaApi.on('scroll', tweenParallax);
+    emblaApi.on('slideFocus', tweenParallax);
+    
     return () => {
       emblaApi.off('select', onSelect);
       emblaApi.off('reInit', onSelect);
+      emblaApi.off('scroll', tweenParallax);
+      emblaApi.off('slideFocus', tweenParallax);
     };
-  }, [emblaApi, onSelect]);
+  }, [emblaApi, onSelect, setTweenNodes, setTweenFactor, tweenParallax]);
 
-  if (!featured || featured.length === 0) return <div className="aspect-[16/9] sm:aspect-[21/9] md:aspect-auto md:h-[85vh] bg-yoru-surface-elevated animate-pulse" />;
+  if (!featured || featured.length === 0) return (
+    <div className="aspect-[16/9] sm:aspect-[21/9] md:aspect-auto md:h-[85vh] bg-yoru-surface-elevated flex items-center justify-center">
+      <div className="shuriken-loader"></div>
+    </div>
+  );
 
   return (
     <div className="relative aspect-[16/9] sm:aspect-[21/9] md:aspect-auto md:h-[85vh] w-full bg-yoru-bg">
@@ -44,13 +116,15 @@ export const Hero: React.FC<HeroProps> = ({ featured }) => {
           {featured.map((anime, index) => {
             const isActive = index === selectedIndex;
             return (
-              <div key={anime.id} className="relative flex-[0_0_100%] min-w-0 h-full w-full">
-                <img
-                  src={anime.backdrop}
-                  alt={anime.title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  draggable={false}
-                />
+              <div key={anime.id} className="relative flex-[0_0_100%] min-w-0 h-full w-full overflow-hidden">
+                <div className="embla__parallax__layer absolute inset-0 w-full h-full">
+                  <img
+                    src={anime.backdrop}
+                    alt={anime.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    draggable={false}
+                  />
+                </div>
                 
                 {/* Gradients for cinematic look */}
                 <div className="absolute inset-0 bg-gradient-to-r from-yoru-bg via-yoru-bg/70 to-transparent pointer-events-none" />

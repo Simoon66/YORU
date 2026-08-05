@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Search, User, Menu, X, LogIn } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Search, User, LogIn, Home, Compass, Download, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { signInWithGoogle, logout } from '../lib/firebase';
 import { Button } from './ui/Button';
@@ -20,8 +20,8 @@ export const Logo = ({ className }: { className?: string }) => (
 export const Navigation = () => {
   const { user, profile } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,11 +45,19 @@ export const Navigation = () => {
     }
   };
 
+  const mobileNav = [
+    { name: 'Home', path: '/', icon: Home },
+    { name: 'Browse', path: '/browse', icon: Compass },
+    { name: 'Download', path: '/downloads', icon: Download },
+    { name: 'Settings', path: '/settings', icon: Settings },
+    { name: 'Profile', path: user ? '/profile' : '#login', icon: User, action: !user ? handleLogin : undefined },
+  ];
+
   return (
     <>
       <nav 
         className={cn(
-          "fixed top-0 w-full z-50 transition-all duration-300",
+          "fixed top-0 w-full z-50 transition-all duration-300 hidden md:block",
           isScrolled ? "bg-yoru-bg/90 backdrop-blur-md border-b border-yoru-border/50 py-3" : "bg-gradient-to-b from-yoru-bg/80 to-transparent py-5"
         )}
       >
@@ -57,7 +65,7 @@ export const Navigation = () => {
           <div className="flex justify-between items-center">
             
             <div className="flex items-center gap-8">
-              <Link to="/" onClick={() => setMobileMenuOpen(false)}>
+              <Link to="/">
                 <Logo />
               </Link>
               
@@ -108,73 +116,63 @@ export const Navigation = () => {
                 </Button>
               )}
             </div>
-
-            {/* Mobile menu button */}
-            <div className="md:hidden flex items-center gap-4">
-               <Link to="/search" className="text-yoru-text-muted hover:text-white transition-colors">
-                <Search className="w-5 h-5" />
-              </Link>
-              <button 
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="text-yoru-text-muted hover:text-white focus:outline-none"
-              >
-                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </button>
-            </div>
           </div>
         </div>
       </nav>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 bg-yoru-bg/95 backdrop-blur-xl pt-24 px-4 flex flex-col md:hidden"
-          >
-            <div className="flex flex-col gap-6 text-lg font-medium">
-              {navLinks.map((link) => (
-                <Link 
-                  key={link.name} 
-                  to={link.path}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={cn(
-                    "transition-colors",
-                    location.pathname === link.path ? "text-white" : "text-yoru-text-muted"
-                  )}
-                >
-                  {link.name}
-                </Link>
-              ))}
-              
-              <div className="h-px bg-yoru-border my-2" />
-              
-              {user ? (
-                <>
-                  <Link to="/watchlist" onClick={() => setMobileMenuOpen(false)} className="text-yoru-text-muted">
-                    Watchlist
-                  </Link>
-                  {profile?.role === 'admin' && (
-                    <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="text-yoru-accent">
-                      Admin Dashboard
-                    </Link>
-                  )}
-                  <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-left text-yoru-text-muted">
-                    Sign Out
-                  </button>
-                </>
-              ) : (
-                <button onClick={() => { handleLogin(); setMobileMenuOpen(false); }} className="text-left text-yoru-accent">
-                  Sign In with Google
-                </button>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Mobile Top Nav (Just Logo and Search) */}
+      <nav className={cn(
+          "fixed top-0 w-full z-50 transition-all duration-300 md:hidden",
+          isScrolled ? "bg-yoru-bg/90 backdrop-blur-md border-b border-yoru-border/50 py-3" : "bg-gradient-to-b from-yoru-bg/80 to-transparent py-3"
+        )}>
+         <div className="px-4 flex justify-between items-center">
+            <Link to="/">
+              <Logo className="scale-90 origin-left" />
+            </Link>
+            <Link to="/search" className="p-2 text-yoru-text-muted hover:text-white bg-yoru-surface-elevated rounded-full">
+               <Search className="w-5 h-5" />
+            </Link>
+         </div>
+      </nav>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-yoru-surface/90 backdrop-blur-xl border-t border-yoru-border/50 md:hidden pb-safe">
+        <div className="flex items-center justify-around px-2 py-2">
+          {mobileNav.map((item) => {
+            const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.name}
+                onClick={() => {
+                  if (item.action) {
+                    item.action();
+                  } else {
+                    navigate(item.path);
+                  }
+                }}
+                className={cn(
+                  "flex flex-col items-center justify-center w-16 py-1 gap-1 transition-all",
+                  isActive ? "text-yoru-accent" : "text-yoru-text-muted hover:text-white"
+                )}
+              >
+                <div className={cn(
+                  "p-1 rounded-full transition-all duration-300", 
+                  isActive ? "bg-yoru-accent/10 translate-y-[-2px]" : ""
+                )}>
+                  <Icon className={cn("w-5 h-5", isActive && "fill-yoru-accent/20")} />
+                </div>
+                <span className={cn(
+                  "text-[10px] font-medium tracking-wide",
+                  isActive ? "font-bold" : ""
+                )}>
+                  {item.name}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </>
   );
 };
