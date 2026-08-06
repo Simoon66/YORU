@@ -3,7 +3,8 @@ import { Anime } from '../types';
 import { getAllAnime } from '../lib/data';
 import { AnimeCard } from '../components/AnimeCard';
 import { SkeletonAnimeCard } from '../components/SkeletonAnimeCard';
-import { Search as SearchIcon, X, Tag, SlidersHorizontal } from 'lucide-react';
+import { GenreChips } from '../components/GenreChips';
+import { Search as SearchIcon, X, SlidersHorizontal } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 
@@ -124,34 +125,12 @@ export const Search = () => {
         </div>
 
         {/* Genre Tags */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-2 mr-2 text-yoru-text-muted">
-            <Tag className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase tracking-widest">Filter by Genre:</span>
-          </div>
-          {availableGenres.map(genre => (
-            <button
-              key={genre}
-              onClick={() => toggleGenre(genre)}
-              className={cn(
-                "px-4 py-2 text-xs font-bold uppercase tracking-widest border transition-all rounded-none",
-                selectedGenres.includes(genre)
-                  ? "bg-yoru-accent border-yoru-accent text-white"
-                  : "bg-transparent border-yoru-border text-yoru-text-muted hover:border-yoru-accent/50 hover:text-white"
-              )}
-            >
-              {genre}
-            </button>
-          ))}
-          {selectedGenres.length > 0 && (
-            <button
-              onClick={() => setSelectedGenres([])}
-              className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-yoru-error hover:text-yoru-error/80 ml-2"
-            >
-              Clear Filters
-            </button>
-          )}
-        </div>
+        <GenreChips 
+          availableGenres={availableGenres}
+          selectedGenres={selectedGenres}
+          onToggleGenre={toggleGenre}
+          onClearFilters={() => setSelectedGenres([])}
+        />
       </div>
 
       {/* Results */}

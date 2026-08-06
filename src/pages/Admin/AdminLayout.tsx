@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LayoutDashboard, Film, Plus, LogOut } from 'lucide-react';
+import { LayoutDashboard, Film, Plus, LogOut, DownloadCloud } from 'lucide-react';
 import { Logo } from '../../components/Navigation';
 
 export const AdminLayout = () => {
@@ -19,6 +19,7 @@ export const AdminLayout = () => {
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Anime Library', path: '/admin/anime', icon: Film },
     { name: 'Add Anime', path: '/admin/anime/new', icon: Plus },
+    { name: 'Auto Import', path: '/admin/auto-import', icon: DownloadCloud },
   ];
 
   return (

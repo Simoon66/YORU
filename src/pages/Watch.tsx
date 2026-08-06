@@ -195,7 +195,7 @@ export const Watch = () => {
         <div className={clsx("bg-black w-full relative group shadow-2xl", isCinemaMode ? "aspect-[21/9]" : "aspect-video")}>
            {currentEpisode.embedLink ? (
              <iframe 
-               src={currentEpisode.embedLink} 
+               src={currentEpisode.embedLink.startsWith('http') ? currentEpisode.embedLink : `https://megaplay.buzz/stream/s-2/${currentEpisode.embedLink}/sub`} 
                className="w-full h-full border-0"
                allowFullScreen
                allow="autoplay; encrypted-media"

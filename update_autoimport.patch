@@ -1,0 +1,198 @@
+--- src/pages/Admin/AutoImport.tsx
++++ src/pages/Admin/AutoImport.tsx
+@@ -19,6 +19,7 @@
+   const [isProcessing, setIsProcessing] = useState(false);
+   const [logs, setLogs] = useState<LogItem[]>([]);
+   const [progress, setProgress] = useState({ current: 0, total: 0 });
++  const [groupAsSeasons, setGroupAsSeasons] = useState(false);
+ 
+   const addLog = (message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') => {
+     setLogs(prev => [...prev, { message, type }]);
+@@ -64,6 +65,28 @@
+     return res.data.data.Media;
+   };
+ 
++  const fetchFillers = async (malId: number): Promise<Set<number>> => {
++    const fillers = new Set<number>();
++    try {
++      let page = 1;
++      let hasNextPage = true;
++      while (hasNextPage) {
++        const res = await axios.get(`https://api.jikan.moe/v4/anime/${malId}/episodes?page=${page}`);
++        const data = res.data;
++        if (data && data.data) {
++          for (const ep of data.data) {
++            if (ep.filler) fillers.add(ep.mal_id);
++          }
++        }
++        hasNextPage = data?.pagination?.has_next_page || false;
++        if (hasNextPage) await new Promise(r => setTimeout(r, 400));
++      }
++    } catch (err) {
++      // silently fail if Jikan is unreachable or rate limited
++    }
++    return fillers;
++  };
++
+   const startImport = async () => {
+     if (isProcessing) return;
+ 
+@@ -85,6 +108,12 @@
+     setProgress({ current: 0, total: ids.length });
+     addLog(`Starting bulk import for ${ids.length} anime...`, 'info');
+ 
++    let sharedAnimeId = '';
++    let sharedAnimeDocRef = null;
++    let sharedSeasons: any[] = [];
++    let sharedAnimeData: Partial<Anime> = {};
++
+     for (let i = 0; i < ids.length; i++) {
+       const aniId = ids[i];
+       setProgress({ current: i + 1, total: ids.length });
+@@ -107,6 +136,13 @@
+           addLog(`Anime has 0 episodes in AniList. Skipping server generation.`, 'warning');
+         }
+ 
++        // Fetch fillers if MAL ID exists
++        let fillerSet = new Set<number>();
++        if (meta.idMal && totalEpisodes > 0) {
++          addLog(`Fetching filler list from Jikan (MAL ID: ${meta.idMal})...`, 'info');
++          fillerSet = await fetchFillers(meta.idMal);
++        }
++
+         // 2. Pre-check servers (Episode 1)
+         addLog(`Pre-checking MegaPlay servers...`, 'info');
+         
+@@ -136,13 +172,21 @@
+         // 3. Save Anime to Firestore
+         const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+         const q = query(collection(db, 'anime'), where('slug', '==', slug));
+         const querySnapshot = await getDocs(q);
+         
+         let animeDocRef;
+         let animeId;
+-
+-        if (querySnapshot.empty) {
++        let currentSeasonId = 's1';
++
++        if (groupAsSeasons && i > 0 && sharedAnimeId) {
++          // We are appending this ID as a new season to the first Anime
++          animeId = sharedAnimeId;
++          animeDocRef = sharedAnimeDocRef;
++          currentSeasonId = `s${i + 1}`;
++          sharedSeasons.push({ id: currentSeasonId, name: title || `Season ${i + 1}`, order: i + 1 });
++          addLog(`Appending as ${currentSeasonId} to existing anime...`, 'info');
++        } else if (querySnapshot.empty) {
+           addLog(`Creating new anime record...`, 'info');
+           animeDocRef = doc(collection(db, 'anime'));
+           animeId = animeDocRef.id;
+@@ -166,6 +210,12 @@
+             updatedAt: Date.now(),
+             published: true
+           };
++
++          if (groupAsSeasons && i === 0) {
++            sharedAnimeId = animeId;
++            sharedAnimeDocRef = animeDocRef;
++            sharedSeasons = [...newAnime.seasons];
++          }
+           await setDoc(animeDocRef, newAnime);
+         } else {
+           animeDocRef = querySnapshot.docs[0].ref;
+           animeId = animeDocRef.id;
++
++          if (groupAsSeasons && i === 0) {
++            sharedAnimeId = animeId;
++            sharedAnimeDocRef = animeDocRef;
++            sharedSeasons = querySnapshot.docs[0].data().seasons || [{ id: 's1', name: 'Season 1', order: 1 }];
++          }
++
+           addLog(`Updating existing anime record...`, 'info');
+           await updateDoc(animeDocRef, {
+             updatedAt: Date.now(),
+@@ -173,6 +223,12 @@
+             status: meta.status || 'FINISHED'
+           });
+         }
++
++        // If grouping as seasons, update the seasons array in the shared Anime doc
++        if (groupAsSeasons && sharedAnimeDocRef) {
++          await updateDoc(sharedAnimeDocRef, { seasons: sharedSeasons, updatedAt: Date.now() });
++        }
+ 
+         // 4. Populate Episodes
+         if (totalEpisodes > 0) {
+@@ -180,31 +236,36 @@
+           addLog(`Generating episodes...`, 'info');
+           
+           // Get existing episodes to prevent duplicates
+-          const epQuery = query(collection(db, 'episodes'), where('animeId', '==', animeId));
++          const epQuery = query(collection(db, 'episodes'), where('animeId', '==', animeId), where('seasonId', '==', currentSeasonId));
+           const existingEpsSnap = await getDocs(epQuery);
+-          const existingEpNumbers = new Set(existingEpsSnap.docs.map(d => d.data().episodeNumber));
++          // existingEpMap: key is "epNum-serverName"
++          const existingEpMap = new Set(existingEpsSnap.docs.map(d => `${d.data().episodeNumber}-${d.data().serverName}`));
+ 
+           for (let epNum = 1; epNum <= totalEpisodes; epNum++) {
+-            if (existingEpNumbers.has(epNum)) continue; // Skip existing
+-
+             const availableLinks = [];
+             
+-            // Add verified server links in priority order
+-            if (servers.aniSub) availableLinks.push(`https://megaplay.buzz/stream/ani/${aniId}/${epNum}/sub`);
+-            if (servers.malSub) availableLinks.push(`https://megaplay.buzz/stream/mal/${meta.idMal}/${epNum}/sub`);
+-            if (servers.aniDub) availableLinks.push(`https://megaplay.buzz/stream/ani/${aniId}/${epNum}/dub`);
+-            if (servers.malDub) availableLinks.push(`https://megaplay.buzz/stream/mal/${meta.idMal}/${epNum}/dub`);
+-
+-            if (availableLinks.length > 0) {
++            if (servers.aniSub) availableLinks.push({ link: `https://megaplay.buzz/stream/ani/${aniId}/${epNum}/sub`, server: 'AniList Sub' });
++            if (servers.malSub) availableLinks.push({ link: `https://megaplay.buzz/stream/mal/${meta.idMal}/${epNum}/sub`, server: 'MAL Sub' });
++            if (servers.aniDub) availableLinks.push({ link: `https://megaplay.buzz/stream/ani/${aniId}/${epNum}/dub`, server: 'AniList Dub' });
++            if (servers.malDub) availableLinks.push({ link: `https://megaplay.buzz/stream/mal/${meta.idMal}/${epNum}/dub`, server: 'MAL Dub' });
++
++            for (const serverItem of availableLinks) {
++              const epKey = `${epNum}-${serverItem.server}`;
++              if (existingEpMap.has(epKey)) continue; // Skip if this exact server for this ep already exists
++
+               const epDocRef = doc(collection(db, 'episodes'));
++              
++              const isFiller = fillerSet.has(epNum);
++
+               const newEp: Episode = {
+                 id: epDocRef.id,
+                 animeId: animeId,
+-                seasonId: 's1',
++                seasonId: currentSeasonId,
+                 episodeNumber: epNum,
+                 title: `Episode ${epNum}`,
+-                embedLink: availableLinks[0], // Use highest priority available
+-                serverName: 'MegaPlay (Auto)',
++                embedLink: serverItem.link,
++                serverName: serverItem.server,
+                 thumbnailUrl: meta.coverImage?.large || '',
+-                isFiller: false,
++                isFiller: isFiller,
+                 createdAt: Date.now(),
+                 published: true
+               };
+@@ -252,6 +313,20 @@
+             <p className="text-xs text-yoru-text-muted">Separate multiple IDs with commas or newlines.</p>
+          </div>
+          
++         <div className="flex items-center gap-3 bg-yoru-bg border border-yoru-border p-4 rounded-lg">
++            <label className="relative inline-flex items-center cursor-pointer">
++              <input 
++                type="checkbox" 
++                className="sr-only peer" 
++                checked={groupAsSeasons} 
++                onChange={(e) => setGroupAsSeasons(e.target.checked)}
++                disabled={isProcessing}
++              />
++              <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yoru-accent"></div>
++            </label>
++            <span className="text-sm font-bold text-white tracking-wide">Merge IDs as Seasons into one Anime</span>
++         </div>
++
+          {isProcessing && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs font-bold text-yoru-text-muted uppercase tracking-widest">

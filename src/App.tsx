@@ -13,14 +13,13 @@ import { Dashboard } from './pages/Admin/Dashboard';
 import { AnimeList } from './pages/Admin/AnimeList';
 import { AnimeEditor } from './pages/Admin/AnimeEditor';
 import { EpisodeManager } from './pages/Admin/EpisodeManager';
+import { AutoImport } from './pages/Admin/AutoImport';
 import ScrollToTop from './components/ScrollToTop';
-import { ShortcutsModal } from './components/ShortcutsModal';
 
 function AppLayout() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navigation />
-      <ShortcutsModal />
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -54,6 +53,7 @@ export default function App() {
              <Route index element={<Dashboard />} />
              <Route path="anime" element={<AnimeList />} />
              <Route path="anime/new" element={<AnimeEditor />} />
+             <Route path="auto-import" element={<AutoImport />} />
              <Route path="anime/:id/edit" element={<AnimeEditor />} />
              <Route path="anime/:id/episodes" element={<EpisodeManager />} />
           </Route>
