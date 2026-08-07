@@ -378,7 +378,7 @@ export const AutoImport = () => {
          <button
            onClick={startImport}
            disabled={isProcessing || !inputIds.trim()}
-           className="bg-yoru-accent hover:bg-yoru-accent/90 disabled:opacity-50 text-white px-6 py-3 rounded text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-colors w-full shadow-lg shadow-yoru-accent/20"
+           className="bg-yoru-accent hover:bg-yoru-accent/90 disabled:opacity-50 text-yoru-bg px-6 py-3 rounded text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-colors w-full shadow-lg shadow-yoru-accent/20"
          >
            {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <DownloadCloud className="w-5 h-5" />}
            {isProcessing ? 'Processing...' : 'Start Bulk Import'}

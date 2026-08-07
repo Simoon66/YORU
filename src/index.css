@@ -1,63 +1,89 @@
 @import "tailwindcss";
 
 @theme {
-  --color-yoru-bg: #050505;
-  --color-yoru-surface: #080808;
-  --color-yoru-surface-elevated: #1a1a1a;
-  --color-yoru-accent: #4A90E2;
-  --color-yoru-accent-hover: #3A7BC8;
-  --color-yoru-text: #E0E0E0;
-  --color-yoru-text-muted: rgba(255, 255, 255, 0.5);
-  --color-yoru-border: rgba(255, 255, 255, 0.05);
+  --color-yoru-bg: #030407;
+  --color-yoru-surface: #0a0b10;
+  --color-yoru-surface-elevated: #11131a;
+  
+  --color-yoru-accent: #e2e8f0;
+  --color-yoru-accent-hover: #ffffff;
+  --color-yoru-accent-content: #030407;
+  
+  --color-yoru-accent-indigo: #4f46e5;
+  
+  --color-yoru-text: #f1f5f9;
+  --color-yoru-text-muted: #8492a6;
+  --color-yoru-border: rgba(255, 255, 255, 0.08);
+  
   --color-yoru-error: #ef4444;
   --color-yoru-success: #10b981;
+  --color-yoru-warning: #f59e0b;
 }
 
 @layer base {
   :root {
     background-color: var(--color-yoru-bg);
     color: var(--color-yoru-text);
-    font-family: "Inter", system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   
   body {
-    @apply bg-yoru-bg text-yoru-text antialiased selection:bg-yoru-accent/30 selection:text-yoru-text;
+    @apply bg-yoru-bg text-yoru-text antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Custom Scrollbar for a premium feel */
+  h1 { font-size: clamp(2rem, 5vw, 4rem); letter-spacing: -0.02em; font-weight: 800; line-height: 1.1; }
+  h2 { font-size: clamp(1.5rem, 4vw, 3rem); letter-spacing: -0.02em; font-weight: 700; line-height: 1.2; }
+  h3 { font-size: clamp(1.25rem, 3vw, 2rem); letter-spacing: -0.01em; font-weight: 700; line-height: 1.3; }
+  h4 { font-size: clamp(1rem, 2vw, 1.5rem); font-weight: 600; line-height: 1.4; }
+  p { font-size: clamp(0.875rem, 1.5vw, 1rem); line-height: 1.6; }
+
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-yoru-bg;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-yoru-border rounded-full hover:bg-yoru-text-muted transition-colors;
+    @apply bg-yoru-border rounded-full hover:bg-white/20 transition-colors;
   }
 }
 
 @layer utilities {
   .text-shadow-sm {
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   }
   .text-shadow-md {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
   }
   .text-shadow-lg {
-    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.9);
   }
-
+  
+  .glass-panel {
+    @apply bg-yoru-surface-elevated/80 backdrop-blur-xl border border-yoru-border;
+  }
+  
+  .cinematic-vignette {
+    background: radial-gradient(circle at center, transparent 30%, var(--color-yoru-bg) 100%);
+  }
+  
   .shuriken-loader {
-    width: 80px;
+    width: 48px;
     aspect-ratio: 1;
     background: var(--color-yoru-accent);
     clip-path: polygon(100.00% 50.00%,64.14% 64.14%,50.00% 100.00%,35.86% 64.14%,0.00% 50.00%,35.86% 35.86%,50.00% 0.00%,64.14% 35.86%);
-    -webkit-mask: radial-gradient(circle 5px, #0000 90%, #000);
-    animation: l1 1.5s infinite linear;
+    -webkit-mask: radial-gradient(circle 3px, #0000 90%, #000);
+    animation: spin-smooth 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    filter: drop-shadow(0 0 16px rgba(79, 70, 229, 0.5));
   }
-  @keyframes l1 { 
-    100% { transform: rotate(1turn) }
+  
+  @keyframes spin-smooth {
+     0% { transform: rotate(0deg) scale(0.95); filter: drop-shadow(0 0 8px rgba(79, 70, 229, 0.3)); }
+     50% { transform: rotate(180deg) scale(1.05); filter: drop-shadow(0 0 24px rgba(79, 70, 229, 0.7)); }
+     100% { transform: rotate(360deg) scale(0.95); filter: drop-shadow(0 0 8px rgba(79, 70, 229, 0.3)); }
   }
 }
-

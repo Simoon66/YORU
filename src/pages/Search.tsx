@@ -14,6 +14,7 @@ export const Search = () => {
   const [query, setQuery] = useState('');
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('relevance');
+  
   const [allAnime, setAllAnime] = useState<Anime[]>([]);
   const [results, setResults] = useState<Anime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,18 +84,18 @@ export const Search = () => {
   }, [query, selectedGenres, sortBy, allAnime]);
 
   return (
-    <div className="min-h-screen bg-yoru-bg pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-yoru-bg pt-28 pb-24 px-4 md:px-6 lg:px-8 max-w-[1440px] mx-auto">
       
       {/* Search Header */}
-      <div className="flex flex-col gap-6 mb-12">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full max-w-2xl">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+      <div className="flex flex-col gap-6 mb-12 relative z-20">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-yoru-surface-elevated p-2 rounded-2xl border border-white/5 shadow-xl">
+          <div className="relative w-full max-w-2xl flex-1 flex items-center">
+            <div className="pl-6 flex items-center pointer-events-none">
               <SearchIcon className="h-5 w-5 text-yoru-text-muted" />
             </div>
             <input
               type="text"
-              className="block w-full pl-12 pr-10 py-4 bg-yoru-surface border border-yoru-border rounded-none text-white placeholder-yoru-text-muted focus:outline-none focus:border-yoru-accent focus:ring-1 focus:ring-yoru-accent transition-all text-lg font-bold tracking-wide"
+              className="block w-full pl-4 pr-12 py-4 bg-transparent border-none text-white placeholder-white/30 focus:outline-none focus:ring-0 text-lg font-bold tracking-wide"
               placeholder="Search anime, genres, or years..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -102,24 +103,24 @@ export const Search = () => {
             {query && (
               <button 
                 onClick={() => setQuery('')}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-yoru-text-muted hover:text-white"
+                className="absolute right-4 p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
           
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <SlidersHorizontal className="w-5 h-5 text-yoru-text-muted" />
+          <div className="flex items-center gap-2 w-full md:w-auto px-4 md:px-0 md:pr-4 pb-4 md:pb-0 border-t md:border-t-0 md:border-l border-white/5 pt-4 md:pt-0">
+            <SlidersHorizontal className="w-5 h-5 text-yoru-text-muted ml-2" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="bg-yoru-surface border border-yoru-border text-white text-sm font-bold uppercase tracking-widest py-3 px-4 focus:outline-none focus:border-yoru-accent flex-1 md:flex-none appearance-none"
+              className="bg-transparent border-none text-white text-xs font-bold uppercase tracking-widest py-3 px-2 focus:outline-none focus:ring-0 flex-1 md:flex-none appearance-none cursor-pointer hover:text-yoru-accent transition-colors"
             >
-              <option value="relevance">Sort by Relevance</option>
-              <option value="score">Highest Rated</option>
-              <option value="newest">Recently Added</option>
-              <option value="release">Release Date</option>
+              <option value="relevance" className="bg-[#0a0b10]">Sort by Relevance</option>
+              <option value="score" className="bg-[#0a0b10]">Highest Rated</option>
+              <option value="newest" className="bg-[#0a0b10]">Recently Added</option>
+              <option value="release" className="bg-[#0a0b10]">Release Date</option>
             </select>
           </div>
         </div>
@@ -145,21 +146,21 @@ export const Search = () => {
           {results.map((anime, idx) => (
             <motion.div 
               key={anime.id} 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: Math.min(idx * 0.05, 0.5) }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: Math.min(idx * 0.05, 0.4), ease: [0.23,1,0.32,1] }}
             >
               <AnimeCard anime={anime} />
             </motion.div>
           ))}
         </div>
       ) : (
-        <div className="py-20 text-center flex flex-col items-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-yoru-surface-elevated mb-6">
-            <SearchIcon className="w-10 h-10 text-yoru-text-muted" />
+        <div className="py-24 text-center flex flex-col items-center glass-panel rounded-2xl mx-auto max-w-2xl">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/5 mb-6 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.05)]">
+            <SearchIcon className="w-8 h-8 text-white/50" />
           </div>
-          <h3 className="text-2xl font-semibold text-white mb-2">No results found</h3>
-          <p className="text-yoru-text-muted">Try adjusting your search or filters to find what you're looking for.</p>
+          <h3 className="text-2xl font-black text-white uppercase tracking-widest mb-2">No results found</h3>
+          <p className="text-sm font-medium text-yoru-text-muted">Try adjusting your search or filters.</p>
         </div>
       )}
     </div>

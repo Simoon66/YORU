@@ -59,13 +59,13 @@ export const AnimeList = () => {
         <h1 className="text-2xl font-bold text-white tracking-tight">Anime Library</h1>
         <Link 
           to="/admin/anime/new" 
-          className="flex items-center gap-2 bg-yoru-accent hover:bg-yoru-accent/90 text-white px-4 py-2 text-sm font-bold uppercase tracking-widest transition-colors"
+          className="flex items-center gap-2 bg-yoru-accent hover:bg-yoru-accent/90 text-yoru-bg px-4 py-2 text-sm font-bold uppercase tracking-widest transition-colors"
         >
           <Plus className="w-4 h-4" /> Add Anime
         </Link>
       </div>
 
-      <div className="bg-yoru-surface border border-yoru-border">
+      <div className="glass-panel rounded-xl overflow-hidden">
         <div className="p-4 border-b border-yoru-border">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yoru-text-muted" />
@@ -138,7 +138,7 @@ export const AnimeList = () => {
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-yoru-surface border border-yoru-border max-w-sm w-full p-6 shadow-2xl">
+          <div className="glass-panel rounded-xl overflow-hidden max-w-sm w-full p-6 shadow-2xl">
             <h3 className="text-xl font-bold text-white mb-2">Delete Anime</h3>
             <p className="text-sm text-yoru-text-muted mb-6">
               Are you sure you want to delete this anime? This action cannot be undone and will not automatically delete its episodes.

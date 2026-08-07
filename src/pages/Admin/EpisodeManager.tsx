@@ -133,7 +133,7 @@ export const EpisodeManager = () => {
         <button 
           onClick={handleSave}
           disabled={isSaving}
-          className="bg-yoru-accent hover:bg-yoru-accent/90 disabled:opacity-50 text-white px-8 py-3 text-sm font-bold uppercase tracking-widest flex items-center gap-2 transition-colors"
+          className="bg-yoru-accent hover:bg-yoru-accent/90 disabled:opacity-50 text-yoru-bg px-8 py-3 text-sm font-bold uppercase tracking-widest flex items-center gap-2 transition-colors"
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save All
         </button>

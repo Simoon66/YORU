@@ -35,7 +35,7 @@ export const signInWithGoogle = async () => {
     
     return user;
   } catch (error) {
-    console.error("Error signing in with Google:", error);
+    if ((error as any).code === "auth/popup-closed-by-user") { console.log("Login popup closed"); return null; } console.error("Error signing in with Google:", error);
     throw error;
   }
 };

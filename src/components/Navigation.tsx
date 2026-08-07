@@ -8,12 +8,11 @@ import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
 export const Logo = ({ className }: { className?: string }) => (
-  <div className={cn("flex items-center gap-2", className)}>
-    <div className="relative w-8 h-8">
-      <div className="absolute inset-0 rounded-full border-2 border-yoru-accent"></div>
-      <div className="absolute top-0 right-0 w-4 h-8 bg-yoru-bg rounded-r-full translate-x-1"></div>
+  <div className={cn("flex items-center gap-3 group", className)}>
+    <div className="relative w-8 h-8 flex items-center justify-center bg-white rounded shadow-[0_0_15px_rgba(255,255,255,0.1)] group-hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-shadow duration-500">
+      <div className="w-3.5 h-3.5 bg-yoru-bg rotate-45 rounded-sm transition-transform duration-500 group-hover:rotate-90" />
     </div>
-    <span className="text-2xl font-bold tracking-widest text-white">Y<span className="text-yoru-accent">O</span>RU</span>
+    <span className="text-xl md:text-2xl font-black tracking-[0.25em] text-white">YORU</span>
   </div>
 );
 
@@ -25,9 +24,9 @@ export const Navigation = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 30);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -48,7 +47,6 @@ export const Navigation = () => {
   const mobileNav = [
     { name: 'Home', path: '/', icon: Home },
     { name: 'Browse', path: '/browse', icon: Compass },
-    { name: 'Download', path: '/downloads', icon: Download },
     { name: 'Settings', path: '/settings', icon: Settings },
     { name: 'Profile', path: user ? '/profile' : '#login', icon: User, action: !user ? handleLogin : undefined },
   ];
@@ -57,61 +55,75 @@ export const Navigation = () => {
     <>
       <nav 
         className={cn(
-          "fixed top-0 w-full z-50 transition-all duration-300 hidden md:block",
-          isScrolled ? "bg-yoru-bg/90 backdrop-blur-md border-b border-yoru-border/50 py-3" : "bg-gradient-to-b from-yoru-bg/80 to-transparent py-5"
+          "fixed top-0 w-full z-50 transition-all duration-500 hidden md:block",
+          isScrolled 
+            ? "bg-yoru-bg/80 backdrop-blur-2xl border-b border-white/5 py-4 shadow-2xl" 
+            : "bg-gradient-to-b from-yoru-bg/90 to-transparent py-6"
         )}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-12">
               <Link to="/">
                 <Logo />
               </Link>
               
-              <div className="hidden md:flex items-center gap-6">
-                {navLinks.map((link) => (
-                  <Link 
-                    key={link.name} 
-                    to={link.path}
-                    className={cn(
-                      "text-sm font-medium uppercase tracking-wider transition-colors hover:text-white",
-                      location.pathname === link.path ? "text-white" : "text-yoru-text-muted"
-                    )}
-                  >
-                    {link.name}
-                  </Link>
-                ))}
+              <div className="hidden md:flex items-center gap-8">
+                {navLinks.map((link) => {
+                  const isActive = location.pathname === link.path;
+                  return (
+                    <Link 
+                      key={link.name} 
+                      to={link.path}
+                      className="relative group"
+                    >
+                      <span className={cn(
+                        "text-xs font-bold uppercase tracking-widest transition-colors duration-300",
+                        isActive ? "text-white" : "text-yoru-text-muted group-hover:text-white"
+                      )}>
+                        {link.name}
+                      </span>
+                      {isActive && (
+                        <motion.div
+                          layoutId="nav-indicator"
+                          className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-yoru-accent rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        />
+                      )}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="hidden md:flex items-center gap-6">
-              <Link to="/search" className="text-yoru-text-muted hover:text-white transition-colors">
+            <div className="hidden md:flex items-center gap-8">
+              <Link to="/search" className="text-yoru-text-muted hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full">
                 <Search className="w-5 h-5" />
               </Link>
               
               {user ? (
-                <div className="flex items-center gap-4">
-                  <Link to="/watchlist" className="text-sm font-medium text-yoru-text-muted hover:text-white transition-colors">
+                <div className="flex items-center gap-6">
+                  <Link to="/watchlist" className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted hover:text-white transition-colors">
                     Watchlist
                   </Link>
                   {profile?.role === 'admin' && (
-                    <Link to="/admin" className="text-sm font-medium text-yoru-accent hover:text-yoru-accent-hover transition-colors">
+                    <Link to="/admin" className="text-xs font-bold uppercase tracking-widest text-yoru-accent hover:text-white transition-colors">
                       Admin
                     </Link>
                   )}
-                  <button onClick={logout} className="w-8 h-8 rounded-full overflow-hidden border border-yoru-border hover:border-yoru-accent transition-colors">
+                  <button onClick={logout} className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/10 hover:border-yoru-accent transition-all duration-300 shadow-lg">
                     {user.photoURL ? (
                       <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-yoru-surface-elevated flex items-center justify-center">
-                        <User className="w-4 h-4 text-yoru-text-muted" />
+                        <User className="w-5 h-5 text-yoru-text-muted" />
                       </div>
                     )}
                   </button>
                 </div>
               ) : (
-                <Button variant="primary" size="sm" onClick={handleLogin} className="gap-2">
+                <Button variant="primary" size="md" onClick={handleLogin} className="gap-2">
                   <LogIn className="w-4 h-4" /> Sign In
                 </Button>
               )}
@@ -123,21 +135,21 @@ export const Navigation = () => {
       {/* Mobile Top Nav (Just Logo and Search) */}
       <nav className={cn(
           "fixed top-0 w-full z-50 transition-all duration-300 md:hidden",
-          isScrolled ? "bg-yoru-bg/90 backdrop-blur-md border-b border-yoru-border/50 py-3" : "bg-gradient-to-b from-yoru-bg/80 to-transparent py-3"
+          isScrolled ? "bg-yoru-bg/90 backdrop-blur-2xl border-b border-white/5 py-3" : "bg-gradient-to-b from-yoru-bg/90 to-transparent py-4"
         )}>
-         <div className="px-4 flex justify-between items-center">
+         <div className="px-5 flex justify-between items-center">
             <Link to="/">
               <Logo className="scale-90 origin-left" />
             </Link>
-            <Link to="/search" className="p-2 text-yoru-text-muted hover:text-white bg-yoru-surface-elevated rounded-full">
+            <Link to="/search" className="p-2.5 text-white/70 hover:text-white bg-white/5 backdrop-blur-md rounded-full border border-white/10">
                <Search className="w-5 h-5" />
             </Link>
          </div>
       </nav>
 
       {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-yoru-surface/90 backdrop-blur-xl border-t border-yoru-border/50 md:hidden pb-safe">
-        <div className="flex items-center justify-around px-2 py-2">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-yoru-bg/80 backdrop-blur-2xl border-t border-white/5 md:hidden pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center justify-around px-2 py-3">
           {mobileNav.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             const Icon = item.icon;
@@ -151,20 +163,19 @@ export const Navigation = () => {
                     navigate(item.path);
                   }
                 }}
-                className={cn(
-                  "flex flex-col items-center justify-center w-16 py-1 gap-1 transition-all",
-                  isActive ? "text-yoru-accent" : "text-yoru-text-muted hover:text-white"
-                )}
+                className="relative flex flex-col items-center justify-center w-16 py-1 gap-1.5 transition-all group"
               >
-                <div className={cn(
-                  "p-1 rounded-full transition-all duration-300", 
-                  isActive ? "bg-yoru-accent/10 translate-y-[-2px]" : ""
-                )}>
-                  <Icon className={cn("w-5 h-5", isActive && "fill-yoru-accent/20")} />
-                </div>
+                {isActive && (
+                  <motion.div 
+                    layoutId="mobile-nav-bg"
+                    className="absolute inset-0 bg-white/5 rounded-xl -z-10"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <Icon className={cn("w-6 h-6 transition-colors duration-300", isActive ? "text-yoru-accent" : "text-yoru-text-muted group-hover:text-white/80")} />
                 <span className={cn(
-                  "text-[10px] font-medium tracking-wide",
-                  isActive ? "font-bold" : ""
+                  "text-[9px] font-bold tracking-widest uppercase transition-colors duration-300",
+                  isActive ? "text-yoru-accent" : "text-yoru-text-muted"
                 )}>
                   {item.name}
                 </span>

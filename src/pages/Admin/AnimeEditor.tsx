@@ -176,7 +176,7 @@ export const AnimeEditor = () => {
             <button 
               onClick={handleFetchAniList}
               disabled={isFetching}
-              className="bg-yoru-accent hover:bg-yoru-accent/90 disabled:opacity-50 text-white px-6 py-2 text-sm font-bold uppercase tracking-widest flex items-center gap-2 transition-colors"
+              className="bg-yoru-accent hover:bg-yoru-accent/90 disabled:opacity-50 text-yoru-bg px-6 py-2 text-sm font-bold uppercase tracking-widest flex items-center gap-2 transition-colors"
             >
               {isFetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} Fetch
             </button>
@@ -300,7 +300,7 @@ export const AnimeEditor = () => {
           <button 
             type="submit"
             disabled={isSaving}
-            className="bg-yoru-accent hover:bg-yoru-accent/90 disabled:opacity-50 text-white px-8 py-3 text-sm font-bold uppercase tracking-widest flex items-center gap-2 transition-colors"
+            className="bg-yoru-accent hover:bg-yoru-accent/90 disabled:opacity-50 text-yoru-bg px-8 py-3 text-sm font-bold uppercase tracking-widest flex items-center gap-2 transition-colors"
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Anime
           </button>

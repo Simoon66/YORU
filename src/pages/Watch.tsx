@@ -1,367 +1,290 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { db } from '../lib/firebase';
+import { collection, query, where, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
 import { Anime, Episode } from '../types';
-import { getAnimeBySlug, getEpisodesForAnime } from '../lib/data';
-import { Lightbulb, Monitor, PlaySquare, ChevronLeft, ChevronRight, Server, HelpCircle } from 'lucide-react';
-import clsx from 'clsx';
+import { useAuth } from '../contexts/AuthContext';
+import { PlaySquare, ChevronLeft, ChevronRight, Server, LayoutGrid, Info } from 'lucide-react';
 import { CommentSection } from '../components/CommentSection';
+import clsx from 'clsx';
+import { Button } from '../components/ui/Button';
 
 export const Watch = () => {
-  const { slug, episodeNum } = useParams<{ slug: string, episodeNum: string }>();
+  const { slug, episodeNum } = useParams();
+  const [searchParams] = useSearchParams();
+  const seasonParam = searchParams.get('season') || 's1';
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const [anime, setAnime] = useState<Anime | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   
-  const [watchedEpisodes, setWatchedEpisodes] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem('yoru_watched');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
-  
-  // UI states
-  const [isCinemaMode, setIsCinemaMode] = useState(false);
-  const [isLightOff, setIsLightOff] = useState(false);
   const [autoplay, setAutoplay] = useState(true);
-  const [currentSeasonId, setCurrentSeasonId] = useState<string>('');
+  const [watchedEpisodes, setWatchedEpisodes] = useState<string[]>([]);
 
   useEffect(() => {
-    async function loadData() {
+    const fetchData = async () => {
       if (!slug || !episodeNum) return;
-      setIsLoading(true);
-      const data = await getAnimeBySlug(slug);
-      setAnime(data);
-      if (data) {
-        const eps = await getEpisodesForAnime(data.id);
-        setEpisodes(eps);
-        const ep = eps.find(e => e.episodeNumber.toString() === episodeNum);
-        setCurrentEpisode(ep || null);
-        if (ep) setCurrentSeasonId(ep.seasonId);
-        else if (data.seasons.length > 0) setCurrentSeasonId(data.seasons[0].id);
-      }
-      setIsLoading(false);
-    }
-    loadData();
-  }, [slug, episodeNum]);
-
-  // Mark as watched automatically & persist to localStorage
-  useEffect(() => {
-    if (currentEpisode && !watchedEpisodes.includes(currentEpisode.id)) {
-      const newWatched = [...watchedEpisodes, currentEpisode.id];
-      setWatchedEpisodes(newWatched);
-      localStorage.setItem('yoru_watched', JSON.stringify(newWatched));
-    }
-  }, [currentEpisode, watchedEpisodes]);
-
-  // Update continue watching history
-  useEffect(() => {
-    if (!anime || !currentEpisode) return;
-    
-    let simulatedProgress = 0;
-
-    const updateHistory = (prog: number) => {
       try {
-        const storedHistory = localStorage.getItem('yoru_watch_history');
-        let history = storedHistory ? JSON.parse(storedHistory) : [];
+        const q = query(collection(db, 'anime'), where('slug', '==', slug));
+        const querySnapshot = await getDocs(q);
         
-        // Preserve progress if same episode
-        const existing = history.find((h: any) => h.animeId === anime.id);
-        if (existing && existing.episodeNumber === currentEpisode.episodeNumber && prog === 0) {
-           simulatedProgress = existing.progress || 0;
-        } else {
-           simulatedProgress = prog;
-        }
-        
-        // Remove existing entry for this anime
-        history = history.filter((h: any) => h.animeId !== anime.id);
-        
-        // Add new entry
-        history.unshift({
-          animeId: anime.id,
-          slug: anime.slug,
-          title: anime.title,
-          coverImage: anime.coverImage,
-          backdrop: anime.backdrop,
-          episodeNumber: currentEpisode.episodeNumber,
-          progress: simulatedProgress,
-          updatedAt: Date.now()
-        });
-        
-        // Keep only last 20
-        history = history.slice(0, 20);
-        localStorage.setItem('yoru_watch_history', JSON.stringify(history));
-      } catch (e) {
-        console.error('Failed to save watch history', e);
-      }
-    };
-
-    updateHistory(0);
-
-    const intervalId = setInterval(() => {
-       simulatedProgress += 1;
-       if (simulatedProgress > 100) simulatedProgress = 100;
-       updateHistory(simulatedProgress);
-    }, 10000);
-
-    return () => clearInterval(intervalId);
-  }, [anime, currentEpisode]);
-
-  // Add global keyboard event listeners for video player
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept if user is typing in an input
-      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
-        return;
-      }
-
-      // Try to post message to iframe for common players if possible, 
-      // or at least intercept and prevent default for scrolling
-      if (e.code === 'Space' || e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
-        // Find the iframe
-        const iframe = document.querySelector('iframe');
-        if (iframe && iframe.contentWindow) {
-          // Prevent default scrolling for spacebar and arrows
-          if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
-            e.preventDefault();
+        if (!querySnapshot.empty) {
+          const animeData = querySnapshot.docs[0].data() as Anime;
+          setAnime(animeData);
+          
+          const epQ = query(collection(db, 'episodes'), where('animeId', '==', animeData.id));
+          const epSnap = await getDocs(epQ);
+          const allEps = epSnap.docs.map(d => d.data() as Episode);
+          setEpisodes(allEps);
+          
+          const matchingEps = allEps.filter(e => 
+            e.episodeNumber === parseInt(episodeNum) && 
+            e.seasonId === seasonParam
+          );
+          
+          if (matchingEps.length > 0) {
+            setCurrentEpisode(matchingEps[0]);
           }
-          // Note: Full control requires iframe API support (e.g. YouTube).
-          // We can try to send standard media keys or just focus the iframe so it can handle it natively.
-          iframe.focus();
+
+          if (user) {
+            const progressRef = doc(db, 'watchProgress', `${user.uid}_${animeData.id}`);
+            const progressDoc = await getDoc(progressRef);
+            if (progressDoc.exists()) {
+              setWatchedEpisodes(progressDoc.data().watchedEpisodeIds || []);
+            }
+          }
         }
+      } catch (error) {
+        console.error("Error:", error);
+      } finally {
+        setLoading(false);
       }
     };
+    fetchData();
+  }, [slug, episodeNum, seasonParam, user]);
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  useEffect(() => {
+    if (currentEpisode && user && anime) {
+      const markWatched = async () => {
+        const newWatched = Array.from(new Set([...watchedEpisodes, currentEpisode.id]));
+        setWatchedEpisodes(newWatched);
+        const progressRef = doc(db, 'watchProgress', `${user.uid}_${anime.id}`);
+        await setDoc(progressRef, {
+          userId: user.uid,
+          animeId: anime.id,
+          watchedEpisodeIds: newWatched,
+          lastWatchedEpisode: currentEpisode.id,
+          updatedAt: Date.now()
+        }, { merge: true });
+      };
+      const timer = setTimeout(markWatched, 30000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentEpisode, user, anime]);
 
-  if (isLoading) return (
-    <div className="min-h-screen bg-yoru-bg pt-20 flex items-center justify-center">
+  if (loading) return (
+    <div className="min-h-screen bg-yoru-bg flex items-center justify-center cinematic-vignette">
       <div className="shuriken-loader"></div>
     </div>
   );
-  if (!anime || !currentEpisode) return <div className="min-h-screen bg-yoru-bg text-white flex items-center justify-center">Episode Not Found</div>;
 
-  const seasonEpisodes = episodes.filter(e => e.seasonId === currentSeasonId);
+  if (!anime || !currentEpisode) return (
+    <div className="min-h-screen bg-yoru-bg flex items-center justify-center text-white">
+       <div className="text-center space-y-4">
+         <Info className="w-12 h-12 text-yoru-text-muted mx-auto" />
+         <h2 className="text-2xl font-bold uppercase tracking-widest">Episode Not Found</h2>
+       </div>
+    </div>
+  );
 
-  // Deduplicate for the episodes grid
-  const uniqueSeasonEpisodesMap = new Map<number, Episode>();
-  seasonEpisodes.forEach(ep => {
-    if (!uniqueSeasonEpisodesMap.has(ep.episodeNumber)) {
-      uniqueSeasonEpisodesMap.set(ep.episodeNumber, ep);
-    }
-  });
-  const uniqueSeasonEpisodes = Array.from(uniqueSeasonEpisodesMap.values()).sort((a,b) => a.episodeNumber - b.episodeNumber);
+  const currentSeasonInfo = anime.seasons?.find(s => s.id === seasonParam);
+  
+  const seasonEpisodes = episodes.filter(e => e.seasonId === seasonParam);
+  const uniqueEpisodes = Array.from(new Set(seasonEpisodes.map(e => e.episodeNumber)))
+    .map(num => seasonEpisodes.find(e => e.episodeNumber === num)!)
+    .sort((a, b) => a.episodeNumber - b.episodeNumber);
 
-  const nextEp = uniqueSeasonEpisodes.find(e => e.episodeNumber === currentEpisode.episodeNumber + 1);
-  const prevEp = uniqueSeasonEpisodes.find(e => e.episodeNumber === currentEpisode.episodeNumber - 1);
-
-  // Available servers for the CURRENT episode
-  const currentEpisodeServers = episodes.filter(e => e.episodeNumber === currentEpisode.episodeNumber && e.seasonId === currentEpisode.seasonId);
+  const currentEpisodeServers = episodes.filter(e => 
+    e.episodeNumber === currentEpisode.episodeNumber && 
+    e.seasonId === currentEpisode.seasonId
+  );
 
   const handleServerChange = (epId: string) => {
     const newEp = currentEpisodeServers.find(ep => ep.id === epId);
     if (newEp) setCurrentEpisode(newEp);
   };
 
+  const currentIndex = uniqueEpisodes.findIndex(e => e.episodeNumber === currentEpisode.episodeNumber);
+  const nextEpisode = currentIndex < uniqueEpisodes.length - 1 ? uniqueEpisodes[currentIndex + 1] : null;
+  const prevEpisode = currentIndex > 0 ? uniqueEpisodes[currentIndex - 1] : null;
+
   return (
-    <div className={clsx("min-h-screen font-sans transition-colors duration-500", isLightOff ? "bg-black" : "bg-yoru-bg pb-12")}>
-      
-      {/* Light Off Overlay */}
-      {isLightOff && (
-        <div className="fixed inset-0 bg-black/95 z-[60] pointer-events-none" />
-      )}
-
-      {/* Main Container */}
-      <div className={clsx("mx-auto transition-all duration-500 relative pt-20", isCinemaMode ? "max-w-[1600px] px-0" : "max-w-6xl px-4 sm:px-6", isLightOff ? "z-[60]" : "z-10")}>
+    <div className="min-h-screen bg-yoru-bg pt-[72px] pb-32">
+      <div className="w-full max-w-[1440px] mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-8 flex flex-col gap-6 md:gap-8">
         
-        {/* Top Breadcrumb */}
-        <div className="mb-6">
-          <div className="flex items-center text-sm font-medium text-yoru-text-muted">
-             <Link to="/" className="hover:text-white transition-colors">Home</Link>
-             <span className="mx-2">•</span>
-             <Link to={`/anime/${anime.slug}`} className="hover:text-white transition-colors">{anime.title}</Link>
-             <span className="mx-2">•</span>
-             <span className="text-white">Episode {currentEpisode.episodeNumber}</span>
-          </div>
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest truncate text-white/50">
+             <Link to={`/anime/${anime.slug}`} className="hover:text-white transition-colors truncate">
+               {anime.title}
+             </Link>
+             <span className="text-white/20">/</span>
+             <span className="text-yoru-accent truncate">EP {currentEpisode.episodeNumber}</span>
         </div>
 
-        {/* Player Section */}
-        <div className={clsx("bg-black w-full relative group shadow-2xl", isCinemaMode ? "aspect-[21/9]" : "aspect-video")}>
-           {currentEpisode.embedLink ? (
-             <iframe 
-               src={currentEpisode.embedLink.startsWith('http') ? currentEpisode.embedLink : `https://megaplay.buzz/stream/s-2/${currentEpisode.embedLink}/sub`} 
-               className="w-full h-full border-0"
-               allowFullScreen
-               allow="autoplay; encrypted-media"
-             />
-           ) : (
-             <div className="w-full h-full flex flex-col items-center justify-center text-yoru-text-muted">
-               <PlaySquare className="w-16 h-16 mb-4 opacity-50" />
-               <p>No playable source found</p>
-             </div>
-           )}
+        {/* 1. Player */}
+        <div className="relative aspect-video w-full bg-[#030407] rounded-xl md:rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/5 ring-1 ring-white/5">
+            <iframe
+              src={currentEpisode.embedLink}
+              allowFullScreen
+              className="absolute inset-0 w-full h-full border-0"
+            />
         </div>
 
-        {/* Player Controls Bar */}
-        <div className="bg-yoru-surface border border-yoru-border border-t-0 p-3 flex flex-wrap items-center justify-between gap-4 relative z-50 mb-8">
-          <div className="flex items-center gap-2 md:gap-4 text-xs font-bold uppercase tracking-widest text-yoru-text-muted">
-             <button onClick={() => setAutoplay(!autoplay)} className={clsx("flex items-center gap-2 hover:text-white transition-colors", autoplay && "text-yoru-accent")}>
-               <div className={clsx("w-8 h-4 rounded-full relative transition-colors", autoplay ? "bg-yoru-accent" : "bg-yoru-border")}>
-                 <div className={clsx("absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all", autoplay ? "left-4.5" : "left-0.5")} />
-               </div>
-               Auto Play
-             </button>
-             
-             <div className="w-px h-4 bg-yoru-border hidden md:block" />
-
-             <button 
-               onClick={() => prevEp && navigate(`/watch/${anime.slug}/${prevEp.episodeNumber}`)}
-               disabled={!prevEp}
-               className="flex items-center gap-1 hover:text-white disabled:opacity-50 disabled:hover:text-yoru-text-muted transition-colors"
-             >
-               <ChevronLeft className="w-4 h-4" /> Prev
-             </button>
-             <button 
-               onClick={() => nextEp && navigate(`/watch/${anime.slug}/${nextEp.episodeNumber}`)}
-               disabled={!nextEp}
-               className="flex items-center gap-1 hover:text-white disabled:opacity-50 disabled:hover:text-yoru-text-muted transition-colors"
-             >
-               Next <ChevronRight className="w-4 h-4" />
-             </button>
-          </div>
-          
-          <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-yoru-text-muted">
-             <div className="relative group/help">
-               <button className="flex items-center gap-2 hover:text-white transition-colors">
-                 <HelpCircle className="w-4 h-4" />
-               </button>
-               <div className="absolute bottom-full mb-2 right-0 hidden group-hover/help:block w-48 bg-yoru-surface-elevated border border-yoru-border p-3 text-[10px] text-white shadow-xl normal-case tracking-normal z-50">
-                 <div className="font-bold mb-2 uppercase tracking-widest text-yoru-accent">Shortcuts</div>
-                 <div className="flex justify-between mb-1"><span>Play/Pause</span><kbd className="bg-yoru-bg px-1 rounded">Space</kbd></div>
-                 <div className="flex justify-between mb-1"><span>Forward</span><kbd className="bg-yoru-bg px-1 rounded">Right Arrow</kbd></div>
-                 <div className="flex justify-between"><span>Backward</span><kbd className="bg-yoru-bg px-1 rounded">Left Arrow</kbd></div>
-                 <div className="absolute -bottom-1 right-2 w-2 h-2 bg-yoru-surface-elevated border-b border-r border-yoru-border rotate-45"></div>
-               </div>
-             </div>
-             <button onClick={() => setIsLightOff(!isLightOff)} className={clsx("flex items-center gap-2 hover:text-white transition-colors", isLightOff && "text-yoru-accent")}>
-               <Lightbulb className="w-4 h-4" /> Light
-             </button>
-             <button onClick={() => setIsCinemaMode(!isCinemaMode)} className={clsx("flex items-center gap-2 hover:text-white transition-colors hidden md:flex", isCinemaMode && "text-yoru-accent")}>
-               <Monitor className="w-4 h-4" /> Cinema
-             </button>
-          </div>
-        </div>
-
-        {/* Info (Title) */}
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-            {anime.title}
-          </h1>
-          {currentEpisode.title && (
-             <p className="text-yoru-text-muted mt-1 font-medium">{currentEpisode.title}</p>
-          )}
-        </div>
-
-        {/* Servers & Seasons Row */}
-        <div className="flex flex-col md:flex-row md:items-stretch gap-6 mb-6">
-          
-          {/* Seasons Dropdown */}
-          {anime.seasons.length > 0 && (
-            <div className="flex-shrink-0">
-              <div className="flex items-center h-full bg-yoru-surface border border-yoru-border px-4 py-3">
-                <select 
-                  value={currentSeasonId} 
-                  onChange={(e) => setCurrentSeasonId(e.target.value)}
-                  className="bg-transparent text-sm font-bold tracking-widest uppercase text-white focus:outline-none cursor-pointer w-full [&>option]:bg-yoru-surface [&>option]:text-white"
-                >
-                  {anime.seasons.sort((a,b)=>a.order-b.order).map(season => (
-                    <option key={season.id} value={season.id} className="bg-[#1C1C1C] text-white py-2">{season.name}</option>
-                  ))}
-                </select>
+        {/* 2. Episode Title & Controls */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 glass-panel p-6 rounded-xl md:rounded-2xl border border-white/5">
+              <div className="space-y-3">
+                <h1 className="text-2xl md:text-3xl font-black uppercase tracking-widest text-white leading-tight">
+                  {anime.title}
+                </h1>
+                <div className="flex items-center gap-3 text-[10px] md:text-xs font-bold uppercase tracking-widest text-yoru-text-muted">
+                  <span>{currentSeasonInfo?.name || 'Season 1'}</span>
+                  <span className="text-white/20">•</span>
+                  <span>Episode <span className="text-white">{currentEpisode.episodeNumber}</span></span>
+                  {currentEpisode.isFiller && (
+                    <span className="px-2 py-0.5 rounded bg-yoru-warning/20 text-yoru-warning border border-yoru-warning/30 ml-2 shadow-sm">Filler</span>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
 
-          {/* Servers Buttons */}
-          <div className="flex-1 flex flex-col md:flex-row md:items-center gap-4 border border-yoru-border bg-yoru-surface p-3">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-yoru-text-muted shrink-0">
-              <Server className="w-4 h-4" /> Servers:
-            </div>
-            <div className="flex flex-wrap gap-2">
+              {/* Autoplay & Navigation */}
+              <div className="flex items-center gap-6">
+                 <label className="flex items-center gap-3 cursor-pointer group">
+                   <span className="text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted group-hover:text-white transition-colors">Auto Play</span>
+                   <div className={clsx("w-9 h-5 rounded-full relative transition-colors duration-300", autoplay ? "bg-yoru-accent" : "bg-white/10 border border-white/20")}>
+                     <div className={clsx(
+                       "absolute top-[2px] w-4 h-4 rounded-full bg-white shadow-md transition-all duration-300",
+                       autoplay ? "left-[18px]" : "left-[2px]"
+                     )} />
+                   </div>
+                   <input type="checkbox" className="hidden" checked={autoplay} onChange={e => setAutoplay(e.target.checked)} />
+                 </label>
+
+                 <div className="flex items-center gap-3">
+                   <Button 
+                     variant="secondary" 
+                     size="icon" 
+                     disabled={!prevEpisode}
+                     onClick={() => prevEpisode && navigate(`/watch/${anime.slug}/${prevEpisode.episodeNumber}?season=${seasonParam}`)}
+                   >
+                     <ChevronLeft className="w-5 h-5" />
+                   </Button>
+                   <Button 
+                     variant="secondary" 
+                     size="icon" 
+                     disabled={!nextEpisode}
+                     onClick={() => nextEpisode && navigate(`/watch/${anime.slug}/${nextEpisode.episodeNumber}?season=${seasonParam}`)}
+                   >
+                     <ChevronRight className="w-5 h-5" />
+                   </Button>
+                 </div>
+              </div>
+        </div>
+
+        {/* 3. Server Selector */}
+        <div className="flex flex-col gap-4 mt-2">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-yoru-text-muted flex items-center gap-2">
+              <Server className="w-4 h-4" /> Servers
+            </span>
+            <div className="flex flex-wrap gap-3">
               {currentEpisodeServers.map(serverEp => (
                 <button
                   key={serverEp.id}
                   onClick={() => handleServerChange(serverEp.id)}
                   className={clsx(
-                    "px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors border",
+                    "min-h-[44px] px-6 py-2 text-[11px] md:text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-200 ease-out border",
                     currentEpisode.id === serverEp.id
-                      ? "bg-yoru-accent/10 border-yoru-accent/50 text-yoru-accent"
-                      : "bg-yoru-surface-elevated border-yoru-border text-yoru-text hover:bg-yoru-border hover:text-white"
+                      ? "bg-yoru-accent text-[#030407] border-yoru-accent shadow-[0_4px_10px_rgba(226,232,240,0.2)] scale-100"
+                      : "bg-yoru-surface-elevated text-yoru-text-muted border-white/5 hover:text-white hover:border-white/20 hover:-translate-y-[2px] active:scale-[0.98]"
                   )}
                 >
                   {serverEp.serverName || 'Default'}
                 </button>
               ))}
             </div>
-            <div className="md:ml-auto text-xs text-yoru-text-muted italic">
-              If one server doesn't work, please try another one.
-            </div>
-          </div>
         </div>
 
-        {/* Episodes Grid */}
-        <div className="bg-yoru-surface border border-yoru-border p-4">
-           <div className="flex items-center justify-between mb-4">
-             <div className="text-sm font-bold text-white uppercase tracking-widest">Episodes</div>
-           </div>
-           <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
-              {uniqueSeasonEpisodes.map(ep => {
-                const isCurrent = ep.episodeNumber === currentEpisode.episodeNumber;
-                // Watched logic: if they watched ANY server of this episode, mark it as watched
+        {/* 4. Season Selector */}
+        {anime.seasons && anime.seasons.length > 1 && (
+            <div className="flex flex-col gap-4 mt-4">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-yoru-text-muted flex items-center gap-2">
+                <LayoutGrid className="w-4 h-4" /> Seasons
+              </span>
+              <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
+                  {anime.seasons.sort((a,b)=>a.order-b.order).map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => navigate(`/watch/${anime.slug}/${currentEpisode.episodeNumber}?season=${s.id}`)}
+                      className={clsx(
+                        "min-h-[44px] px-6 py-2 text-[11px] md:text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-200 ease-out border flex-shrink-0",
+                        seasonParam === s.id 
+                          ? "bg-white text-[#030407] border-white shadow-[0_4px_10px_rgba(255,255,255,0.2)]"
+                          : "bg-yoru-surface-elevated text-yoru-text-muted border-white/5 hover:text-white hover:border-white/20 hover:-translate-y-[2px] active:scale-[0.98]"
+                      )}
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+              </div>
+            </div>
+        )}
+
+        {/* 5. Episode Grid */}
+        <div className="flex flex-col gap-4 mt-4">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-yoru-text-muted flex items-center gap-2">
+              <PlaySquare className="w-4 h-4" /> Episodes
+          </span>
+          <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 xl:grid-cols-14 gap-2 md:gap-3">
+             {uniqueEpisodes.map((ep) => {
+                const isActive = ep.episodeNumber === currentEpisode.episodeNumber;
                 const episodeServersIds = episodes.filter(e => e.episodeNumber === ep.episodeNumber && e.seasonId === ep.seasonId).map(e => e.id);
                 const isWatched = episodeServersIds.some(id => watchedEpisodes.includes(id));
+                const isFiller = ep.isFiller;
+
+                let bgClass = "bg-yoru-surface-elevated border-white/5 text-yoru-text hover:border-white/20 hover:text-white hover:-translate-y-[2px] active:scale-[0.98]";
                 
-                let bgClass = "bg-yoru-surface-elevated hover:bg-yoru-accent/20 border-yoru-border";
-                let textClass = "text-yoru-text";
-                
-                if (isCurrent) {
-                  bgClass = "bg-yoru-accent border-yoru-accent";
-                  textClass = "text-white";
-                } else if (ep.isFiller) {
-                  bgClass = "bg-gray-800/80 border-orange-500/30 hover:border-orange-500";
-                  textClass = "text-orange-400";
+                if (isActive) {
+                  bgClass = "bg-yoru-accent text-[#030407] border-yoru-accent shadow-[0_4px_10px_rgba(226,232,240,0.2)]";
                 } else if (isWatched) {
-                  bgClass = "bg-white/5 border-white/10 opacity-75";
-                  textClass = "text-yoru-text-muted";
+                  bgClass = "bg-white/5 border-white/10 text-white/50 hover:border-white/20 hover:-translate-y-[2px] active:scale-[0.98]";
+                } else if (isFiller) {
+                  bgClass = "bg-[#1f1a18] border-yoru-warning/30 text-yoru-warning/80 hover:border-yoru-warning/60 hover:text-yoru-warning hover:-translate-y-[2px] active:scale-[0.98]";
                 }
 
                 return (
                   <Link
                     key={ep.id}
-                    to={`/watch/${anime.slug}/${ep.episodeNumber}`}
+                    to={`/watch/${anime.slug}/${ep.episodeNumber}?season=${seasonParam}`}
                     className={clsx(
-                      "aspect-square flex items-center justify-center text-xs font-bold border transition-all",
-                      bgClass, textClass
+                      "flex items-center justify-center aspect-square min-h-[44px] rounded-lg border font-bold text-xs md:text-sm transition-all duration-200 ease-out relative overflow-hidden group",
+                      bgClass
                     )}
                     title={ep.title || `Episode ${ep.episodeNumber}`}
                   >
-                    {ep.episodeNumber}
+                    <span className="relative z-10">{ep.episodeNumber}</span>
                   </Link>
                 );
-              })}
-           </div>
+             })}
+          </div>
         </div>
 
-        {/* Comment Section */}
-        {anime && currentEpisode && (
+        {/* 6. Comments */}
+        <div className="mt-12 border-t border-white/5 pt-8">
           <CommentSection animeId={anime.id} episodeId={currentEpisode.id} />
-        )}
+        </div>
+        
       </div>
     </div>
   );

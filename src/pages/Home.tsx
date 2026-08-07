@@ -66,7 +66,7 @@ export const Home = () => {
          <div className="aspect-[16/9] sm:aspect-[21/9] md:aspect-auto md:h-[85vh] bg-yoru-surface-elevated flex items-center justify-center border-b border-yoru-border">
             <div className="shuriken-loader"></div>
          </div>
-         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 space-y-20">
+         <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-8 mt-12 space-y-20">
             <section>
               <div className="h-4 w-32 bg-yoru-surface-elevated mb-6 animate-pulse" />
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
@@ -88,7 +88,7 @@ export const Home = () => {
     <div className="min-h-screen bg-yoru-bg pb-20">
       <Hero featured={trending.slice(0, 5)} />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 space-y-20">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-8 mt-12 space-y-20">
         
         {/* Continue Watching Section */}
         {watchHistory.length > 0 && (
