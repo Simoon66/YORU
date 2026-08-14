@@ -46,6 +46,7 @@ export interface Episode {
   title: string;
   embedLink: string;
   serverName: string; // e.g., 'HD-1', 'Mega'
+  serverType?: 'sub' | 'dub' | 'multi';
   thumbnailUrl: string;
   isFiller: boolean;
   createdAt: number;

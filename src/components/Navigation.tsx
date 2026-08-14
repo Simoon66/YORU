@@ -33,7 +33,6 @@ export const Navigation = () => {
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'Browse', path: '/browse' },
-    { name: 'Genres', path: '/genres' },
   ];
 
   const handleLogin = async () => {

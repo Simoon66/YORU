@@ -8,6 +8,7 @@ import { PlaySquare, ChevronLeft, ChevronRight, Server, LayoutGrid, Info } from 
 import { CommentSection } from '../components/CommentSection';
 import clsx from 'clsx';
 import { Button } from '../components/ui/Button';
+import { WatchlistButton } from '../components/WatchlistButton';
 
 export const Watch = () => {
   const { slug, episodeNum } = useParams();
@@ -46,7 +47,20 @@ export const Watch = () => {
           );
           
           if (matchingEps.length > 0) {
-            setCurrentEpisode(matchingEps[0]);
+            const savedType = localStorage.getItem('preferredServerType') || 'sub';
+            const savedName = localStorage.getItem('preferredServerName') || 'HD-1';
+            
+            let selectedEp = matchingEps.find(e => (e.serverType || 'sub') === savedType && e.serverName === savedName);
+            
+            if (!selectedEp) {
+              selectedEp = matchingEps.find(e => (e.serverType || 'sub') === savedType);
+            }
+            
+            if (!selectedEp) {
+              selectedEp = matchingEps[0];
+            }
+            
+            setCurrentEpisode(selectedEp);
           }
 
           if (user) {
@@ -114,7 +128,11 @@ export const Watch = () => {
 
   const handleServerChange = (epId: string) => {
     const newEp = currentEpisodeServers.find(ep => ep.id === epId);
-    if (newEp) setCurrentEpisode(newEp);
+    if (newEp) {
+      setCurrentEpisode(newEp);
+      if (newEp.serverType) localStorage.setItem('preferredServerType', newEp.serverType);
+      if (newEp.serverName) localStorage.setItem('preferredServerName', newEp.serverName);
+    }
   };
 
   const currentIndex = uniqueEpisodes.findIndex(e => e.episodeNumber === currentEpisode.episodeNumber);
@@ -122,11 +140,11 @@ export const Watch = () => {
   const prevEpisode = currentIndex > 0 ? uniqueEpisodes[currentIndex - 1] : null;
 
   return (
-    <div className="min-h-screen bg-yoru-bg pt-[72px] pb-32">
-      <div className="w-full max-w-[1440px] mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-8 flex flex-col gap-6 md:gap-8">
+    <div className="min-h-screen bg-yoru-bg pt-[60px] md:pt-[72px] pb-32">
+      <div className="w-full max-w-[1440px] mx-auto px-0 md:px-6 lg:px-8 py-0 md:py-8 flex flex-col gap-0 md:gap-8">
         
         {/* Breadcrumb */}
-        <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest truncate text-white/50">
+        <div className="hidden md:flex items-center gap-3 text-xs font-bold uppercase tracking-widest truncate text-white/50 px-4 md:px-0">
              <Link to={`/anime/${anime.slug}`} className="hover:text-white transition-colors truncate">
                {anime.title}
              </Link>
@@ -135,7 +153,7 @@ export const Watch = () => {
         </div>
 
         {/* 1. Player */}
-        <div className="relative aspect-video w-full bg-[#030407] rounded-xl md:rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/5 ring-1 ring-white/5">
+        <div className="relative aspect-video w-full bg-[#030407] md:rounded-2xl overflow-hidden md:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-b md:border border-white/5 ring-0 md:ring-1 ring-white/5">
             <iframe
               src={currentEpisode.embedLink}
               allowFullScreen
@@ -144,12 +162,12 @@ export const Watch = () => {
         </div>
 
         {/* 2. Episode Title & Controls */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 glass-panel p-6 rounded-xl md:rounded-2xl border border-white/5">
-              <div className="space-y-3">
-                <h1 className="text-2xl md:text-3xl font-black uppercase tracking-widest text-white leading-tight">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-4 md:p-6 md:glass-panel md:rounded-2xl md:border border-white/5 bg-yoru-surface/30 md:bg-transparent">
+              <div className="space-y-3 min-w-0 flex-1">
+                <h1 className="text-xl md:text-3xl font-black uppercase tracking-wider md:tracking-widest text-white leading-tight break-words line-clamp-2 md:line-clamp-none">
                   {anime.title}
                 </h1>
-                <div className="flex items-center gap-3 text-[10px] md:text-xs font-bold uppercase tracking-widest text-yoru-text-muted">
+                <div className="flex flex-wrap items-center gap-3 text-[10px] md:text-xs font-bold uppercase tracking-widest text-yoru-text-muted">
                   <span>{currentSeasonInfo?.name || 'Season 1'}</span>
                   <span className="text-white/20">•</span>
                   <span>Episode <span className="text-white">{currentEpisode.episodeNumber}</span></span>
@@ -160,8 +178,9 @@ export const Watch = () => {
               </div>
 
               {/* Autoplay & Navigation */}
-              <div className="flex items-center gap-6">
-                 <label className="flex items-center gap-3 cursor-pointer group">
+              <div className="flex items-center gap-4 md:gap-6 shrink-0 flex-wrap sm:flex-nowrap">
+                 <WatchlistButton animeId={anime.id} size="icon" variant="secondary" className="w-10 h-10 rounded-full" showText={false} />
+                 <label className="flex items-center gap-2 md:gap-3 cursor-pointer group">
                    <span className="text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted group-hover:text-white transition-colors">Auto Play</span>
                    <div className={clsx("w-9 h-5 rounded-full relative transition-colors duration-300", autoplay ? "bg-yoru-accent" : "bg-white/10 border border-white/20")}>
                      <div className={clsx(
@@ -194,31 +213,44 @@ export const Watch = () => {
         </div>
 
         {/* 3. Server Selector */}
-        <div className="flex flex-col gap-4 mt-2">
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-yoru-text-muted flex items-center gap-2">
+        <div className="flex flex-col gap-6 mt-2 px-4 md:px-0">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-yoru-text-muted flex items-center gap-2 border-b border-white/5 pb-2">
               <Server className="w-4 h-4" /> Servers
             </span>
-            <div className="flex flex-wrap gap-3">
-              {currentEpisodeServers.map(serverEp => (
-                <button
-                  key={serverEp.id}
-                  onClick={() => handleServerChange(serverEp.id)}
-                  className={clsx(
-                    "min-h-[44px] px-6 py-2 text-[11px] md:text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-200 ease-out border",
-                    currentEpisode.id === serverEp.id
-                      ? "bg-yoru-accent text-[#030407] border-yoru-accent shadow-[0_4px_10px_rgba(226,232,240,0.2)] scale-100"
-                      : "bg-yoru-surface-elevated text-yoru-text-muted border-white/5 hover:text-white hover:border-white/20 hover:-translate-y-[2px] active:scale-[0.98]"
-                  )}
-                >
-                  {serverEp.serverName || 'Default'}
-                </button>
-              ))}
+            <div className="flex flex-col gap-4">
+              {['sub', 'dub', 'multi'].map((type) => {
+                const serversOfType = currentEpisodeServers.filter(ep => (ep.serverType === type) || (!ep.serverType && type === 'sub'));
+                if (serversOfType.length === 0) return null;
+                return (
+                  <div key={type} className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
+                    <span className="text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] text-white/50 w-16">
+                      {type}:
+                    </span>
+                    <div className="flex flex-wrap gap-2 md:gap-3">
+                      {serversOfType.map(serverEp => (
+                        <button
+                          key={serverEp.id}
+                          onClick={() => handleServerChange(serverEp.id)}
+                          className={clsx(
+                            "min-h-[40px] px-5 py-1.5 text-[10px] md:text-xs font-bold uppercase tracking-widest rounded-lg transition-all duration-200 ease-out border",
+                            currentEpisode.id === serverEp.id
+                              ? "bg-yoru-accent text-[#030407] border-yoru-accent shadow-[0_4px_10px_rgba(226,232,240,0.2)] scale-100"
+                              : "bg-yoru-surface-elevated text-yoru-text-muted border-white/5 hover:text-white hover:border-white/20 hover:-translate-y-[2px] active:scale-[0.98]"
+                          )}
+                        >
+                          {serverEp.serverName || 'Default'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
         </div>
 
         {/* 4. Season Selector */}
         {anime.seasons && anime.seasons.length > 1 && (
-            <div className="flex flex-col gap-4 mt-4">
+            <div className="flex flex-col gap-4 mt-4 px-4 md:px-0">
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-yoru-text-muted flex items-center gap-2">
                 <LayoutGrid className="w-4 h-4" /> Seasons
               </span>
@@ -242,7 +274,7 @@ export const Watch = () => {
         )}
 
         {/* 5. Episode Grid */}
-        <div className="flex flex-col gap-4 mt-4">
+        <div className="flex flex-col gap-4 mt-4 px-4 md:px-0">
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-yoru-text-muted flex items-center gap-2">
               <PlaySquare className="w-4 h-4" /> Episodes
           </span>
@@ -282,7 +314,7 @@ export const Watch = () => {
 
         {/* 6. Comments */}
         <div className="mt-12 border-t border-white/5 pt-8">
-          <CommentSection animeId={anime.id} episodeId={currentEpisode.id} />
+          <div className="px-4 md:px-0"><CommentSection animeId={anime.id} episodeId={currentEpisode.id} /></div>
         </div>
         
       </div>

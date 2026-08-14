@@ -5,6 +5,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Anime, Episode } from '../types';
 import { Play, Plus, Star, Calendar, Clock, Loader2, PlayCircle, Info } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { WatchlistButton } from '../components/WatchlistButton';
 import { motion } from 'motion/react';
 import clsx from 'clsx';
 
@@ -150,9 +151,7 @@ export const AnimeDetail = () => {
                      <Play className="w-5 h-5" /> No Episodes Yet
                    </Button>
                 )}
-                <Button variant="secondary" size="lg" className="px-8 py-3.5 gap-2 backdrop-blur-md">
-                  <Plus className="w-5 h-5" /> Watchlist
-                </Button>
+                <WatchlistButton animeId={anime.id!} className="px-8 py-3.5 backdrop-blur-md" />
               </div>
             </motion.div>
           </div>

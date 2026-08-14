@@ -5,6 +5,7 @@ import { Play, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { Button } from './ui/Button';
+import { WatchlistButton } from './WatchlistButton';
 
 interface AnimeCardProps {
   anime: Anime;
@@ -125,9 +126,7 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
                     <Play className="w-4 h-4 fill-current" /> Watch Now
                   </Button>
                 </Link>
-                <Button variant="secondary" size="icon" className="shrink-0 rounded-full">
-                  <Plus className="w-5 h-5" />
-                </Button>
+                <WatchlistButton animeId={anime.id!} variant="secondary" size="icon" showText={false} className="shrink-0 rounded-full w-10 h-10" />
               </div>
             </div>
           </motion.div>
