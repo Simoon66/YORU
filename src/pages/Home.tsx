@@ -4,9 +4,10 @@ import { AnimeCard } from '../components/AnimeCard';
 import { ContinueWatchingCard } from '../components/ContinueWatchingCard';
 import { SkeletonAnimeCard } from '../components/SkeletonAnimeCard';
 import { Anime } from '../types';
-import { getTrendingAnime, getAllAnime } from '../lib/data';
+import { getTrendingAnime, getAllAnime, getWatchHistory } from '../lib/data';
 import { ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'motion/react';
 
 interface HistoryItem {
@@ -20,6 +21,7 @@ interface HistoryItem {
 }
 
 export const Home = () => {
+  const { user } = useAuth();
   const [trending, setTrending] = useState<Anime[]>([]);
   const [latest, setLatest] = useState<Anime[]>([]);
   const [watchHistory, setWatchHistory] = useState<HistoryItem[]>([]);
@@ -36,8 +38,13 @@ export const Home = () => {
       setLatest(allData); // In a real app, this would be a separate query sorting by createdAt
       
       try {
-        const history = localStorage.getItem('yoru_watch_history');
-        if (history) setWatchHistory(JSON.parse(history).slice(0, 4));
+        if (user) {
+          const h = await getWatchHistory(user.uid);
+          setWatchHistory(h as any);
+        } else {
+          const history = localStorage.getItem('yoru_watch_history');
+          if (history) setWatchHistory(JSON.parse(history).slice(0, 4));
+        }
       } catch (e) {
         console.error("Failed to load history", e);
       }
@@ -45,7 +52,7 @@ export const Home = () => {
       setIsLoading(false);
     }
     loadData();
-  }, []);
+  }, [user]);
 
   const SectionHeader = ({ title, linkTo }: { title: string, linkTo?: string }) => (
     <div className="flex items-center justify-between mb-6">

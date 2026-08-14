@@ -1,27 +1,10 @@
-import React from 'react';
-import { Plus, Check } from 'lucide-react';
-import { useWatchlist } from '../hooks/useWatchlist';
-import { Button } from './ui/Button';
-import { cn } from '../lib/utils';
+const fs = require('fs');
+let content = fs.readFileSync('src/components/WatchlistButton.tsx', 'utf8');
 
-interface WatchlistButtonProps {
-  animeId: string;
-  className?: string;
-  variant?: 'primary' | 'secondary' | 'icon';
-  size?: 'sm' | 'md' | 'lg' | 'icon';
-  showText?: boolean;
-}
-
-export const WatchlistButton: React.FC<WatchlistButtonProps> = ({ 
-  animeId, 
-  className,
-  variant = 'secondary',
-  size = 'lg',
-  showText = true
-}) => {
-  const { isInWatchlist, toggleWatchlist, isLoading } = useWatchlist(animeId);
-
-  return (
+// replace the button render
+content = content.replace(
+  /return \([\s\S]*?\);\n\};/,
+  `return (
     <Button 
       variant={variant} 
       size={size} 
@@ -59,4 +42,6 @@ export const WatchlistButton: React.FC<WatchlistButtonProps> = ({
       )}
     </Button>
   );
-};
+};`
+);
+fs.writeFileSync('src/components/WatchlistButton.tsx', content);

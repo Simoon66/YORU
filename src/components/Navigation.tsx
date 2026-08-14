@@ -6,6 +6,7 @@ import { signInWithGoogle, logout } from '../lib/firebase';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { AuthModal } from './AuthModal';
 
 export const Logo = ({ className }: { className?: string }) => (
   <div className={cn("flex items-center gap-3 group", className)}>
@@ -21,6 +22,7 @@ export const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,12 +37,8 @@ export const Navigation = () => {
     { name: 'Browse', path: '/browse' },
   ];
 
-  const handleLogin = async () => {
-    try {
-      await signInWithGoogle();
-    } catch (error) {
-      console.error("Login failed", error);
-    }
+  const handleLogin = () => {
+    setIsAuthModalOpen(true);
   };
 
   const mobileNav = [
@@ -52,6 +50,7 @@ export const Navigation = () => {
 
   return (
     <>
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
       <nav 
         className={cn(
           "fixed top-0 w-full z-50 transition-all duration-500 hidden md:block",
@@ -111,7 +110,7 @@ export const Navigation = () => {
                       Admin
                     </Link>
                   )}
-                  <button onClick={logout} className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/10 hover:border-yoru-accent transition-all duration-300 shadow-lg">
+                  <Link to="/profile" className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/10 hover:border-yoru-accent transition-all duration-300 shadow-lg block">
                     {user.photoURL ? (
                       <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
@@ -119,7 +118,7 @@ export const Navigation = () => {
                         <User className="w-5 h-5 text-yoru-text-muted" />
                       </div>
                     )}
-                  </button>
+                  </Link>
                 </div>
               ) : (
                 <Button variant="primary" size="md" onClick={handleLogin} className="gap-2">

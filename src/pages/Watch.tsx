@@ -4,7 +4,7 @@ import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
 import { Anime, Episode } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { PlaySquare, ChevronLeft, ChevronRight, Server, LayoutGrid, Info } from 'lucide-react';
+import { PlaySquare, ChevronLeft, ChevronRight, Server, LayoutGrid, Info, Check } from 'lucide-react';
 import { CommentSection } from '../components/CommentSection';
 import clsx from 'clsx';
 import { Button } from '../components/ui/Button';
@@ -81,20 +81,45 @@ export const Watch = () => {
   }, [slug, episodeNum, seasonParam, user]);
 
   useEffect(() => {
-    if (currentEpisode && user && anime) {
+    if (currentEpisode && anime) {
       const markWatched = async () => {
         const newWatched = Array.from(new Set([...watchedEpisodes, currentEpisode.id]));
         setWatchedEpisodes(newWatched);
-        const progressRef = doc(db, 'watchProgress', `${user.uid}_${anime.id}`);
-        await setDoc(progressRef, {
-          userId: user.uid,
-          animeId: anime.id,
-          watchedEpisodeIds: newWatched,
-          lastWatchedEpisode: currentEpisode.id,
-          updatedAt: Date.now()
-        }, { merge: true });
+        
+        // LocalStorage for Guests & Backup
+        try {
+          const history = JSON.parse(localStorage.getItem('yoru_watch_history') || '[]');
+          const newHistoryItem = {
+            animeId: anime.id,
+            slug: anime.slug,
+            title: anime.title,
+            coverImage: anime.poster,
+            backdrop: anime.backdrop,
+            episodeNumber: currentEpisode.episodeNumber,
+            updatedAt: Date.now()
+          };
+          const existingIdx = history.findIndex((h) => h.animeId === anime.id);
+          if (existingIdx !== -1) history.splice(existingIdx, 1);
+          history.unshift(newHistoryItem);
+          localStorage.setItem('yoru_watch_history', JSON.stringify(history.slice(0, 10)));
+        } catch (e) {
+          console.error("Local storage save error", e);
+        }
+
+        // Firestore for Logged-In Users
+        if (user) {
+          const progressRef = doc(db, 'watchProgress', `${user.uid}_${anime.id}`);
+          await setDoc(progressRef, {
+            userId: user.uid,
+            animeId: anime.id,
+            watchedEpisodeIds: newWatched,
+            lastWatchedEpisode: currentEpisode.id,
+            updatedAt: Date.now()
+          }, { merge: true });
+        }
       };
-      const timer = setTimeout(markWatched, 30000);
+      
+      const timer = setTimeout(markWatched, 5000); // 5 seconds for faster testing (usually 30s)
       return () => clearTimeout(timer);
     }
   }, [currentEpisode, user, anime]);
@@ -140,7 +165,7 @@ export const Watch = () => {
   const prevEpisode = currentIndex > 0 ? uniqueEpisodes[currentIndex - 1] : null;
 
   return (
-    <div className="min-h-screen bg-yoru-bg pt-[60px] md:pt-[72px] pb-32">
+    <div className="min-h-screen bg-yoru-bg pt-[60px] md:pt-[72px] pb-24">
       <div className="w-full max-w-[1440px] mx-auto px-0 md:px-6 lg:px-8 py-0 md:py-8 flex flex-col gap-0 md:gap-8">
         
         {/* Breadcrumb */}
@@ -152,6 +177,7 @@ export const Watch = () => {
              <span className="text-yoru-accent truncate">EP {currentEpisode.episodeNumber}</span>
         </div>
 
+        <div className="w-full max-w-[1100px] mx-auto flex flex-col gap-4 md:gap-6">
         {/* 1. Player */}
         <div className="relative aspect-video w-full bg-[#030407] md:rounded-2xl overflow-hidden md:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-b md:border border-white/5 ring-0 md:ring-1 ring-white/5">
             <iframe
@@ -184,8 +210,8 @@ export const Watch = () => {
                    <span className="text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted group-hover:text-white transition-colors">Auto Play</span>
                    <div className={clsx("w-9 h-5 rounded-full relative transition-colors duration-300", autoplay ? "bg-yoru-accent" : "bg-white/10 border border-white/20")}>
                      <div className={clsx(
-                       "absolute top-[2px] w-4 h-4 rounded-full bg-white shadow-md transition-all duration-300",
-                       autoplay ? "left-[18px]" : "left-[2px]"
+                       "absolute top-[2px] w-4 h-4 rounded-full shadow-md transition-all duration-300",
+                       autoplay ? "left-[18px] bg-black" : "left-[2px] bg-white"
                      )} />
                    </div>
                    <input type="checkbox" className="hidden" checked={autoplay} onChange={e => setAutoplay(e.target.checked)} />
@@ -248,6 +274,7 @@ export const Watch = () => {
             </div>
         </div>
 
+        </div>
         {/* 4. Season Selector */}
         {anime.seasons && anime.seasons.length > 1 && (
             <div className="flex flex-col gap-4 mt-4 px-4 md:px-0">
@@ -296,7 +323,7 @@ export const Watch = () => {
                 }
 
                 return (
-                  <Link
+                                    <Link
                     key={ep.id}
                     to={`/watch/${anime.slug}/${ep.episodeNumber}?season=${seasonParam}`}
                     className={clsx(
@@ -306,6 +333,11 @@ export const Watch = () => {
                     title={ep.title || `Episode ${ep.episodeNumber}`}
                   >
                     <span className="relative z-10">{ep.episodeNumber}</span>
+                    {isWatched && !isActive && (
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-[1px]">
+                        <Check className="w-4 h-4 text-white/70" />
+                      </div>
+                    )}
                   </Link>
                 );
              })}

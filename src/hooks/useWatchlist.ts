@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -42,17 +42,20 @@ export function useWatchlist(animeId?: string) {
     checkWatchlist();
   }, [user, animeId]);
 
-  const toggleWatchlist = async () => {
+  const toggleWatchlist = useCallback(async () => {
     if (!user) {
       alert("Please login to use watchlist");
       return;
     }
     if (!animeId) return;
+    
+    // Optimistic Update
+    const prevIsInWatchlist = isInWatchlist;
+    setIsInWatchlist(!prevIsInWatchlist);
 
     try {
-      if (isInWatchlist && watchlistDocId) {
+      if (prevIsInWatchlist && watchlistDocId) {
         await deleteDoc(doc(db, 'watchlist', watchlistDocId));
-        setIsInWatchlist(false);
         setWatchlistDocId(null);
       } else {
         const docRef = await addDoc(collection(db, 'watchlist'), {
@@ -60,13 +63,13 @@ export function useWatchlist(animeId?: string) {
           animeId: animeId,
           createdAt: Date.now()
         });
-        setIsInWatchlist(true);
         setWatchlistDocId(docRef.id);
       }
     } catch (err) {
       console.error("Error toggling watchlist:", err);
+      setIsInWatchlist(prevIsInWatchlist); // revert on error
     }
-  };
+  }, [user, animeId, isInWatchlist, watchlistDocId]);
 
   return { isInWatchlist, toggleWatchlist, isLoading };
 }
