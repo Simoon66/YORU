@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LayoutDashboard, Film, Plus, LogOut, DownloadCloud } from 'lucide-react';
+import { LayoutDashboard, Film, Plus, LogOut, DownloadCloud, Sparkles } from 'lucide-react';
 import { Logo } from '../../components/Navigation';
 
 export const AdminLayout = () => {
@@ -17,6 +17,7 @@ export const AdminLayout = () => {
 
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { name: 'Spotlight Sliders', path: '/admin/spotlights', icon: Sparkles },
     { name: 'Anime Library', path: '/admin/anime', icon: Film },
     { name: 'Add Anime', path: '/admin/anime/new', icon: Plus },
     { name: 'Auto Import', path: '/admin/auto-import', icon: DownloadCloud },

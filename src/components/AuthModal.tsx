@@ -68,11 +68,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleGoogle = async () => {
+    setError('');
+    setLoading(true);
     try {
-      await signInWithGoogle();
-      onClose();
-    } catch (err) {
+      const user = await signInWithGoogle();
+      if (user) {
+        onClose();
+      }
+    } catch (err: any) {
       console.error(err);
+      if (err.code === 'auth/unauthorized-domain') {
+        const currentDomain = window.location.hostname;
+        setError(`Firebase Auth Domain Error: '${currentDomain}' is not authorized in your Firebase Console. Please add '${currentDomain}' to Firebase Console > Authentication > Settings > Authorized domains. In the meantime, you can sign up or log in using Email and Password below.`);
+      } else {
+        setError(err.message || 'Google authentication failed');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 

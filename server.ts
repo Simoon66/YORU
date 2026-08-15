@@ -64,8 +64,8 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    // Use *all for Express v5 or * for Express v4. Wait, express 4 is installed.
-    app.get("*", (req, res) => {
+    // Use *all for Express v5
+    app.get("*all", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

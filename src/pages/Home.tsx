@@ -4,11 +4,11 @@ import { AnimeCard } from '../components/AnimeCard';
 import { ContinueWatchingCard } from '../components/ContinueWatchingCard';
 import { SkeletonAnimeCard } from '../components/SkeletonAnimeCard';
 import { Anime } from '../types';
-import { getTrendingAnime, getAllAnime, getWatchHistory } from '../lib/data';
-import { ChevronRight } from 'lucide-react';
+import { getTrendingAnime, getAllAnime, getWatchHistory, clearWatchHistory } from '../lib/data';
+import { ChevronRight, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface HistoryItem {
   animeId: string;
@@ -26,6 +26,7 @@ export const Home = () => {
   const [latest, setLatest] = useState<Anime[]>([]);
   const [watchHistory, setWatchHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isClearing, setIsClearing] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -54,16 +55,28 @@ export const Home = () => {
     loadData();
   }, [user]);
 
-  const SectionHeader = ({ title, linkTo }: { title: string, linkTo?: string }) => (
+  const handleClearHistory = async () => {
+    if (window.confirm("Are you sure you want to clear your watch history?")) {
+      setIsClearing(true);
+      await clearWatchHistory(user?.uid);
+      setWatchHistory([]);
+      setIsClearing(false);
+    }
+  };
+
+  const SectionHeader = ({ title, linkTo, action }: { title: string, linkTo?: string, action?: React.ReactNode }) => (
     <div className="flex items-center justify-between mb-6">
       <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-yoru-accent">
         {title}
       </h3>
-      {linkTo && (
-        <Link to={linkTo} className="flex items-center text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted hover:text-white transition-colors">
-          View All <ChevronRight className="w-3 h-3 ml-1" />
-        </Link>
-      )}
+      <div className="flex items-center gap-4">
+        {action}
+        {linkTo && (
+          <Link to={linkTo} className="flex items-center text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted hover:text-white transition-colors">
+            View All <ChevronRight className="w-3 h-3 ml-1" />
+          </Link>
+        )}
+      </div>
     </div>
   );
 
@@ -100,7 +113,20 @@ export const Home = () => {
         {/* Continue Watching Section */}
         {watchHistory.length > 0 && (
           <section>
-            <SectionHeader title="Continue Watching" />
+            <SectionHeader 
+              title="Continue Watching" 
+              action={
+                <button
+                  onClick={handleClearHistory}
+                  disabled={isClearing}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 hover:bg-red-500/10 text-yoru-text-muted hover:text-red-400 border border-white/5 hover:border-red-500/20 text-[10px] font-bold uppercase tracking-wider transition-all duration-200"
+                  title="Clear all watch history"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>{isClearing ? 'Clearing...' : 'Clear History'}</span>
+                </button>
+              }
+            />
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {watchHistory.map((item, index) => (
                 <motion.div

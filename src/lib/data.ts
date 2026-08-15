@@ -1,6 +1,6 @@
-import { collection, getDocs, doc, getDoc, query, where, limit, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, where, limit, orderBy, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { Anime, Episode } from '../types';
+import { Anime, Episode, SpotlightSlide } from '../types';
 
 // Mock data fallback
 export const mockAnimeList: Anime[] = [
@@ -184,3 +184,53 @@ export async function getWatchHistory(userId: string): Promise<HistoryItem[]> {
     return [];
   }
 }
+
+export async function clearWatchHistory(userId?: string): Promise<boolean> {
+  try {
+    localStorage.removeItem('yoru_watch_history');
+    if (userId) {
+      const q = query(
+        collection(db, 'watchProgress'),
+        where('userId', '==', userId)
+      );
+      const snap = await getDocs(q);
+      const deletePromises = snap.docs.map(d => deleteDoc(d.ref));
+      await Promise.all(deletePromises);
+    }
+    return true;
+  } catch (e) {
+    console.error("Failed to clear watch history:", e);
+    return false;
+  }
+}
+
+export async function getSpotlightSlides(): Promise<SpotlightSlide[]> {
+  try {
+    const q = query(
+      collection(db, 'spotlights'),
+      where('active', '==', true)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return [];
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as SpotlightSlide));
+    list.sort((a, b) => (a.order || 0) - (b.order || 0));
+    return list;
+  } catch (e) {
+    console.warn("Failed to fetch spotlight slides:", e);
+    return [];
+  }
+}
+
+export async function getAllSpotlightSlides(): Promise<SpotlightSlide[]> {
+  try {
+    const snap = await getDocs(collection(db, 'spotlights'));
+    if (snap.empty) return [];
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as SpotlightSlide));
+    list.sort((a, b) => (a.order || 0) - (b.order || 0));
+    return list;
+  } catch (e) {
+    console.error("Failed to fetch all spotlight slides:", e);
+    return [];
+  }
+}
+

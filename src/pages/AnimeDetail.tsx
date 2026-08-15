@@ -141,9 +141,9 @@ export const AnimeDetail = () => {
 
               <div className="flex items-center gap-4 pt-4">
                 {firstEpisodeOfSeason ? (
-                  <Link to={`/watch/${anime.slug}/${firstEpisodeOfSeason.episodeNumber}?season=${activeSeason}`}>
+                  <Link to={`/watch/${anime.slug}`}>
                     <Button size="lg" className="px-8 py-3.5 gap-2 shadow-xl shadow-white/5">
-                      <Play className="w-5 h-5 fill-current" /> Watch Episode 1
+                      <Play className="w-5 h-5 fill-current" /> Watch Now
                     </Button>
                   </Link>
                 ) : (

@@ -73,3 +73,25 @@ export interface WatchProgress {
   completed: boolean;
   updatedAt: number;
 }
+
+export interface SpotlightSlide {
+  id: string;
+  order: number; // 1, 2, 3, etc. for #1 Spotlight, #2 Spotlight...
+  animeId: string;
+  animeTitle?: string;
+  animeSlug?: string;
+  targetSeasonId?: string; // target season e.g. "s1", "s2"
+  targetSeasonName?: string;
+  badge?: string; // e.g. "#1 Spotlight", "Trending", "New Season"
+  logo?: string; // Custom TMDB/web logo PNG URL
+  backdrop: string; // Custom TMDB/web backdrop image URL
+  synopsis: string; // Custom synopsis / hook (line-clamp-2 on Hero)
+  active: boolean; // toggle visibility
+  format?: string; // 'TV', 'Movie', 'OVA', 'ONA', 'Special'
+  duration?: string; // e.g. '24m'
+  year?: string; // e.g. '2025'
+  isHd?: boolean; // HD indicator
+  createdAt?: number;
+  updatedAt?: number;
+}
+

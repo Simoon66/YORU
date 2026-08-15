@@ -14,6 +14,7 @@ import { AnimeList } from './pages/Admin/AnimeList';
 import { AnimeEditor } from './pages/Admin/AnimeEditor';
 import { EpisodeManager } from './pages/Admin/EpisodeManager';
 import { AutoImport } from './pages/Admin/AutoImport';
+import { SpotlightManager } from './pages/Admin/SpotlightManager';
 import ScrollToTop from './components/ScrollToTop';
 
 function AppLayout() {
@@ -27,6 +28,7 @@ function AppLayout() {
           <Route path="/genres" element={<Search />} />
           <Route path="/search" element={<Search />} />
           <Route path="/anime/:slug" element={<AnimeDetail />} />
+          <Route path="/watch/:slug" element={<Watch />} />
           <Route path="/watch/:slug/:episodeNum" element={<Watch />} />
           <Route path="/watchlist" element={<Watchlist />} />
           <Route path="/downloads" element={<DownloadsPage />} />
@@ -51,6 +53,7 @@ export default function App() {
           {/* Admin App */}
           <Route path="/admin" element={<AdminLayout />}>
              <Route index element={<Dashboard />} />
+             <Route path="spotlights" element={<SpotlightManager />} />
              <Route path="anime" element={<AnimeList />} />
              <Route path="anime/new" element={<AnimeEditor />} />
              <Route path="auto-import" element={<AutoImport />} />

@@ -32,6 +32,13 @@ service cloud.firestore {
       allow read, delete: if request.auth != null && resource != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.resource != null && request.auth.uid == request.resource.data.userId;
     }
+    match /spotlights/{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') 
+        || request.auth.token.email in ['simoonabdulla@gmail.com', 'kamaluddin124578@gmail.com']
+      );
+    }
     match /watchProgress/{progressId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && (
