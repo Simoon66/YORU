@@ -1,11 +1,20 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
 import { getFirestore, collection, doc, getDoc, setDoc } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+const firebaseConfig = {
+  apiKey: "AIzaSyC8uJw5pSdOFvPX0MCBQhBZt12HAL1_0bg",
+  authDomain: "yuro-live.firebaseapp.com",
+  databaseURL: "https://yuro-live-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "yuro-live",
+  storageBucket: "yuro-live.firebasestorage.app",
+  messagingSenderId: "907964173677",
+  appId: "1:907964173677:web:5b701af913ecdb8e221e64",
+  measurementId: "G-Z2DWP302PR"
+};
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 
 export const signInWithGoogle = async () => {
