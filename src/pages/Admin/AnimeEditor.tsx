@@ -38,6 +38,45 @@ export const AnimeEditor = () => {
   const [fetchQuery, setFetchQuery] = useState('');
   const [isFetching, setIsFetching] = useState(false);
   const [fetchError, setFetchError] = useState('');
+  
+  const [aniListSuggestions, setAniListSuggestions] = useState<any[]>([]);
+  const [isSuggesting, setIsSuggesting] = useState(false);
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!fetchQuery.trim() || /^\d+$/.test(fetchQuery) || fetchQuery.length < 3) {
+        setAniListSuggestions([]);
+        return;
+      }
+      setIsSuggesting(true);
+      try {
+        const query = `
+        query ($search: String) {
+          Page(page: 1, perPage: 5) {
+            media(search: $search, type: ANIME, sort: SEARCH_MATCH) {
+              id
+              title { english romaji native }
+              coverImage { medium }
+              startDate { year }
+            }
+          }
+        }`;
+        const res = await fetch('https://graphql.anilist.co', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ query, variables: { search: fetchQuery } })
+        });
+        const json = await res.json();
+        setAniListSuggestions(json.data.Page.media || []);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsSuggesting(false);
+      }
+    };
+    const timeoutId = setTimeout(fetchSuggestions, 500);
+    return () => clearTimeout(timeoutId);
+  }, [fetchQuery]);
 
   const [formData, setFormData] = useState<Partial<Anime>>({
     title: '',
@@ -164,19 +203,52 @@ export const AnimeEditor = () => {
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <DownloadCloud className="w-5 h-5 text-yoru-accent" /> Auto-Import from AniList
           </h2>
-          <div className="flex gap-2">
-            <input 
-              type="text" 
-              placeholder="Enter AniList ID or Exact Title..." 
-              value={fetchQuery}
-              onChange={e => setFetchQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleFetchAniList()}
-              className="flex-1 bg-yoru-bg border border-yoru-border px-4 py-2 text-sm text-white focus:outline-none focus:border-yoru-accent"
-            />
+          <div className="flex gap-2 relative">
+            <div className="flex-1 relative">
+              <input 
+                type="text" 
+                placeholder="Enter AniList ID or Exact Title..." 
+                value={fetchQuery}
+                onChange={e => setFetchQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleFetchAniList()}
+                className="w-full bg-yoru-bg border border-yoru-border px-4 py-2 text-sm text-white focus:outline-none focus:border-yoru-accent"
+              />
+              
+              {/* AniList Live Suggestions Dropdown */}
+              {(aniListSuggestions.length > 0 || isSuggesting) && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-yoru-surface-elevated border border-white/10 rounded shadow-2xl z-50 overflow-hidden">
+                  {isSuggesting ? (
+                    <div className="p-4 flex items-center justify-center text-yoru-text-muted">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="max-h-60 overflow-y-auto">
+                      {aniListSuggestions.map(media => (
+                        <button
+                          key={media.id}
+                          onClick={() => {
+                            setFetchQuery(media.id.toString());
+                            setAniListSuggestions([]);
+                          }}
+                          className="w-full flex items-center gap-3 p-2 hover:bg-white/5 transition-colors text-left border-b border-white/5 last:border-0"
+                        >
+                          <img src={media.coverImage.medium} alt="Cover" className="w-8 h-12 object-cover rounded" />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-sm font-bold text-white truncate">{media.title.english || media.title.romaji || media.title.native}</h4>
+                            <p className="text-[10px] text-yoru-text-muted truncate">ID: {media.id} {media.startDate?.year ? `• ${media.startDate.year}` : ''}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
             <button 
               onClick={handleFetchAniList}
               disabled={isFetching}
-              className="bg-yoru-accent hover:bg-yoru-accent/90 disabled:opacity-50 text-yoru-bg px-6 py-2 text-sm font-bold uppercase tracking-widest flex items-center gap-2 transition-colors"
+              className="bg-yoru-accent hover:bg-yoru-accent/90 disabled:opacity-50 text-yoru-bg px-6 py-2 text-sm font-bold uppercase tracking-widest flex items-center gap-2 transition-colors shrink-0"
             >
               {isFetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />} Fetch
             </button>

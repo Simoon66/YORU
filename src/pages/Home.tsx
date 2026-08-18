@@ -55,13 +55,20 @@ export const Home = () => {
     loadData();
   }, [user]);
 
+  const [confirmClear, setConfirmClear] = useState(false);
+
   const handleClearHistory = async () => {
-    if (window.confirm("Are you sure you want to clear your watch history?")) {
-      setIsClearing(true);
-      await clearWatchHistory(user?.uid);
-      setWatchHistory([]);
-      setIsClearing(false);
+    if (!confirmClear) {
+      setConfirmClear(true);
+      setTimeout(() => setConfirmClear(false), 3000);
+      return;
     }
+    
+    setIsClearing(true);
+    await clearWatchHistory(user?.uid);
+    setWatchHistory([]);
+    setIsClearing(false);
+    setConfirmClear(false);
   };
 
   const SectionHeader = ({ title, linkTo, action }: { title: string, linkTo?: string, action?: React.ReactNode }) => (
@@ -119,26 +126,29 @@ export const Home = () => {
                 <button
                   onClick={handleClearHistory}
                   disabled={isClearing}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 hover:bg-red-500/10 text-yoru-text-muted hover:text-red-400 border border-white/5 hover:border-red-500/20 text-[10px] font-bold uppercase tracking-wider transition-all duration-200"
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full ${confirmClear ? 'bg-red-500/20 text-red-400 border-red-500/50' : 'bg-white/5 hover:bg-red-500/10 text-yoru-text-muted hover:text-red-400 border-white/5 hover:border-red-500/20'} border text-[10px] font-bold uppercase tracking-wider transition-all duration-200`}
                   title="Clear all watch history"
                 >
                   <Trash2 className="w-3 h-3" />
-                  <span>{isClearing ? 'Clearing...' : 'Clear History'}</span>
+                  <span>{isClearing ? 'Clearing...' : confirmClear ? 'Click again to confirm' : 'Clear History'}</span>
                 </button>
               }
             />
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-              {watchHistory.map((item, index) => (
-                <motion.div
-                  key={item.animeId}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <ContinueWatchingCard item={item} />
-                </motion.div>
-              ))}
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <AnimatePresence>
+                {watchHistory.map((item, index) => (
+                  <motion.div
+                    key={item.animeId}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9, width: 0, marginLeft: 0, marginRight: 0, padding: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="min-w-[280px] sm:min-w-[320px] snap-start"
+                  >
+                    <ContinueWatchingCard item={item} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           </section>
         )}

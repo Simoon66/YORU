@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, User, LogIn, Home, Compass, Download, Settings } from 'lucide-react';
+import { Search, User, LogIn, Home, Compass, Download, Settings, X, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { signInWithGoogle, logout } from '../lib/firebase';
+import { signInWithGoogle, logout, db } from '../lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { Anime } from '../types';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -23,6 +25,50 @@ export const Navigation = () => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Anime[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (!searchQuery.trim()) {
+        setSearchResults([]);
+        return;
+      }
+      setIsSearching(true);
+      try {
+        const q = query(collection(db, 'anime'), where('published', '==', true));
+        const snap = await getDocs(q);
+        const results = snap.docs
+          .map(d => d.data() as Anime)
+          .filter(a => 
+            a.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            a.nativeTitle?.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+          .slice(0, 5);
+        setSearchResults(results);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+    const timeoutId = setTimeout(fetchResults, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -95,10 +141,90 @@ export const Navigation = () => {
               </div>
             </div>
 
-            <div className="hidden md:flex items-center gap-8">
-              <Link to="/search" className="text-yoru-text-muted hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full">
-                <Search className="w-5 h-5" />
-              </Link>
+            <div className="hidden md:flex items-center gap-8 relative">
+              <div ref={searchRef} className="relative">
+                <button 
+                  onClick={() => setIsSearchOpen(!isSearchOpen)}
+                  className="text-yoru-text-muted hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+                
+                <AnimatePresence>
+                  {isSearchOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-full right-0 mt-4 w-96 bg-yoru-surface-elevated/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_30px_60px_rgba(0,0,0,0.6)] overflow-hidden z-50"
+                    >
+                      <div className="p-3 border-b border-white/10 flex items-center gap-3">
+                        <Search className="w-4 h-4 text-yoru-text-muted shrink-0" />
+                        <input 
+                          type="text" 
+                          autoFocus
+                          placeholder="Search anime..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setIsSearchOpen(false);
+                              navigate('/search', { state: { query: searchQuery } });
+                            }
+                          }}
+                          className="w-full bg-transparent border-none text-white text-sm focus:outline-none focus:ring-0 placeholder-white/30"
+                        />
+                        {isSearching ? (
+                           <Loader2 className="w-4 h-4 text-yoru-accent animate-spin shrink-0" />
+                        ) : searchQuery ? (
+                          <button onClick={() => setSearchQuery('')} className="text-white/30 hover:text-white">
+                            <X className="w-4 h-4" />
+                          </button>
+                        ) : null}
+                      </div>
+                      
+                      <div className="max-h-96 overflow-y-auto">
+                        {searchResults.length > 0 ? (
+                          <div className="p-2 space-y-1">
+                            <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted">Results</div>
+                            {searchResults.map(anime => (
+                              <Link 
+                                key={anime.id}
+                                to={`/anime/${anime.slug}`}
+                                onClick={() => setIsSearchOpen(false)}
+                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                              >
+                                <img src={anime.poster} alt={anime.title} className="w-10 h-14 object-cover rounded shadow-sm group-hover:shadow-md transition-shadow" />
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-sm font-bold text-white truncate group-hover:text-yoru-accent transition-colors">{anime.title}</h4>
+                                  <p className="text-[10px] text-yoru-text-muted truncate mt-0.5">{anime.nativeTitle}</p>
+                                </div>
+                              </Link>
+                            ))}
+                            <Link 
+                              to="/search" 
+                              onClick={() => setIsSearchOpen(false)}
+                              className="block p-3 text-center text-xs font-bold uppercase tracking-widest text-yoru-accent hover:bg-yoru-accent/10 rounded-lg transition-colors mt-2"
+                            >
+                              View All Results
+                            </Link>
+                          </div>
+                        ) : searchQuery && !isSearching ? (
+                          <div className="p-8 text-center text-sm text-yoru-text-muted">
+                            No anime found matching "{searchQuery}"
+                          </div>
+                        ) : !searchQuery ? (
+                          <div className="p-6 text-center">
+                            <Search className="w-8 h-8 text-white/10 mx-auto mb-3" />
+                            <p className="text-xs font-medium text-yoru-text-muted">Type to search for an anime</p>
+                          </div>
+                        ) : null}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               
               {user ? (
                 <div className="flex items-center gap-6">

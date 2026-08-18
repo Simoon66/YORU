@@ -11,6 +11,7 @@ interface HistoryItem {
   coverImage: string;
   backdrop: string;
   episodeNumber: number;
+  seasonId?: string;
   progress?: number;
   updatedAt: number;
 }
@@ -19,7 +20,7 @@ export const ContinueWatchingCard: React.FC<{ item: HistoryItem }> = ({ item }) 
   const progressPercent = item.progress || Math.floor(Math.random() * 60) + 10;
   
   return (
-    <Link to={`/watch/${item.slug}/${item.episodeNumber}`} className="group relative block w-full overflow-hidden rounded-xl bg-yoru-surface-elevated aspect-video border border-white/5 ring-1 ring-white/5 shadow-lg">
+    <Link to={`/watch/${item.slug}/${item.episodeNumber}${item.seasonId ? `?season=${item.seasonId}` : ''}`} className="group relative block w-full overflow-hidden rounded-xl bg-yoru-surface-elevated aspect-video border border-white/5 ring-1 ring-white/5 shadow-lg">
       <img
         src={item.backdrop || item.coverImage}
         alt={item.title}
@@ -39,7 +40,7 @@ export const ContinueWatchingCard: React.FC<{ item: HistoryItem }> = ({ item }) 
           {item.title}
         </h4>
         <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted drop-shadow-sm">
-          Episode <span className="text-white">{item.episodeNumber}</span>
+          {item.seasonId && item.seasonId !== 's1' ? `S${item.seasonId.replace(/\D/g, '')} • ` : ''}EP <span className="text-white">{item.episodeNumber}</span>
         </p>
       </div>
       

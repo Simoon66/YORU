@@ -107,7 +107,8 @@ interface HeroProps {
 export const Hero: React.FC<HeroProps> = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [slides, setSlides] = useState<SpotlightSlide[]>(FALLBACK_SLIDES);
+  const [slides, setSlides] = useState<SpotlightSlide[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
   const touchStartX = useRef(0);
@@ -119,9 +120,14 @@ export const Hero: React.FC<HeroProps> = () => {
         const customSlides = await getSpotlightSlides();
         if (customSlides && customSlides.length > 0) {
           setSlides(customSlides);
+        } else {
+          setSlides(FALLBACK_SLIDES);
         }
       } catch (e) {
         console.warn("Using fallback slides:", e);
+        setSlides(FALLBACK_SLIDES);
+      } finally {
+        setIsLoading(false);
       }
     }
     loadSpotlights();
@@ -234,6 +240,30 @@ export const Hero: React.FC<HeroProps> = () => {
       setIsNavigating(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="w-full relative overflow-hidden bg-yoru-bg pb-6">
+        <div className="relative w-full h-[360px] sm:h-[420px] md:h-[500px] overflow-hidden bg-white/[0.02] animate-pulse flex flex-col justify-end p-6 sm:px-10 pb-12 sm:pb-16 border-b border-white/5">
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent"></div>
+          <div className="relative z-10 max-w-[85%] sm:max-w-[440px] md:max-w-[540px] space-y-4">
+            <div className="h-4 w-28 bg-white/10 rounded"></div>
+            <div className="h-10 sm:h-14 w-3/4 bg-white/10 rounded"></div>
+            <div className="flex gap-3">
+              <div className="h-5 w-14 bg-white/10 rounded"></div>
+              <div className="h-5 w-14 bg-white/10 rounded"></div>
+              <div className="h-5 w-14 bg-white/10 rounded"></div>
+            </div>
+            <div className="space-y-2 mt-4">
+              <div className="h-4 w-full bg-white/10 rounded"></div>
+              <div className="h-4 w-5/6 bg-white/10 rounded"></div>
+            </div>
+            <div className="h-10 w-36 bg-white/10 rounded-[30px] mt-6"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (slides.length === 0) return null;
 

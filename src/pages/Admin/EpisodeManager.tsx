@@ -42,6 +42,20 @@ export const EpisodeManager = () => {
 
   const activeEpisodes = episodes.filter(e => e.seasonId === activeSeason);
 
+  const groupedEpisodes = activeEpisodes.reduce((acc, ep) => {
+    if (!acc[ep.episodeNumber!]) acc[ep.episodeNumber!] = [];
+    acc[ep.episodeNumber!].push(ep);
+    return acc;
+  }, {} as Record<number, Partial<Episode>[]>);
+
+  const sortedEpNumbers = Object.keys(groupedEpisodes).map(Number).sort((a, b) => a - b);
+
+  const handleBulkFillerToggle = (epNumber: number, isFiller: boolean) => {
+    const epsToUpdate = activeEpisodes.filter(e => e.episodeNumber === epNumber);
+    const updated = episodes.map(e => epsToUpdate.find(ue => ue.id === e.id) ? { ...e, isFiller } : e);
+    setEpisodes(updated);
+  };
+
   const addEpisodeRow = () => {
     const nextNum = activeEpisodes.length > 0 ? Math.max(...activeEpisodes.map(e => e.episodeNumber!)) + 1 : 1;
     setEpisodes([...episodes, {
@@ -271,68 +285,122 @@ export const EpisodeManager = () => {
                 <th className="pb-4 font-bold w-16 text-right">Remove</th>
               </tr>
             </thead>
-            <tbody className="space-y-2">
-              {activeEpisodes.map((ep, idx) => (
-                <tr key={ep.id} className="group">
-                  <td className="py-2 pr-2">
-                    <input 
-                      type="number" 
-                      value={ep.episodeNumber}
-                      onChange={e => updateEpisode(ep.id!, 'episodeNumber', parseInt(e.target.value) || 0)}
-                      className="w-full bg-yoru-bg border border-yoru-border px-3 py-2 text-white focus:outline-none focus:border-yoru-accent text-center"
-                    />
-                  </td>
-                  <td className="py-2 pr-2">
-                    <input 
-                      type="text" 
-                      value={ep.title}
-                      onChange={e => updateEpisode(ep.id!, 'title', e.target.value)}
-                      className="w-full bg-yoru-bg border border-yoru-border px-3 py-2 text-white focus:outline-none focus:border-yoru-accent"
-                    />
-                  </td>
-                  <td className="py-2 pr-2">
-                    <input 
-                      type="text" 
-                      value={ep.embedLink}
-                      placeholder="https://..."
-                      onChange={e => updateEpisode(ep.id!, 'embedLink', e.target.value)}
-                      className="w-full bg-yoru-bg border border-yoru-border px-3 py-2 text-white focus:outline-none focus:border-yoru-accent"
-                    />
-                  </td>
-                  <td className="py-2 pr-2">
-                    <input 
-                      type="text" 
-                      value={ep.serverName}
-                      onChange={e => updateEpisode(ep.id!, 'serverName', e.target.value)}
-                      className="w-full bg-yoru-bg border border-yoru-border px-3 py-2 text-white focus:outline-none focus:border-yoru-accent"
-                    />
-                  </td>
-                                    <td className="py-2 pr-2">
-                    <select
-                      value={ep.serverType || 'sub'}
-                      onChange={e => updateEpisode(ep.id!, 'serverType', e.target.value)}
-                      className="w-full bg-yoru-bg border border-yoru-border px-3 py-2 text-white focus:outline-none focus:border-yoru-accent"
-                    >
-                      <option value="sub">SUB</option>
-                      <option value="dub">DUB</option>
-                      <option value="multi">MULTI</option>
-                    </select>
-                  </td>
-                  <td className="py-2 pr-2 text-center">
-                    <input 
-                      type="checkbox" 
-                      checked={ep.isFiller}
-                      onChange={e => updateEpisode(ep.id!, 'isFiller', e.target.checked)}
-                      className="w-4 h-4 bg-yoru-bg border-yoru-border text-orange-500 focus:ring-orange-500 cursor-pointer"
-                    />
-                  </td>
-                  <td className="py-2 text-right">
-                    <button onClick={() => removeEpisode(ep.id!)} className="p-2 text-yoru-text-muted hover:text-red-400 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+            <tbody className="space-y-4">
+              {sortedEpNumbers.map((epNum) => {
+                const eps = groupedEpisodes[epNum];
+                const groupFiller = eps.every(e => e.isFiller);
+                const title = eps[0].title;
+                
+                return (
+                  <React.Fragment key={`group-${epNum}`}>
+                    {/* Group Header row */}
+                    <tr className="bg-white/5 border-t border-yoru-border">
+                      <td colSpan={5} className="py-3 px-3">
+                        <div className="flex items-center gap-4">
+                          <span className="font-black text-white text-lg">EP {epNum}</span>
+                          <span className="font-semibold text-yoru-text-muted truncate">{title}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <label className="flex flex-col items-center gap-1 cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            checked={groupFiller}
+                            onChange={e => handleBulkFillerToggle(epNum, e.target.checked)}
+                            className="w-4 h-4 bg-yoru-bg border-yoru-border text-orange-500 focus:ring-orange-500 cursor-pointer"
+                          />
+                          <span className="text-[9px] uppercase font-bold text-yoru-text-muted">All Filler</span>
+                        </label>
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <button 
+                          onClick={() => {
+                            setEpisodes(episodes.map(e => (e.seasonId === activeSeason && e.episodeNumber === epNum) ? { ...e, id: `temp_${Date.now()}_clone`, serverName: 'New Server', embedLink: '' } : e).concat([{
+                              id: `temp_${Date.now()}`,
+                              animeId: id,
+                              seasonId: activeSeason,
+                              episodeNumber: epNum,
+                              title: title || `Episode ${epNum}`,
+                              embedLink: '',
+                              serverName: 'HD-1',
+                              serverType: 'sub',
+                              thumbnailUrl: anime?.backdrop || '',
+                              isFiller: groupFiller,
+                              published: true
+                            }]));
+                          }}
+                          className="text-[10px] font-bold uppercase tracking-widest text-yoru-accent hover:text-white transition-colors"
+                        >
+                          + Add Server
+                        </button>
+                      </td>
+                    </tr>
+                    
+                    {/* Group Server Rows */}
+                    {eps.map((ep) => (
+                      <tr key={ep.id} className="group bg-yoru-surface border-b border-yoru-border/50">
+                        <td className="py-2 pr-2 pl-3">
+                          <input 
+                            type="number" 
+                            value={ep.episodeNumber}
+                            onChange={e => updateEpisode(ep.id!, 'episodeNumber', parseInt(e.target.value) || 0)}
+                            className="w-16 bg-yoru-bg border border-yoru-border px-2 py-1.5 text-white focus:outline-none focus:border-yoru-accent text-center text-xs"
+                          />
+                        </td>
+                        <td className="py-2 pr-2">
+                          <input 
+                            type="text" 
+                            value={ep.title}
+                            onChange={e => updateEpisode(ep.id!, 'title', e.target.value)}
+                            className="w-full bg-yoru-bg border border-yoru-border px-2 py-1.5 text-white focus:outline-none focus:border-yoru-accent text-xs"
+                          />
+                        </td>
+                        <td className="py-2 pr-2">
+                          <input 
+                            type="text" 
+                            value={ep.embedLink}
+                            placeholder="https://..."
+                            onChange={e => updateEpisode(ep.id!, 'embedLink', e.target.value)}
+                            className="w-full bg-yoru-bg border border-yoru-border px-2 py-1.5 text-white focus:outline-none focus:border-yoru-accent text-xs"
+                          />
+                        </td>
+                        <td className="py-2 pr-2">
+                          <input 
+                            type="text" 
+                            value={ep.serverName}
+                            onChange={e => updateEpisode(ep.id!, 'serverName', e.target.value)}
+                            className="w-full bg-yoru-bg border border-yoru-border px-2 py-1.5 text-white focus:outline-none focus:border-yoru-accent text-xs"
+                          />
+                        </td>
+                        <td className="py-2 pr-2">
+                          <select
+                            value={ep.serverType || 'sub'}
+                            onChange={e => updateEpisode(ep.id!, 'serverType', e.target.value)}
+                            className="w-full bg-yoru-bg border border-yoru-border px-2 py-1.5 text-white focus:outline-none focus:border-yoru-accent text-xs"
+                          >
+                            <option value="sub">SUB</option>
+                            <option value="dub">DUB</option>
+                            <option value="multi">MULTI</option>
+                          </select>
+                        </td>
+                        <td className="py-2 pr-2 text-center">
+                          <input 
+                            type="checkbox" 
+                            checked={ep.isFiller}
+                            onChange={e => updateEpisode(ep.id!, 'isFiller', e.target.checked)}
+                            className="w-3.5 h-3.5 bg-yoru-bg border-yoru-border text-orange-500 focus:ring-orange-500 cursor-pointer opacity-50 group-hover:opacity-100 transition-opacity"
+                          />
+                        </td>
+                        <td className="py-2 text-right pr-3">
+                          <button onClick={() => removeEpisode(ep.id!)} className="p-1.5 text-yoru-text-muted hover:text-red-400 transition-colors bg-yoru-bg rounded">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
           {activeEpisodes.length === 0 && (

@@ -82,8 +82,15 @@ export const Profile = () => {
     }
   };
 
+  const [confirmClear, setConfirmClear] = useState(false);
+
   const handleClearHistory = async () => {
-    if (!confirm("Are you sure you want to clear your entire watch history? This cannot be undone.")) return;
+    if (!confirmClear) {
+      setConfirmClear(true);
+      setTimeout(() => setConfirmClear(false), 3000);
+      return;
+    }
+
     try {
       const q = query(collection(db, 'watchProgress'), where('userId', '==', user.uid));
       const snap = await getDocs(q);
@@ -91,7 +98,7 @@ export const Profile = () => {
       await Promise.all(deletePromises);
       localStorage.removeItem('yoru_watch_history');
       setTotalWatched(0);
-      alert("Watch history cleared successfully.");
+      setConfirmClear(false);
     } catch (e) {
       console.error(e);
       alert("Failed to clear history.");
@@ -185,8 +192,8 @@ export const Profile = () => {
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-yoru-warning mb-2 block">Danger Zone</span>
               <p className="text-xs text-yoru-text-muted font-medium">Clear all watch history including the "Continue Watching" list. This action is irreversible.</p>
             </div>
-            <Button onClick={handleClearHistory} variant="secondary" className="gap-2 bg-yoru-warning/10 text-yoru-warning border-yoru-warning/30 hover:bg-yoru-warning hover:text-[#030407]">
-              <Trash2 className="w-4 h-4" /> Clear History
+            <Button onClick={handleClearHistory} variant="secondary" className={`gap-2 text-yoru-warning border-yoru-warning/30 hover:bg-yoru-warning hover:text-[#030407] ${confirmClear ? 'bg-yoru-warning/30' : 'bg-yoru-warning/10'}`}>
+              <Trash2 className="w-4 h-4" /> {confirmClear ? 'Click again to confirm' : 'Clear History'}
             </Button>
           </div>
         </div>

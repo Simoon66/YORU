@@ -288,6 +288,9 @@ export const SpotlightManager = () => {
         createdAt: editingSlide?.createdAt || Date.now()
       };
 
+      // Sanitize undefined fields to prevent Firestore errors
+      Object.keys(slideData).forEach(key => slideData[key as keyof SpotlightSlide] === undefined && delete slideData[key as keyof SpotlightSlide]);
+
       await setDoc(doc(db, 'spotlights', slideId), slideData);
       await loadData();
       setIsModalOpen(false);

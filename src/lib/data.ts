@@ -138,6 +138,7 @@ export interface HistoryItem {
   coverImage: string;
   backdrop: string;
   episodeNumber: number;
+  seasonId?: string;
   updatedAt: number;
 }
 
@@ -161,10 +162,12 @@ export async function getWatchHistory(userId: string): Promise<HistoryItem[]> {
       const animeData = animeSnap.data();
       
       let epNumber = 1;
+      let seasonId = 's1';
       if (prog.lastWatchedEpisode) {
         const epSnap = await getDoc(doc(db, 'episodes', prog.lastWatchedEpisode));
         if (epSnap.exists()) {
           epNumber = epSnap.data().episodeNumber;
+          seasonId = epSnap.data().seasonId || 's1';
         }
       }
       
@@ -175,6 +178,7 @@ export async function getWatchHistory(userId: string): Promise<HistoryItem[]> {
         coverImage: animeData.poster,
         backdrop: animeData.backdrop,
         episodeNumber: epNumber,
+        seasonId: seasonId,
         updatedAt: prog.updatedAt || 0
       });
     }

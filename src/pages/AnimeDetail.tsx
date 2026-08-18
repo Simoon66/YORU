@@ -89,11 +89,11 @@ export const AnimeDetail = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-yoru-bg via-yoru-bg/20 to-transparent" />
         <div className="absolute inset-0 cinematic-vignette opacity-50" />
         
-        <div className="absolute inset-0 pt-32 pb-12 px-4 md:px-6 lg:px-8 max-w-[1440px] mx-auto flex items-end">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 w-full items-end">
+        <div className="absolute inset-0 pt-24 md:pt-32 pb-12 px-4 md:px-6 lg:px-8 max-w-[1440px] mx-auto flex items-end">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-12 w-full items-end">
             
-            {/* Left: Poster (Desktop) */}
-            <div className="hidden md:block md:col-span-3 lg:col-span-3">
+            {/* Poster (Visible on all devices, adjusted for mobile) */}
+            <div className="md:col-span-3 lg:col-span-3 w-1/3 md:w-full max-w-[150px] md:max-w-none">
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -104,12 +104,12 @@ export const AnimeDetail = () => {
               </motion.div>
             </div>
 
-            {/* Right: Info */}
+            {/* Info */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-              className="md:col-span-9 lg:col-span-8 space-y-6"
+              className="md:col-span-9 lg:col-span-8 space-y-4 md:space-y-6 pb-2"
             >
               <div className="flex flex-wrap items-center gap-3 text-[10px] sm:text-xs font-bold uppercase tracking-widest">
                 <span className="px-3 py-1 rounded bg-white/10 backdrop-blur-md text-white border border-white/5">{anime.format}</span>
@@ -198,21 +198,37 @@ export const AnimeDetail = () => {
             
             {/* Season Selector */}
             {anime.seasons && anime.seasons.length > 1 && (
-              <div className="flex bg-yoru-surface-elevated p-1 rounded-lg border border-white/5">
-                {anime.seasons.sort((a,b) => a.order - b.order).map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => setActiveSeason(s.id)}
-                    className={clsx(
-                      "px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-md",
-                      activeSeason === s.id 
-                        ? "bg-white text-[#030407] shadow-md" 
-                        : "text-yoru-text-muted hover:text-white"
-                    )}
+              <div className="flex">
+                {anime.seasons.length > 4 ? (
+                  <select
+                    value={activeSeason}
+                    onChange={(e) => setActiveSeason(e.target.value)}
+                    className="bg-yoru-surface-elevated border border-white/5 text-xs font-bold uppercase tracking-widest text-white rounded-md px-4 py-2.5 outline-none appearance-none cursor-pointer focus:border-yoru-accent transition-colors"
                   >
-                    {s.name}
-                  </button>
-                ))}
+                    {anime.seasons.sort((a,b) => a.order - b.order).map(s => (
+                      <option key={s.id} value={s.id} className="bg-[#0F1117] text-white">
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="flex flex-wrap gap-2 bg-yoru-surface-elevated p-1 rounded-lg border border-white/5">
+                    {anime.seasons.sort((a,b) => a.order - b.order).map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => setActiveSeason(s.id)}
+                        className={clsx(
+                          "px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-md",
+                          activeSeason === s.id 
+                            ? "bg-white text-[#030407] shadow-md" 
+                            : "text-yoru-text-muted hover:text-white"
+                        )}
+                      >
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
