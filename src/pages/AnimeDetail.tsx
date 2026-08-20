@@ -77,7 +77,7 @@ export const AnimeDetail = () => {
   return (
     <div className="min-h-screen bg-yoru-bg pb-32">
       {/* Cinematic Hero */}
-      <div className="relative h-[60vh] md:h-[75vh] w-full">
+      <div className="relative w-full min-h-[60vh] md:min-h-[75vh] flex flex-col">
         <div className="absolute inset-0 w-full h-full">
           <img 
             src={anime.backdrop} 
@@ -89,8 +89,8 @@ export const AnimeDetail = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-yoru-bg via-yoru-bg/20 to-transparent" />
         <div className="absolute inset-0 cinematic-vignette opacity-50" />
         
-        <div className="absolute inset-0 pt-24 md:pt-32 pb-12 px-4 md:px-6 lg:px-8 max-w-[1440px] mx-auto flex items-end">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-12 w-full items-end">
+        <div className="relative z-10 pt-28 md:pt-36 pb-12 px-4 md:px-6 lg:px-8 max-w-[1440px] mx-auto flex flex-col justify-end grow w-full">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-12 w-full items-end mt-auto">
             
             {/* Poster (Visible on all devices, adjusted for mobile) */}
             <div className="md:col-span-3 lg:col-span-3 w-1/3 md:w-full max-w-[150px] md:max-w-none">

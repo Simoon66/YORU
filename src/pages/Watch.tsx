@@ -26,8 +26,13 @@ export const Watch = () => {
   const [isLightDimmed, setIsLightDimmed] = useState(false);
   const [watchedEpisodes, setWatchedEpisodes] = useState<string[]>([]);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
-  
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+
   const playerContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIframeLoaded(false);
+  }, [currentEpisode?.embedLink]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -212,30 +217,41 @@ export const Watch = () => {
       {/* Light Dimmer Overlay */}
       {isLightDimmed && (
         <div 
-          className="fixed inset-0 bg-black/95 z-[60] transition-opacity duration-500 cursor-pointer" 
+          className="fixed inset-0 bg-black/95 z-[9990] transition-opacity duration-500 cursor-pointer" 
           onClick={() => setIsLightDimmed(false)}
         />
       )}
 
-      <div className="w-full flex flex-col relative z-10">
+      <div className="w-full flex flex-col relative">
         
         {/* TOP SECTION: Player & Toolbar */}
         <div className={clsx("w-full mx-auto transition-all duration-500 flex flex-col",
           isTheaterMode ? "max-w-full" : "max-w-[1440px] px-0 md:px-6 lg:px-8 pt-0 md:pt-8"
         )}>
-          <div className={clsx("w-full mx-auto flex flex-col bg-[#0F1117] shadow-2xl transition-all duration-500 overflow-hidden",
+          <div className={clsx("w-full mx-auto flex flex-col bg-[#0F1117] shadow-2xl transition-all duration-500",
+            !isLightDimmed && "overflow-hidden",
             isTheaterMode ? "max-w-full rounded-none border-0" : "max-w-[1100px] rounded-none md:rounded-2xl border-0 md:border border-white/5"
           )}>
             {/* Player */}
             <div className={clsx("relative w-full bg-black transition-all duration-500", 
               isTheaterMode ? "h-[40vh] sm:h-[60vh] md:h-[75vh] lg:h-[85vh]" : "aspect-video",
-              isLightDimmed ? "z-[70]" : "z-10"
+              isLightDimmed ? "z-[9999]" : "z-10"
             )}>
-                <iframe
-                  src={currentEpisode.embedLink}
-                  allowFullScreen
-                  className="absolute inset-0 w-full h-full border-0"
-                />
+              {!iframeLoaded && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
+                  <Loader2 className="w-10 h-10 text-yoru-accent animate-spin mb-4" />
+                  <p className="text-white/70 text-sm font-medium animate-pulse tracking-wide">Loading video player...</p>
+                </div>
+              )}
+              <iframe
+                src={autoplay ? (currentEpisode.embedLink.includes('?') ? `${currentEpisode.embedLink}&autoplay=1&autoPlay=1` : `${currentEpisode.embedLink}?autoplay=1&autoPlay=1`) : currentEpisode.embedLink}
+                allowFullScreen
+                className={clsx(
+                  "absolute inset-0 w-full h-full border-0 transition-opacity duration-500",
+                  iframeLoaded ? "opacity-100" : "opacity-0"
+                )}
+                onLoad={() => setIframeLoaded(true)}
+              />
             </div>
 
             {/* Quick Control Ribbon */}
@@ -247,14 +263,14 @@ export const Watch = () => {
                 
                 <div className="h-4 w-px bg-white/10 hidden sm:block"></div>
                 
-                <label className="flex items-center gap-2 cursor-pointer group">
+                <label className="flex items-center gap-2 cursor-pointer group" onClick={(e) => { e.preventDefault(); setAutoplay(!autoplay); }}>
                   <div className={clsx("w-7 h-4 rounded-full relative transition-colors duration-300", autoplay ? "bg-yoru-accent" : "bg-white/10")}>
                     <div className={clsx("absolute top-[2px] w-3 h-3 rounded-full shadow-md transition-all duration-300", autoplay ? "left-[14px] bg-black" : "left-[2px] bg-white")} />
                   </div>
                   <span className="text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted group-hover:text-white transition-colors">Auto Play</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer group">
+                <label className="flex items-center gap-2 cursor-pointer group" onClick={(e) => { e.preventDefault(); setAutoNext(!autoNext); }}>
                   <div className={clsx("w-7 h-4 rounded-full relative transition-colors duration-300", autoNext ? "bg-yoru-accent" : "bg-white/10")}>
                     <div className={clsx("absolute top-[2px] w-3 h-3 rounded-full shadow-md transition-all duration-300", autoNext ? "left-[14px] bg-black" : "left-[2px] bg-white")} />
                   </div>

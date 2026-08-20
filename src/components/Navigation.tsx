@@ -99,13 +99,13 @@ export const Navigation = () => {
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
       <nav 
         className={cn(
-          "fixed top-0 w-full z-50 transition-all duration-500 hidden md:block",
+          "fixed top-0 w-full z-[100] transition-all duration-500 hidden md:block",
           isScrolled 
             ? "bg-yoru-bg/80 backdrop-blur-2xl border-b border-white/5 py-4 shadow-2xl" 
             : "bg-gradient-to-b from-yoru-bg/90 to-transparent py-6"
         )}
       >
-        <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-8">
+        <div className="w-full px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             
             <div className="flex items-center gap-12">
@@ -258,7 +258,7 @@ export const Navigation = () => {
 
       {/* Mobile Top Nav (Just Logo and Search) */}
       <nav className={cn(
-          "fixed top-0 w-full z-50 transition-all duration-300 md:hidden",
+          "fixed top-0 w-full z-[100] transition-all duration-300 md:hidden",
           isScrolled ? "bg-yoru-bg/90 backdrop-blur-2xl border-b border-white/5 py-3" : "bg-gradient-to-b from-yoru-bg/90 to-transparent py-4"
         )}>
          <div className="px-5 flex justify-between items-center">
@@ -272,7 +272,7 @@ export const Navigation = () => {
       </nav>
 
       {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-yoru-bg/80 backdrop-blur-2xl border-t border-white/5 md:hidden pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+      <div className="fixed bottom-0 left-0 right-0 z-[100] bg-yoru-bg/80 backdrop-blur-2xl border-t border-white/5 md:hidden pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <div className="flex items-center justify-around px-2 py-3">
           {mobileNav.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));

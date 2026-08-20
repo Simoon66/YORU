@@ -59,7 +59,7 @@ export const EpisodeManager = () => {
   const addEpisodeRow = () => {
     const nextNum = activeEpisodes.length > 0 ? Math.max(...activeEpisodes.map(e => e.episodeNumber!)) + 1 : 1;
     setEpisodes([...episodes, {
-      id: `temp_${Date.now()}`,
+      id: `temp_${Date.now()}_${Math.random()}`,
       animeId: id,
       seasonId: activeSeason,
       episodeNumber: nextNum,
@@ -315,19 +315,19 @@ export const EpisodeManager = () => {
                       <td className="py-3 px-3 text-right">
                         <button 
                           onClick={() => {
-                            setEpisodes(episodes.map(e => (e.seasonId === activeSeason && e.episodeNumber === epNum) ? { ...e, id: `temp_${Date.now()}_clone`, serverName: 'New Server', embedLink: '' } : e).concat([{
-                              id: `temp_${Date.now()}`,
-                              animeId: id,
+                            setEpisodes([...episodes, {
+                              id: `temp_${Date.now()}_${Math.random()}`,
+                              animeId: id!,
                               seasonId: activeSeason,
                               episodeNumber: epNum,
                               title: title || `Episode ${epNum}`,
                               embedLink: '',
-                              serverName: 'HD-1',
+                              serverName: 'New Server',
                               serverType: 'sub',
                               thumbnailUrl: anime?.backdrop || '',
                               isFiller: groupFiller,
                               published: true
-                            }]));
+                            }]);
                           }}
                           className="text-[10px] font-bold uppercase tracking-widest text-yoru-accent hover:text-white transition-colors"
                         >
