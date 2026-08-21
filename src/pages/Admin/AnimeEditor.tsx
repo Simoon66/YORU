@@ -339,14 +339,32 @@ export const AnimeEditor = () => {
           <div className="space-y-1 md:col-span-2">
             <label className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted">Poster URL</label>
             <input 
-              required type="url" value={formData.poster} onChange={e => setFormData({...formData, poster: e.target.value})}
+              required type="url" value={formData.poster} onChange={e => {
+                let url = e.target.value;
+                if (url.includes('image.tmdb.org/t/p/')) {
+                  url = url.replace(/\/p\/(w\d+|w\d+_and_h\d+_bestv2|w\d+_and_h\d+_face)\//, '/p/original/');
+                }
+                if (url.includes('s4.anilist.co/file/anilistcdn/media/anime/cover/')) {
+                  url = url.replace('/medium/', '/large/').replace('/small/', '/large/');
+                }
+                setFormData({...formData, poster: url});
+              }}
               className="w-full bg-yoru-bg border border-yoru-border px-4 py-2 text-sm text-white focus:outline-none focus:border-yoru-accent"
             />
           </div>
           <div className="space-y-1 md:col-span-2">
             <label className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted">Backdrop URL</label>
             <input 
-              type="url" value={formData.backdrop} onChange={e => setFormData({...formData, backdrop: e.target.value})}
+              type="url" value={formData.backdrop} onChange={e => {
+                let url = e.target.value;
+                if (url.includes('image.tmdb.org/t/p/')) {
+                  url = url.replace(/\/p\/(w\d+|w\d+_and_h\d+_bestv2|w\d+_and_h\d+_face)\//, '/p/original/');
+                }
+                if (url.includes('s4.anilist.co/file/anilistcdn/media/anime/cover/')) {
+                  url = url.replace('/medium/', '/large/').replace('/small/', '/large/');
+                }
+                setFormData({...formData, backdrop: url});
+              }}
               className="w-full bg-yoru-bg border border-yoru-border px-4 py-2 text-sm text-white focus:outline-none focus:border-yoru-accent"
             />
           </div>

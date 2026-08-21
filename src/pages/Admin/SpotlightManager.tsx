@@ -231,26 +231,36 @@ export const SpotlightManager = () => {
   const handleDropUrl = (e: React.DragEvent<HTMLDivElement>, setter: (url: string) => void) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
+    const upgradeQuality = (url: string) => {
+      if (url.includes('image.tmdb.org/t/p/')) {
+        return url.replace(/\/p\/(w\d+|w\d+_and_h\d+_bestv2|w\d+_and_h\d+_face)\//, '/p/original/');
+      }
+      if (url.includes('s4.anilist.co/file/anilistcdn/media/anime/cover/')) {
+        return url.replace('/medium/', '/large/').replace('/small/', '/large/');
+      }
+      return url;
+    };
+
     // Check for URL in dataTransfer
     const html = e.dataTransfer.getData('text/html');
     if (html) {
       const match = html.match(/src=["'](.*?)["']/);
       if (match && match[1]) {
-        setter(match[1]);
+        setter(upgradeQuality(match[1]));
         return;
       }
     }
     
     const uriList = e.dataTransfer.getData('text/uri-list');
     if (uriList) {
-      setter(uriList);
+      setter(upgradeQuality(uriList.split('\n')[0]));
       return;
     }
     
     const plainText = e.dataTransfer.getData('text/plain');
     if (plainText && (plainText.startsWith('http://') || plainText.startsWith('https://'))) {
-      setter(plainText.trim());
+      setter(upgradeQuality(plainText.trim()));
     }
   };
 
@@ -749,7 +759,13 @@ export const SpotlightManager = () => {
                   <input
                     type="url"
                     value={logoUrl}
-                    onChange={(e) => setLogoUrl(e.target.value)}
+                    onChange={(e) => {
+                      let url = e.target.value;
+                      if (url.includes('image.tmdb.org/t/p/')) {
+                        url = url.replace(/\/p\/(w\d+|w\d+_and_h\d+_bestv2|w\d+_and_h\d+_face)\//, '/p/original/');
+                      }
+                      setLogoUrl(url);
+                    }}
                     placeholder="https://image.tmdb.org/t/p/original/...png"
                     className="w-full px-4 py-2 bg-yoru-surface-elevated border border-yoru-border focus:border-yoru-accent rounded-xl text-white text-xs outline-none"
                   />
@@ -783,7 +799,16 @@ export const SpotlightManager = () => {
                     type="url"
                     required
                     value={backdropUrl}
-                    onChange={(e) => setBackdropUrl(e.target.value)}
+                    onChange={(e) => {
+                      let url = e.target.value;
+                      if (url.includes('image.tmdb.org/t/p/')) {
+                        url = url.replace(/\/p\/(w\d+|w\d+_and_h\d+_bestv2|w\d+_and_h\d+_face)\//, '/p/original/');
+                      }
+                      if (url.includes('s4.anilist.co/file/anilistcdn/media/anime/cover/')) {
+                        url = url.replace('/medium/', '/large/').replace('/small/', '/large/');
+                      }
+                      setBackdropUrl(url);
+                    }}
                     placeholder="https://image.tmdb.org/t/p/original/...jpg"
                     className="w-full px-4 py-2 bg-yoru-surface-elevated border border-yoru-border focus:border-yoru-accent rounded-xl text-white text-xs outline-none"
                   />
