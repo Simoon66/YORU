@@ -120,11 +120,20 @@ export const Watch = () => {
             }
           }
 
+          // Load cached local watched episodes
+          try {
+            const localSaved = JSON.parse(localStorage.getItem(`yoru_watched_${animeData.id}`) || '[]');
+            if (Array.isArray(localSaved) && localSaved.length > 0) {
+              setWatchedEpisodes(prev => Array.from(new Set([...prev, ...localSaved])));
+            }
+          } catch (e) {}
+
           if (user) {
             const progressRef = doc(db, 'watchProgress', `${user.uid}_${animeData.id}`);
             const progressDoc = await getDoc(progressRef);
             if (progressDoc.exists()) {
-              setWatchedEpisodes(progressDoc.data().watchedEpisodeIds || []);
+              const firestoreWatched = progressDoc.data().watchedEpisodeIds || [];
+              setWatchedEpisodes(prev => Array.from(new Set([...prev, ...firestoreWatched])));
             }
           }
           
@@ -193,10 +202,30 @@ export const Watch = () => {
 
   useEffect(() => {
     if (currentEpisode && anime) {
+      const epKey = `${currentEpisode.seasonId}_${currentEpisode.episodeNumber}`;
+      const epFullId = currentEpisode.id;
+      const epNumStr = String(currentEpisode.episodeNumber);
+
       const markWatched = async () => {
-        const newWatched = Array.from(new Set([...watchedEpisodes, currentEpisode.id]));
-        setWatchedEpisodes(newWatched);
-        
+        setWatchedEpisodes(prev => {
+          const updated = Array.from(new Set([...prev, epFullId, epKey, epNumStr]));
+          try {
+            localStorage.setItem(`yoru_watched_${anime.id}`, JSON.stringify(updated));
+          } catch (e) {}
+
+          if (user) {
+            const progressRef = doc(db, 'watchProgress', `${user.uid}_${anime.id}`);
+            setDoc(progressRef, {
+              userId: user.uid,
+              animeId: anime.id,
+              watchedEpisodeIds: updated,
+              lastWatchedEpisode: epFullId,
+              updatedAt: Date.now()
+            }, { merge: true }).catch(err => console.error("Error updating watchProgress:", err));
+          }
+          return updated;
+        });
+
         try {
           const history = JSON.parse(localStorage.getItem('yoru_watch_history') || '[]');
           const newHistoryItem = {
@@ -216,23 +245,12 @@ export const Watch = () => {
         } catch (e) {
           console.error("Local storage save error", e);
         }
-
-        if (user) {
-          const progressRef = doc(db, 'watchProgress', `${user.uid}_${anime.id}`);
-          await setDoc(progressRef, {
-            userId: user.uid,
-            animeId: anime.id,
-            watchedEpisodeIds: newWatched,
-            lastWatchedEpisode: currentEpisode.id,
-            updatedAt: Date.now()
-          }, { merge: true });
-        }
       };
-      
-      const timer = setTimeout(markWatched, 5000); 
+
+      const timer = setTimeout(markWatched, 1000);
       return () => clearTimeout(timer);
     }
-  }, [currentEpisode, user, anime]);
+  }, [currentEpisode?.id, currentEpisode?.seasonId, currentEpisode?.episodeNumber, user?.uid, anime?.id]);
 
   if (loading) return (
     <div className="min-h-screen bg-[#0A0B0E] flex items-center justify-center">
@@ -491,12 +509,32 @@ export const Watch = () => {
                <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
                  {uniqueEpisodes.map((ep) => {
                     const isActive = ep.episodeNumber === currentEpisode.episodeNumber;
-                    const isWatched = watchedEpisodes.includes(ep.id) || watchedEpisodes.some(wid => wid.endsWith(`_${ep.seasonId}_${ep.episodeNumber}`));
+                    const isWatched = watchedEpisodes.includes(ep.id) ||
+                      watchedEpisodes.includes(`${ep.seasonId}_${ep.episodeNumber}`) ||
+                      watchedEpisodes.includes(String(ep.episodeNumber)) ||
+                      watchedEpisodes.some(wid =>
+                        wid === ep.id ||
+                        wid === `${ep.seasonId}_${ep.episodeNumber}` ||
+                        wid.endsWith(`_${ep.seasonId}_${ep.episodeNumber}`) ||
+                        wid.endsWith(`_${ep.episodeNumber}`)
+                      );
                     
                     let btnClass = "bg-white/5 text-yoru-text-muted hover:bg-white/10 hover:text-white";
-                    if (isActive) btnClass = "bg-yoru-accent text-[#030407] shadow-[0_0_10px_rgba(244,117,33,0.3)] relative overflow-hidden font-black";
-                    else if (isWatched) btnClass = "bg-white/5 text-white/30 border border-white/5";
-                    else if (ep.isFiller) btnClass = "bg-yoru-warning/10 text-yoru-warning/70 border border-yoru-warning/20 hover:bg-yoru-warning/20 hover:text-yoru-warning";
+                    if (isActive) {
+                      if (ep.isFiller) {
+                        btnClass = "bg-amber-500 text-[#030407] shadow-[0_0_12px_rgba(245,158,11,0.35)] relative overflow-hidden font-black";
+                      } else {
+                        btnClass = "bg-yoru-accent text-[#030407] shadow-[0_0_10px_rgba(255,255,255,0.2)] relative overflow-hidden font-black";
+                      }
+                    } else if (isWatched) {
+                      if (ep.isFiller) {
+                        btnClass = "bg-amber-950/30 text-amber-500/60 border border-amber-900/50 hover:bg-amber-950/40 hover:text-amber-400";
+                      } else {
+                        btnClass = "bg-white/5 text-white/30 border border-white/5";
+                      }
+                    } else if (ep.isFiller) {
+                      btnClass = "bg-white/5 text-yoru-text-muted border border-amber-500/35 hover:bg-white/10 hover:text-white";
+                    }
 
                     return (
                       <button
@@ -521,12 +559,39 @@ export const Watch = () => {
                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {uniqueEpisodes.map((ep) => {
                     const isActive = ep.episodeNumber === currentEpisode.episodeNumber;
-                    const isWatched = watchedEpisodes.includes(ep.id) || watchedEpisodes.some(wid => wid.endsWith(`_${ep.seasonId}_${ep.episodeNumber}`));
+                    const isWatched = watchedEpisodes.includes(ep.id) ||
+                      watchedEpisodes.includes(`${ep.seasonId}_${ep.episodeNumber}`) ||
+                      watchedEpisodes.includes(String(ep.episodeNumber)) ||
+                      watchedEpisodes.some(wid =>
+                        wid === ep.id ||
+                        wid === `${ep.seasonId}_${ep.episodeNumber}` ||
+                        wid.endsWith(`_${ep.seasonId}_${ep.episodeNumber}`) ||
+                        wid.endsWith(`_${ep.episodeNumber}`)
+                      );
                     
                     let btnClass = "bg-white/5 text-yoru-text-muted hover:bg-white/10 hover:text-white";
-                    if (isActive) btnClass = "bg-yoru-accent/10 text-yoru-accent border-yoru-accent shadow-[0_0_10px_rgba(244,117,33,0.1)] relative overflow-hidden font-bold";
-                    else if (isWatched) btnClass = "bg-white/5 text-white/30 border border-white/5";
-                    else if (ep.isFiller) btnClass = "bg-yoru-warning/10 text-yoru-warning/70 border border-yoru-warning/20 hover:bg-yoru-warning/20 hover:text-yoru-warning";
+                    let badgeClass = "bg-black/20 text-yoru-text-muted";
+
+                    if (isActive) {
+                      if (ep.isFiller) {
+                        btnClass = "bg-amber-500/10 text-yoru-accent border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.15)] relative overflow-hidden font-bold";
+                        badgeClass = "bg-amber-500 text-[#030407]";
+                      } else {
+                        btnClass = "bg-yoru-accent/10 text-yoru-accent border-yoru-accent shadow-[0_0_10px_rgba(255,255,255,0.1)] relative overflow-hidden font-bold";
+                        badgeClass = "bg-yoru-accent text-[#030407]";
+                      }
+                    } else if (isWatched) {
+                      if (ep.isFiller) {
+                        btnClass = "bg-amber-950/20 text-amber-500/60 border border-amber-900/40 hover:bg-amber-950/30 hover:text-amber-400";
+                        badgeClass = "bg-amber-950/40 text-amber-600/70 border border-amber-900/30";
+                      } else {
+                        btnClass = "bg-white/5 text-white/30 border border-white/5";
+                        badgeClass = "bg-white/5 text-white/30";
+                      }
+                    } else if (ep.isFiller) {
+                      btnClass = "bg-white/5 text-yoru-text-muted border border-amber-500/25 hover:bg-white/10 hover:text-white";
+                      badgeClass = "bg-amber-500/15 text-amber-400/90 border border-amber-500/30";
+                    }
 
                     return (
                       <button
@@ -535,7 +600,7 @@ export const Watch = () => {
                         className={clsx("flex items-center justify-between p-3 rounded-lg text-left transition-all duration-200 border border-transparent", btnClass)}
                       >
                         <div className="flex items-center gap-3 overflow-hidden">
-                           <div className={clsx("w-8 h-8 rounded shrink-0 flex items-center justify-center font-bold text-[10px]", isActive ? "bg-yoru-accent text-[#030407]" : "bg-black/20")}>
+                           <div className={clsx("w-8 h-8 rounded shrink-0 flex items-center justify-center font-bold text-[10px]", badgeClass)}>
                              {isActive ? (
                                 <div className="flex items-end gap-[2px] h-3">
                                   <div className="w-[2px] bg-[#030407] animate-[pulse_1s_ease-in-out_infinite]" style={{height: '60%'}}></div>
@@ -550,7 +615,9 @@ export const Watch = () => {
                              {ep.title || `Episode ${ep.episodeNumber}`}
                            </span>
                         </div>
-                        {isWatched && !isActive && <Check className="w-4 h-4 shrink-0 text-white/20 ml-2" />}
+                        {isWatched && !isActive && (
+                          <Check className={clsx("w-4 h-4 shrink-0 ml-2", ep.isFiller ? "text-amber-500/50" : "text-white/20")} />
+                        )}
                       </button>
                     )
                  })}
