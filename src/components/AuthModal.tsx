@@ -61,13 +61,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       onClose();
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Authentication failed');
+      if (err.code === 'auth/email-already-in-use') {
+        setError('An account with this email already exists. Please login instead.');
+      } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found') {
+        setError('Invalid email or password. Please check your credentials.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Password should be at least 6 characters.');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Please enter a valid email address.');
+      } else {
+        setError(err.message || 'Authentication failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogle = async () => {
+    if (loading) return;
     setError('');
     setLoading(true);
     try {
@@ -76,12 +87,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         onClose();
       }
     } catch (err: any) {
-      console.error(err);
-      if (err.code === 'auth/unauthorized-domain') {
+      if (err?.code === 'auth/popup-blocked') {
+        setError('Sign-in popup was blocked by your browser. Please allow popups for this site, open the app in a new tab, or use email and password login below.');
+      } else if (err?.code === 'auth/unauthorized-domain') {
         const currentDomain = window.location.hostname;
         setError(`Firebase Auth Domain Error: '${currentDomain}' is not authorized in your Firebase Console. Please add '${currentDomain}' to Firebase Console > Authentication > Settings > Authorized domains. In the meantime, you can sign up or log in using Email and Password below.`);
+      } else if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+        // User closed or cancelled popup; do not show error
       } else {
-        setError(err.message || 'Google authentication failed');
+        setError(err?.message || 'Google authentication failed. Please try again or use email login.');
       }
     } finally {
       setLoading(false);
@@ -172,9 +186,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </form>
 
             <div className="mt-6 pt-6 border-t border-white/5">
-              <Button onClick={handleGoogle} variant="secondary" className="w-full bg-white text-black hover:bg-white/90">
+              <Button 
+                onClick={handleGoogle} 
+                variant="secondary" 
+                disabled={loading}
+                className="w-full bg-white text-black hover:bg-white/90 font-bold"
+              >
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-4 h-4 mr-2" />
-                Continue with Google
+                {loading ? 'Connecting...' : 'Continue with Google'}
               </Button>
             </div>
 

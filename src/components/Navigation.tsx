@@ -237,8 +237,8 @@ export const Navigation = () => {
                     </Link>
                   )}
                   <Link to="/profile" className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/10 hover:border-yoru-accent transition-all duration-300 shadow-lg block">
-                    {user.photoURL ? (
-                      <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                    {profile?.photoURL || user.photoURL ? (
+                      <img src={(profile?.photoURL || user.photoURL) as string} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-yoru-surface-elevated flex items-center justify-center">
                         <User className="w-5 h-5 text-yoru-text-muted" />
@@ -272,8 +272,8 @@ export const Navigation = () => {
       </nav>
 
       {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-[100] bg-yoru-bg/80 backdrop-blur-2xl border-t border-white/5 md:hidden pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
-        <div className="flex items-center justify-around px-2 py-3">
+      <div className="fixed bottom-0 left-0 right-0 z-[100] bg-yoru-bg/90 backdrop-blur-2xl border-t border-white/10 md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
+        <div className="flex items-center justify-around px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
           {mobileNav.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             const Icon = item.icon;
@@ -287,7 +287,7 @@ export const Navigation = () => {
                     navigate(item.path);
                   }
                 }}
-                className="relative flex flex-col items-center justify-center w-16 py-1 gap-1.5 transition-all group"
+                className="relative flex flex-col items-center justify-center w-16 py-1 gap-1 transition-all group"
               >
                 {isActive && (
                   <motion.div 
@@ -296,9 +296,9 @@ export const Navigation = () => {
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-                <Icon className={cn("w-6 h-6 transition-colors duration-300", isActive ? "text-yoru-accent" : "text-yoru-text-muted group-hover:text-white/80")} />
+                <Icon className={cn("w-5 h-5 transition-colors duration-300", isActive ? "text-yoru-accent" : "text-yoru-text-muted group-hover:text-white/80")} />
                 <span className={cn(
-                  "text-[9px] font-bold tracking-widest uppercase transition-colors duration-300",
+                  "text-[9px] font-bold tracking-wider uppercase leading-tight transition-colors duration-300",
                   isActive ? "text-yoru-accent" : "text-yoru-text-muted"
                 )}>
                   {item.name}

@@ -1,16 +1,24 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { User, onAuthStateChanged, updateProfile as updateAuthProfile } from 'firebase/auth';
+import { doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
-import { UserProfile } from '../types';
+import { UserProfile, UserBadge } from '../types';
 
 interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
+  updateUserProfile: (data: { displayName?: string; photoURL?: string | null }) => Promise<void>;
+  claimEventRewards: (eventId: string, avatars: string[], badge?: UserBadge) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, profile: null, loading: true });
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  profile: null,
+  loading: true,
+  updateUserProfile: async () => {},
+  claimEventRewards: async () => {}
+});
 
 export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -54,8 +62,93 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
     return () => unsubscribe();
   }, []);
 
+  const updateUserProfile = async (data: { displayName?: string; photoURL?: string | null }) => {
+    if (!auth.currentUser) throw new Error("User not authenticated");
+    
+    // Update Firebase Auth user (only if photoURL is short standard URL <= 2000 chars and not data URL)
+    const authProfileUpdate: { displayName?: string; photoURL?: string } = {};
+    if (data.displayName !== undefined) {
+      authProfileUpdate.displayName = data.displayName;
+    }
+    
+    if (data.photoURL !== undefined) {
+      if (data.photoURL && data.photoURL.length <= 2000 && !data.photoURL.startsWith('data:')) {
+        authProfileUpdate.photoURL = data.photoURL;
+      } else if (!data.photoURL) {
+        authProfileUpdate.photoURL = '';
+      }
+    }
+
+    try {
+      if (Object.keys(authProfileUpdate).length > 0) {
+        await updateAuthProfile(auth.currentUser, authProfileUpdate);
+      }
+    } catch (authErr) {
+      console.warn("Could not update Firebase Auth profile directly, persisting in Firestore:", authErr);
+    }
+
+    // Update Firestore users collection (Firestore supports full compressed image data URLs up to 1MB)
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    const updatePayload: Record<string, any> = {
+      updatedAt: Date.now()
+    };
+    if (data.displayName !== undefined) updatePayload.displayName = data.displayName;
+    if (data.photoURL !== undefined) updatePayload.photoURL = data.photoURL || null;
+
+    await setDoc(userRef, updatePayload, { merge: true });
+
+    // Update local state
+    setProfile(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        ...(data.displayName !== undefined ? { displayName: data.displayName } : {}),
+        ...(data.photoURL !== undefined ? { photoURL: data.photoURL || null } : {})
+      };
+    });
+
+    if (auth.currentUser) {
+      setUser({
+        ...auth.currentUser,
+        ...(data.displayName !== undefined ? { displayName: data.displayName } : {}),
+        ...(data.photoURL !== undefined && data.photoURL && data.photoURL.length <= 2000 && !data.photoURL.startsWith('data:') ? { photoURL: data.photoURL } : {})
+      } as User);
+    }
+  };
+
+  const claimEventRewards = async (eventId: string, avatars: string[], badge?: UserBadge) => {
+    if (!auth.currentUser) throw new Error("User not authenticated");
+
+    const userRef = doc(db, 'users', auth.currentUser.uid);
+    const updatePayload: Record<string, any> = {
+      claimedEvents: arrayUnion(eventId),
+      unlockedAvatars: arrayUnion(...avatars),
+      updatedAt: Date.now()
+    };
+
+    if (badge) {
+      updatePayload.badges = arrayUnion(badge);
+    }
+
+    await setDoc(userRef, updatePayload, { merge: true });
+
+    setProfile(prev => {
+      if (!prev) return null;
+      const currentClaimed = prev.claimedEvents || [];
+      const currentAvatars = prev.unlockedAvatars || [];
+      const currentBadges = prev.badges || [];
+
+      return {
+        ...prev,
+        claimedEvents: currentClaimed.includes(eventId) ? currentClaimed : [...currentClaimed, eventId],
+        unlockedAvatars: Array.from(new Set([...currentAvatars, ...avatars])),
+        badges: badge && !currentBadges.some(b => b.id === badge.id) ? [...currentBadges, badge] : currentBadges
+      };
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading }}>
+    <AuthContext.Provider value={{ user, profile, loading, updateUserProfile, claimEventRewards }}>
       {children}
     </AuthContext.Provider>
   );

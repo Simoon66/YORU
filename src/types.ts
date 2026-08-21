@@ -1,3 +1,12 @@
+export interface UserBadge {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  event: string;
+  unlockedAt: number;
+}
+
 export interface UserProfile {
   uid: string;
   email: string | null;
@@ -5,6 +14,9 @@ export interface UserProfile {
   photoURL: string | null;
   role: 'user' | 'admin';
   createdAt: number;
+  claimedEvents?: string[];
+  unlockedAvatars?: string[];
+  badges?: UserBadge[];
 }
 
 export interface Season {
