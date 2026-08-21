@@ -301,16 +301,11 @@ export const Hero: React.FC<HeroProps> = () => {
                     isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                   )}
                 >
-                  {/* Badge & Target Season */}
+                  {/* Spotlight Badge */}
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-[12px] sm:text-[13px] text-yoru-accent font-bold">
                       {slide.badge || `#${slide.order || idx + 1} Spotlight`}
                     </span>
-                    {slide.targetSeasonName && slide.targetSeasonName !== 'Season 1' && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400 bg-blue-500/20 px-2 py-0.5 rounded border border-blue-500/30">
-                        {slide.targetSeasonName}
-                      </span>
-                    )}
                   </div>
                   
                   {/* Logo and Title */}

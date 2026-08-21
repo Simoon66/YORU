@@ -35,6 +35,8 @@ function AppLayout() {
           <Route path="/downloads" element={<DownloadsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/:userId" element={<ProfilePage />} />
+          <Route path="/user/:userId" element={<ProfilePage />} />
         </Routes>
       </main>
       <Footer />
