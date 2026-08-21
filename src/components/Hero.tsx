@@ -244,7 +244,7 @@ export const Hero: React.FC<HeroProps> = () => {
   if (isLoading) {
     return (
       <div className="w-full relative overflow-hidden bg-[#030407] pb-6">
-        <div className="relative w-full h-[60vh] sm:h-[65vh] md:h-[75vh] lg:h-[80vh] xl:h-[85vh] min-h-[450px] max-h-[900px] overflow-hidden bg-white/[0.02] animate-pulse flex flex-col justify-end p-6 sm:px-10 pb-12 sm:pb-16 border-b border-white/5">
+        <div className="relative w-full aspect-[16/9] max-h-[450px] md:max-h-[500px] xl:max-h-[550px] overflow-hidden bg-white/[0.02] animate-pulse flex flex-col justify-end p-6 sm:px-10 pb-12 sm:pb-16 border-b border-white/5">
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent"></div>
           <div className="relative z-10 max-w-[85%] sm:max-w-[440px] md:max-w-[540px] space-y-4">
             <div className="h-4 w-28 bg-white/10 rounded"></div>
@@ -270,7 +270,7 @@ export const Hero: React.FC<HeroProps> = () => {
   return (
     <div className="w-full relative overflow-hidden bg-[#030407] pb-6">
       <div 
-        className="relative w-full h-[60vh] sm:h-[65vh] md:h-[75vh] lg:h-[80vh] xl:h-[85vh] min-h-[450px] max-h-[900px] overflow-hidden group select-none"
+        className="relative w-full aspect-[16/9] max-h-[450px] md:max-h-[500px] xl:max-h-[550px] overflow-hidden group select-none"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onMouseDown={handleMouseDown}
@@ -288,7 +288,7 @@ export const Hero: React.FC<HeroProps> = () => {
             return (
               <div 
                 key={slide.id || idx} 
-                className="relative flex-[0_0_100%] w-full h-full flex items-center bg-cover bg-top"
+                className="relative flex-[0_0_100%] w-full h-full flex items-center bg-cover bg-center"
                 style={{ backgroundImage: `url(${slide.backdrop})` }}
               >
                 {/* Dark Gradient Overlay */}
