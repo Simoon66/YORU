@@ -244,7 +244,7 @@ export const Hero: React.FC<HeroProps> = () => {
   if (isLoading) {
     return (
       <div className="w-full relative overflow-hidden bg-[#030407] pb-6">
-        <div className="relative w-full aspect-[16/9] max-h-[450px] md:max-h-[500px] xl:max-h-[550px] overflow-hidden bg-white/[0.02] animate-pulse flex flex-col justify-end p-6 sm:px-10 pb-12 sm:pb-16 border-b border-white/5">
+        <div className="relative w-full h-[360px] md:h-[420px] lg:h-[500px] xl:h-[550px] overflow-hidden bg-white/[0.02] animate-pulse flex flex-col justify-center p-[18px_22px] md:p-[24px_36px] lg:p-[30px_60px] border-b border-white/5">
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/30 to-transparent"></div>
           <div className="relative z-10 max-w-[85%] sm:max-w-[440px] md:max-w-[540px] space-y-4">
             <div className="h-4 w-28 bg-white/10 rounded"></div>
@@ -270,7 +270,7 @@ export const Hero: React.FC<HeroProps> = () => {
   return (
     <div className="w-full relative overflow-hidden bg-[#030407] pb-6">
       <div 
-        className="relative w-full aspect-[16/9] max-h-[450px] md:max-h-[500px] xl:max-h-[550px] overflow-hidden group select-none"
+        className="relative w-full h-[360px] md:h-[420px] lg:h-[500px] xl:h-[550px] overflow-hidden group select-none"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onMouseDown={handleMouseDown}
@@ -292,12 +292,12 @@ export const Hero: React.FC<HeroProps> = () => {
                 style={{ backgroundImage: `url(${slide.backdrop})` }}
               >
                 {/* Dark Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/50 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.88) 35%, rgba(0,0,0,0.1) 100%)' }} />
                 
                 {/* Content */}
                 <div 
                   className={clsx(
-                    "relative z-10 px-6 sm:px-10 max-w-[85%] sm:max-w-[440px] md:max-w-[540px] transition-all duration-700 delay-100",
+                    "relative z-10 p-[18px_22px] md:p-[24px_36px] lg:p-[30px_60px] max-w-[85%] md:max-w-[420px] lg:max-w-[520px] transition-all duration-700 delay-100",
                     isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
                   )}
                 >

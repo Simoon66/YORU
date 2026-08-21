@@ -30,7 +30,34 @@ export const Navigation = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Anime[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isSearchOpen) {
+        setIsSearchOpen(false);
+        return;
+      }
+      if (
+        document.activeElement?.tagName === 'INPUT' || 
+        document.activeElement?.tagName === 'TEXTAREA' ||
+        (document.activeElement as HTMLElement)?.isContentEditable
+      ) {
+        return;
+      }
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [isSearchOpen]);
+
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [searchQuery, isSearchOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -145,9 +172,12 @@ export const Navigation = () => {
               <div ref={searchRef} className="relative">
                 <button 
                   onClick={() => setIsSearchOpen(!isSearchOpen)}
-                  className="text-yoru-text-muted hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full"
+                  className="text-yoru-text-muted hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full group relative"
                 >
                   <Search className="w-5 h-5" />
+                  <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-white/10 text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                    Press S
+                  </span>
                 </button>
                 
                 <AnimatePresence>
@@ -168,9 +198,22 @@ export const Navigation = () => {
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Escape') {
                               setIsSearchOpen(false);
-                              navigate('/search', { state: { query: searchQuery } });
+                            } else if (e.key === 'ArrowDown') {
+                              e.preventDefault();
+                              setFocusedIndex(prev => (prev < searchResults.length - 1 ? prev + 1 : prev));
+                            } else if (e.key === 'ArrowUp') {
+                              e.preventDefault();
+                              setFocusedIndex(prev => (prev > -1 ? prev - 1 : -1));
+                            } else if (e.key === 'Enter') {
+                              if (focusedIndex >= 0 && focusedIndex < searchResults.length) {
+                                setIsSearchOpen(false);
+                                navigate(`/anime/${searchResults[focusedIndex].slug}`);
+                              } else if (searchQuery) {
+                                setIsSearchOpen(false);
+                                navigate('/search', { state: { query: searchQuery } });
+                              }
                             }
                           }}
                           className="w-full bg-transparent border-none text-white text-sm focus:outline-none focus:ring-0 placeholder-white/30"
@@ -188,16 +231,22 @@ export const Navigation = () => {
                         {searchResults.length > 0 ? (
                           <div className="p-2 space-y-1">
                             <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted">Results</div>
-                            {searchResults.map(anime => (
+                            {searchResults.map((anime, idx) => (
                               <Link 
                                 key={anime.id}
                                 to={`/anime/${anime.slug}`}
                                 onClick={() => setIsSearchOpen(false)}
-                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                                className={cn(
+                                  "flex items-center gap-3 p-2 rounded-lg transition-colors group",
+                                  focusedIndex === idx ? "bg-white/10" : "hover:bg-white/5"
+                                )}
                               >
                                 <img src={anime.poster} alt={anime.title} className="w-10 h-14 object-cover rounded shadow-sm group-hover:shadow-md transition-shadow" />
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="text-sm font-bold text-white truncate group-hover:text-yoru-accent transition-colors">{anime.title}</h4>
+                                  <h4 className={cn(
+                                    "text-sm font-bold truncate transition-colors",
+                                    focusedIndex === idx ? "text-yoru-accent" : "text-white group-hover:text-yoru-accent"
+                                  )}>{anime.title}</h4>
                                   <p className="text-[10px] text-yoru-text-muted truncate mt-0.5">{anime.nativeTitle}</p>
                                 </div>
                               </Link>
