@@ -37,7 +37,6 @@ import { Button } from '../components/ui/Button';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db, logout } from '../lib/firebase';
 import { SPECIAL_EVENT_S1, SIMOON_ADMIN_AVATAR, STANDARD_ANIME_AVATARS } from '../data/avatarsData';
-import { SpecialAvatarTooltip } from '../components/profile/SpecialAvatarTooltip';
 import { CharacterLoreModal } from '../components/profile/CharacterLoreModal';
 import { ShareProfileModal } from '../components/profile/ShareProfileModal';
 import { PublicProfileView } from '../components/profile/PublicProfileView';
@@ -384,35 +383,29 @@ export const ProfilePage: React.FC = () => {
               )}
             </div>
 
-            {/* Clean Statistics Row: Total Watch Time, Episodes, Bookmarked */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-lg mx-auto md:mx-0">
-              <div className="bg-white/5 border border-white/5 rounded-xl p-2.5 sm:p-3 text-center sm:text-left">
-                <div className="flex items-center justify-center sm:justify-start gap-1 text-[10px] sm:text-xs font-bold uppercase text-yoru-text-muted mb-0.5">
-                  <Clock className="w-3.5 h-3.5 text-emerald-400 shrink-0 hidden sm:inline" />
-                  <span>Watch Time</span>
+            {/* Clean Statistics Row: Total Watch Time & Episodes */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 sm:gap-4 mt-1">
+              <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2.5 sm:py-3 rounded-2xl">
+                <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
+                   <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="text-sm sm:text-base font-black text-emerald-400 truncate">
-                  {watchHours} <span className="text-[10px] text-emerald-300/70 font-normal">hrs</span>
-                </div>
-              </div>
-
-              <div className="bg-white/5 border border-white/5 rounded-xl p-2.5 sm:p-3 text-center sm:text-left">
-                <div className="flex items-center justify-center sm:justify-start gap-1 text-[10px] sm:text-xs font-bold uppercase text-yoru-text-muted mb-0.5">
-                  <Film className="w-3.5 h-3.5 text-yoru-accent shrink-0 hidden sm:inline" />
-                  <span>Episodes</span>
-                </div>
-                <div className="text-sm sm:text-base font-black text-white truncate">
-                  {isLoadingStats ? '...' : watchedCount} <span className="text-[10px] text-white/50 font-normal">eps</span>
+                <div className="text-left">
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-yoru-text-muted block mb-0.5">Watch Time</span>
+                  <span className="text-sm sm:text-base font-black text-white truncate">
+                    {watchHours} <span className="text-xs text-white/50 font-medium">hrs</span>
+                  </span>
                 </div>
               </div>
 
-              <div className="bg-white/5 border border-white/5 rounded-xl p-2.5 sm:p-3 text-center sm:text-left">
-                <div className="flex items-center justify-center sm:justify-start gap-1 text-[10px] sm:text-xs font-bold uppercase text-yoru-text-muted mb-0.5">
-                  <Bookmark className="w-3.5 h-3.5 text-amber-400 shrink-0 hidden sm:inline" />
-                  <span>Watchlist</span>
+              <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2.5 sm:py-3 rounded-2xl">
+                <div className="p-2 bg-yoru-accent/10 rounded-xl text-yoru-accent">
+                   <Film className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="text-sm sm:text-base font-black text-amber-300 truncate">
-                  {isLoadingStats ? '...' : watchlistItems.length}
+                <div className="text-left">
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-yoru-text-muted block mb-0.5">Episodes</span>
+                  <span className="text-sm sm:text-base font-black text-white truncate">
+                    {isLoadingStats ? '...' : watchedCount} <span className="text-xs text-white/50 font-medium">eps</span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -567,19 +560,7 @@ export const ProfilePage: React.FC = () => {
                     {SPECIAL_EVENT_S1.avatars.map((av) => {
                       const isEquipped = selectedPhotoURL === av.url;
                       return (
-                        <SpecialAvatarTooltip
-                          key={av.id}
-                          name={av.name}
-                          title={av.title}
-                          lore={av.lore}
-                          rarity={av.rarity}
-                          element={av.element}
-                          eventName={av.eventName}
-                          badge={av.badge}
-                          isUnlocked={isEventClaimed}
-                          position="top"
-                        >
-                          <div className="text-center group cursor-pointer">
+                          <div key={av.id} className="text-center group cursor-pointer">
                             <div
                               onClick={() => {
                                 if (isEventClaimed) {
@@ -617,7 +598,6 @@ export const ProfilePage: React.FC = () => {
                               {av.name.split(' ')[0]}
                             </span>
                           </div>
-                        </SpecialAvatarTooltip>
                       );
                     })}
                   </div>
@@ -963,18 +943,7 @@ export const ProfilePage: React.FC = () => {
                             : `${av.borderColor} hover:border-white/40`
                         }`}
                       >
-                        {/* Avatar Image with Hover Tooltip */}
-                        <SpecialAvatarTooltip
-                          name={av.name}
-                          title={av.title}
-                          lore={av.lore}
-                          rarity={av.rarity}
-                          element={av.element}
-                          eventName={av.eventName}
-                          badge={av.badge}
-                          isUnlocked={true}
-                          position="top"
-                        >
+                        {/* Avatar Image */}
                           <div className="relative w-22 h-22 sm:w-26 sm:h-26 rounded-2xl overflow-hidden border-2 border-white/20 shrink-0 bg-[#12141C] shadow-lg group cursor-pointer">
                             <img
                               src={av.url}
@@ -997,7 +966,6 @@ export const ProfilePage: React.FC = () => {
                               <Maximize2 className="w-3 h-3" />
                             </button>
                           </div>
-                        </SpecialAvatarTooltip>
 
                         {/* Details */}
                         <div className="flex-1 min-w-0 text-center sm:text-left space-y-1.5">

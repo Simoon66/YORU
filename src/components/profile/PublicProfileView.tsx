@@ -23,7 +23,6 @@ import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firesto
 import { db } from '../../lib/firebase';
 import { UserProfile, Anime } from '../../types';
 import { SPECIAL_EVENT_S1 } from '../../data/avatarsData';
-import { SpecialAvatarTooltip } from './SpecialAvatarTooltip';
 import { CharacterLoreModal } from './CharacterLoreModal';
 import { Button } from '../ui/Button';
 import { ShareProfileModal } from './ShareProfileModal';
@@ -249,28 +248,28 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
             </div>
 
             {/* Clean Statistics Row */}
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
-              <div className="flex items-center gap-2.5 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl">
-                <Clock className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 sm:gap-4 mt-2">
+              <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2.5 sm:py-3 rounded-2xl">
+                <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
+                   <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
                 <div className="text-left">
-                  <span className="text-[10px] font-bold uppercase text-yoru-text-muted block">Total Watch Time</span>
-                  <span className="text-sm font-black text-emerald-400">{watchHours} hrs</span>
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-yoru-text-muted block mb-0.5">Watch Time</span>
+                  <span className="text-sm sm:text-base font-black text-white truncate">
+                    {watchHours} <span className="text-xs text-white/50 font-medium">hrs</span>
+                  </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl">
-                <Film className="w-4 h-4 text-yoru-accent shrink-0" />
-                <div className="text-left">
-                  <span className="text-[10px] font-bold uppercase text-yoru-text-muted block">Episodes Watched</span>
-                  <span className="text-sm font-black text-white">{watchedCount}</span>
+              <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2.5 sm:py-3 rounded-2xl">
+                <div className="p-2 bg-yoru-accent/10 rounded-xl text-yoru-accent">
+                   <Film className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-              </div>
-
-              <div className="flex items-center gap-2.5 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl">
-                <Bookmark className="w-4 h-4 text-amber-400 shrink-0" />
                 <div className="text-left">
-                  <span className="text-[10px] font-bold uppercase text-yoru-text-muted block">Bookmarked</span>
-                  <span className="text-sm font-black text-amber-300">{watchlistCount}</span>
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-yoru-text-muted block mb-0.5">Episodes</span>
+                  <span className="text-sm sm:text-base font-black text-white truncate">
+                    {watchedCount} <span className="text-xs text-white/50 font-medium">eps</span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -327,17 +326,6 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                 key={av.id}
                 className={`relative rounded-2xl overflow-hidden border-2 p-5 flex flex-col sm:flex-row items-center sm:items-start gap-4 bg-gradient-to-br ${av.auraColor} backdrop-blur-md ${av.borderColor}`}
               >
-                <SpecialAvatarTooltip
-                  name={av.name}
-                  title={av.title}
-                  lore={av.lore}
-                  rarity={av.rarity}
-                  element={av.element}
-                  eventName={av.eventName}
-                  badge={av.badge}
-                  isUnlocked={true}
-                  position="top"
-                >
                   <div
                     onClick={() => setInspectedAvatar(av)}
                     className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-white/20 shrink-0 bg-[#12141C] shadow-lg cursor-pointer group"
@@ -355,7 +343,6 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                       <Maximize2 className="w-5 h-5 text-white" />
                     </div>
                   </div>
-                </SpecialAvatarTooltip>
 
                 <div className="flex-1 min-w-0 text-center sm:text-left space-y-1.5">
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
