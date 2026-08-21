@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+const fs = require('fs');
+
+const content = `import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Anime, Episode, Season, ServerLink } from '../../types';
 import { collection, doc, getDoc, getDocs, setDoc, query, where, writeBatch, deleteDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { ArrowLeft, Save, Plus, Trash2, GripVertical, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
-import { normalizeEpisodes } from '../../lib/episodeUtils';
 
 export const EpisodeManager = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,8 +23,6 @@ export const EpisodeManager = () => {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [bulkTitles, setBulkTitles] = useState('');
   const [bulkLinks, setBulkLinks] = useState('');
-  const [showAutoAddModal, setShowAutoAddModal] = useState(false);
-  const [autoAddConfig, setAutoAddConfig] = useState({ startEp: 1, endEp: 12, anilistId: '', malId: '' });
 
   useEffect(() => {
     if (!id) return;
@@ -34,31 +33,41 @@ export const EpisodeManager = () => {
         setAnime(data);
         setSeasons(data.seasons || [{ id: 's1', name: 'Season 1', order: 1 }]);
         setActiveSeason(data.seasons?.[0]?.id || 's1');
-        setAutoAddConfig(prev => ({ ...prev, anilistId: data.aniListId || '' }));
-        if (data.aniListId) {
-          fetch('https://graphql.anilist.co', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              query: `query ($id: Int) { Media(id: $id) { idMal } }`,
-              variables: { id: parseInt(data.aniListId) }
-            })
-          })
-          .then(res => res.json())
-          .then(resData => {
-            if (resData?.data?.Media?.idMal) {
-              setAutoAddConfig(prev => ({ ...prev, malId: resData.data.Media.idMal.toString() }));
-            }
-          })
-          .catch(e => console.error('Error fetching MAL ID', e));
-        }
       }
       
       const epQ = query(collection(db, 'episodes'), where('animeId', '==', id));
       const epSnap = await getDocs(epQ);
-      const rawDocs = epSnap.docs.map(d => ({ ...d.data(), id: d.id }));
-      const normalizedEps = normalizeEpisodes(rawDocs);
-      setEpisodes(normalizedEps);
+      const eps = epSnap.docs.map(d => ({ ...d.data(), id: d.id } as Episode));
+      
+      // Migration logic for old flat structure:
+      const migratedEps: Episode[] = [];
+      const epMap = new Map<number, Episode>();
+      
+      for (const ep of eps) {
+        if (ep.servers === undefined) {
+          // It's an old episode format
+          if (!epMap.has(ep.episodeNumber)) {
+            epMap.set(ep.episodeNumber, {
+              ...ep,
+              servers: [],
+              isFiller: ep.isFiller || false,
+            });
+          }
+          const existing = epMap.get(ep.episodeNumber)!;
+          if ((ep as any).embedLink) {
+            existing.servers.push({
+              serverName: (ep as any).serverName || 'HD-1',
+              embedLink: (ep as any).embedLink,
+              serverType: (ep as any).serverType || 'sub'
+            });
+          }
+        } else {
+          epMap.set(ep.episodeNumber, ep);
+        }
+      }
+      
+      const finalEps = Array.from(epMap.values()).sort((a,b) => a.episodeNumber - b.episodeNumber);
+      setEpisodes(finalEps);
       setIsLoading(false);
     }
     load();
@@ -67,9 +76,8 @@ export const EpisodeManager = () => {
   const activeEpisodes = episodes.filter(e => e.seasonId === activeSeason);
 
   const addSeason = () => {
-    const nextNum = seasons.length > 0 ? Math.max(...seasons.map(s => parseInt(s.id.replace('s', '')) || 0)) + 1 : 1;
-    const newSeasonId = `s${nextNum}_${Date.now()}`;
-    const newSeason = { id: newSeasonId, name: `Season ${seasons.length + 1}`, order: seasons.length + 1 };
+    const nextNum = seasons.length + 1;
+    const newSeason = { id: \`s\${nextNum}\`, name: \`Season \${nextNum}\`, order: nextNum };
     setSeasons([...seasons, newSeason]);
     setActiveSeason(newSeason.id);
   };
@@ -91,42 +99,33 @@ export const EpisodeManager = () => {
     if (!id || !anime) return;
     setIsSaving(true);
     try {
-      // 1. Fetch all existing documents in Firestore for this anime
-      const epQ = query(collection(db, 'episodes'), where('animeId', '==', id));
-      const existingSnap = await getDocs(epQ);
-
       const batch = writeBatch(db);
       
       // Save seasons
       const animeRef = doc(db, 'anime', id);
       batch.update(animeRef, { seasons });
 
-      // Keep track of valid new doc IDs
-      const validDocIds = new Set<string>();
-
+      // Handle episodes - since we migrated from flat to nested, we need to rewrite them
+      // To avoid orphaned docs, we should ideally delete all existing and re-insert, or just overwrite by ID.
+      // We will overwrite by ID. Because old IDs were random for each server, we might have leftovers if we don't delete.
+      // But we'll just save the new structured episodes with consistent IDs.
+      
       for (const ep of episodes) {
-        const newEpId = `${id}_${ep.seasonId}_${ep.episodeNumber}`;
-        validDocIds.add(newEpId);
+        // use a consistent ID based on season and episode number
+        const newEpId = \`\${id}_\${ep.seasonId}_\${ep.episodeNumber}\`;
         const epRef = doc(db, 'episodes', newEpId);
         batch.set(epRef, {
           id: newEpId,
-          animeId: ep.animeId || id,
+          animeId: ep.animeId,
           seasonId: ep.seasonId,
           episodeNumber: ep.episodeNumber,
-          title: ep.title || `Episode ${ep.episodeNumber}`,
+          title: ep.title || \`Episode \${ep.episodeNumber}\`,
           isFiller: ep.isFiller || false,
           servers: ep.servers || [],
           thumbnailUrl: ep.thumbnailUrl || '',
           createdAt: ep.createdAt || Date.now(),
           published: ep.published !== undefined ? ep.published : true
         });
-      }
-
-      // Delete any obsolete or duplicate documents
-      for (const docSnap of existingSnap.docs) {
-        if (!validDocIds.has(docSnap.id)) {
-          batch.delete(docSnap.ref);
-        }
       }
 
       await batch.commit();
@@ -142,11 +141,11 @@ export const EpisodeManager = () => {
   const addEpisodeRow = () => {
     const nextNum = activeEpisodes.length > 0 ? Math.max(...activeEpisodes.map(e => e.episodeNumber)) + 1 : 1;
     setEpisodes([...episodes, {
-      id: `temp_${Date.now()}`,
+      id: \`temp_\${Date.now()}\`,
       animeId: id!,
       seasonId: activeSeason,
       episodeNumber: nextNum,
-      title: `Episode ${nextNum}`,
+      title: \`Episode \${nextNum}\`,
       isFiller: false,
       servers: [],
       thumbnailUrl: anime?.backdrop || '',
@@ -212,58 +211,13 @@ export const EpisodeManager = () => {
     }));
   };
 
-  const handleAutoGenerate = () => {
-    const { startEp, endEp, anilistId, malId } = autoAddConfig;
-    let newEps = [...episodes];
-    
-    for (let i = startEp; i <= endEp; i++) {
-      let ep = newEps.find(e => e.episodeNumber === i && e.seasonId === activeSeason);
-      if (!ep) {
-        ep = {
-          id: `temp_${Date.now()}_${i}`,
-          animeId: id!,
-          seasonId: activeSeason,
-          episodeNumber: i,
-          title: `Episode ${i}`,
-          isFiller: false,
-          servers: [],
-          thumbnailUrl: anime?.backdrop || '',
-          createdAt: Date.now(),
-          published: true
-        };
-        newEps.push(ep);
-      }
-      
-      // We only add new servers if they don't already exist in this episode to avoid dupes
-      if (anilistId) {
-        if (!ep.servers.some(s => s.serverName === 'HD-1' && s.serverType === 'sub')) {
-          ep.servers.push({ serverName: 'HD-1', embedLink: `https://megaplay.buzz/stream/ani/${anilistId}/${i}/sub`, serverType: 'sub' });
-        }
-        if (!ep.servers.some(s => s.serverName === 'HD-1' && s.serverType === 'dub')) {
-          ep.servers.push({ serverName: 'HD-1', embedLink: `https://megaplay.buzz/stream/ani/${anilistId}/${i}/dub`, serverType: 'dub' });
-        }
-      }
-      if (malId) {
-        if (!ep.servers.some(s => s.serverName === 'HD-2' && s.serverType === 'sub')) {
-          ep.servers.push({ serverName: 'HD-2', embedLink: `https://megaplay.buzz/stream/mal/${malId}/${i}/sub`, serverType: 'sub' });
-        }
-        if (!ep.servers.some(s => s.serverName === 'HD-2' && s.serverType === 'dub')) {
-          ep.servers.push({ serverName: 'HD-2', embedLink: `https://megaplay.buzz/stream/mal/${malId}/${i}/dub`, serverType: 'dub' });
-        }
-      }
-    }
-    
-    setEpisodes(newEps);
-    setShowAutoAddModal(false);
-  };
-
   const handleBulkImport = () => {
     const parseLines = (text: string) => {
       const results: {epNum: number, val: string}[] = [];
-      const lines = text.split('\n');
+      const lines = text.split(\'\\n\');
       for (const line of lines) {
         // Matches: 1: 'https...' or 1: "Title" or 1: Title
-        const match = line.match(/^(\d+)\s*:\s*['"]?(.*?)['"]?,?\s*$/);
+        const match = line.match(/^(\\d+)\\s*:\\s*['"]?(.*?)['"]?,?\\s*$/);
         if (match) {
           results.push({ epNum: parseInt(match[1]), val: match[2].trim() });
         }
@@ -283,7 +237,7 @@ export const EpisodeManager = () => {
           newEps[existingIdx].title = val;
         } else {
           newEps.push({
-            id: `temp_${Date.now()}_${epNum}`,
+            id: \`temp_\${Date.now()}_\${epNum}\`,
             animeId: id!,
             seasonId: activeSeason,
             episodeNumber: epNum,
@@ -306,11 +260,11 @@ export const EpisodeManager = () => {
         let ep = newEps.find(e => e.episodeNumber === epNum && e.seasonId === activeSeason);
         if (!ep) {
           ep = {
-            id: `temp_${Date.now()}_${epNum}`,
+            id: \`temp_\${Date.now()}_\${epNum}\`,
             animeId: id!,
             seasonId: activeSeason,
             episodeNumber: epNum,
-            title: `Episode ${epNum}`,
+            title: \`Episode \${epNum}\`,
             isFiller: false,
             servers: [],
             thumbnailUrl: anime?.backdrop || '',
@@ -375,9 +329,9 @@ export const EpisodeManager = () => {
 
         {/* Seasons Bar */}
         <div className="flex flex-wrap items-center gap-2">
-          {seasons.map((season, idx) => (
+          {seasons.map(season => (
             <button
-              key={`${season.id}-${idx}`}
+              key={season.id}
               onClick={() => setActiveSeason(season.id)}
               className={clsx(
                 "px-4 py-2 text-sm font-bold uppercase tracking-widest transition-colors border",
@@ -416,12 +370,6 @@ export const EpisodeManager = () => {
               className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-yoru-error hover:text-yoru-error/80 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" /> Remove Season
-            </button>
-            <button 
-              onClick={() => setShowAutoAddModal(true)}
-              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white hover:text-yoru-accent transition-colors ml-4"
-            >
-              <Plus className="w-3.5 h-3.5" /> Auto Add
             </button>
             <button 
               onClick={() => setShowBulkModal(true)}
@@ -563,8 +511,7 @@ export const EpisodeManager = () => {
                 <textarea 
                   value={bulkTitles}
                   onChange={e => setBulkTitles(e.target.value)}
-                  placeholder="1: 'First Episode'
-2: 'Second Episode'"
+                  placeholder="1: 'First Episode'\n2: 'Second Episode'"
                   className="w-full h-64 bg-yoru-bg border border-yoru-border p-3 text-sm text-white focus:outline-none focus:border-yoru-accent font-mono resize-none"
                 />
               </div>
@@ -575,8 +522,7 @@ export const EpisodeManager = () => {
                 <textarea 
                   value={bulkLinks}
                   onChange={e => setBulkLinks(e.target.value)}
-                  placeholder="1: 'https://as-cdn21.top/...'
-2: 'https://animesalt.ac/...'"
+                  placeholder="1: 'https://as-cdn21.top/...'\n2: 'https://animesalt.ac/...'"
                   className="w-full h-64 bg-yoru-bg border border-yoru-border p-3 text-sm text-white focus:outline-none focus:border-yoru-accent font-mono resize-none"
                 />
               </div>
@@ -594,69 +540,6 @@ export const EpisodeManager = () => {
                 className="bg-yoru-accent hover:bg-yoru-accent/90 text-yoru-bg px-6 py-2 text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2"
               >
                 Import
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Auto Add Modal */}
-      {showAutoAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-yoru-surface border border-yoru-border max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-xl font-bold text-white mb-2">Auto Add Episodes</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted">Start Ep</label>
-                <input 
-                  type="number" 
-                  value={autoAddConfig.startEp} 
-                  onChange={e => setAutoAddConfig({...autoAddConfig, startEp: parseInt(e.target.value) || 1})}
-                  className="w-full bg-yoru-bg border border-yoru-border px-4 py-2 text-sm text-white focus:outline-none focus:border-yoru-accent"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted">End Ep</label>
-                <input 
-                  type="number" 
-                  value={autoAddConfig.endEp} 
-                  onChange={e => setAutoAddConfig({...autoAddConfig, endEp: parseInt(e.target.value) || 12})}
-                  className="w-full bg-yoru-bg border border-yoru-border px-4 py-2 text-sm text-white focus:outline-none focus:border-yoru-accent"
-                />
-              </div>
-              <div className="space-y-1 col-span-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted">Anilist ID</label>
-                <input 
-                  type="text" 
-                  value={autoAddConfig.anilistId} 
-                  onChange={e => setAutoAddConfig({...autoAddConfig, anilistId: e.target.value})}
-                  className="w-full bg-yoru-bg border border-yoru-border px-4 py-2 text-sm text-white focus:outline-none focus:border-yoru-accent"
-                />
-              </div>
-              <div className="space-y-1 col-span-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted">MAL ID</label>
-                <input 
-                  type="text" 
-                  value={autoAddConfig.malId} 
-                  onChange={e => setAutoAddConfig({...autoAddConfig, malId: e.target.value})}
-                  className="w-full bg-yoru-bg border border-yoru-border px-4 py-2 text-sm text-white focus:outline-none focus:border-yoru-accent"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4">
-              <button 
-                onClick={() => setShowAutoAddModal(false)}
-                className="px-4 py-2 text-sm font-bold uppercase tracking-widest text-yoru-text-muted hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleAutoGenerate}
-                className="bg-yoru-accent hover:bg-yoru-accent/90 text-yoru-bg px-6 py-2 text-sm font-bold uppercase tracking-widest transition-colors flex items-center gap-2"
-              >
-                Generate
               </button>
             </div>
           </div>
@@ -691,3 +574,5 @@ export const EpisodeManager = () => {
     </div>
   );
 };
+`
+fs.writeFileSync('src/pages/Admin/EpisodeManager.tsx', content);

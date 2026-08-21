@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import { normalizeEpisodes } from '../lib/episodeUtils';
 import { Anime, Episode } from '../types';
 import { Play, Plus, Star, Calendar, Clock, Loader2, PlayCircle, Info } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -32,19 +33,9 @@ export const AnimeDetail = () => {
           
           const epQ = query(collection(db, 'episodes'), where('animeId', '==', animeData.id));
           const epSnap = await getDocs(epQ);
-          const eps = epSnap.docs.map(d => d.data() as Episode)
-            .sort((a, b) => a.episodeNumber - b.episodeNumber);
-          
-          const uniqueEps: Episode[] = [];
-          const seen = new Set();
-          for (const ep of eps) {
-            const key = `${ep.seasonId}-${ep.episodeNumber}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              uniqueEps.push(ep);
-            }
-          }
-          setEpisodes(uniqueEps);
+          const rawDocs = epSnap.docs.map(d => ({ ...d.data(), id: d.id }));
+          const normalized = normalizeEpisodes(rawDocs);
+          setEpisodes(normalized);
         }
       } catch (error) {
         console.error("Error fetching anime:", error);
@@ -205,17 +196,17 @@ export const AnimeDetail = () => {
                     onChange={(e) => setActiveSeason(e.target.value)}
                     className="bg-yoru-surface-elevated border border-white/5 text-xs font-bold uppercase tracking-widest text-white rounded-md px-4 py-2.5 outline-none appearance-none cursor-pointer focus:border-yoru-accent transition-colors"
                   >
-                    {anime.seasons.sort((a,b) => a.order - b.order).map(s => (
-                      <option key={s.id} value={s.id} className="bg-[#0F1117] text-white">
+                    {anime.seasons.sort((a,b) => a.order - b.order).map((s, idx) => (
+                      <option key={`${s.id}-${idx}`} value={s.id} className="bg-[#0F1117] text-white">
                         {s.name}
                       </option>
                     ))}
                   </select>
                 ) : (
                   <div className="flex flex-wrap gap-2 bg-yoru-surface-elevated p-1 rounded-lg border border-white/5">
-                    {anime.seasons.sort((a,b) => a.order - b.order).map(s => (
+                    {anime.seasons.sort((a,b) => a.order - b.order).map((s, idx) => (
                       <button
-                        key={s.id}
+                        key={`${s.id}-${idx}`}
                         onClick={() => setActiveSeason(s.id)}
                         className={clsx(
                           "px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-md",

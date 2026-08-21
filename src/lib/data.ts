@@ -59,8 +59,13 @@ export const mockEpisodes: Episode[] = [
     seasonId: "s1",
     episodeNumber: 1,
     title: "The Long Night Begins",
-    embedLink: "https://www.youtube.com/embed/aqz-KE-bpKQ",
-    serverName: "HD-1",
+    servers: [
+      {
+        serverName: "HD-1",
+        serverType: "sub",
+        embedLink: "https://www.youtube.com/embed/aqz-KE-bpKQ"
+      }
+    ],
     thumbnailUrl: "https://images.unsplash.com/photo-1505322022379-7c3353ee6291?auto=format&fit=crop&q=80&w=800",
     isFiller: false,
     createdAt: Date.now(),
@@ -72,8 +77,13 @@ export const mockEpisodes: Episode[] = [
     seasonId: "s1",
     episodeNumber: 2,
     title: "Shadow Stalker",
-    embedLink: "https://www.youtube.com/embed/aqz-KE-bpKQ",
-    serverName: "HD-1",
+    servers: [
+      {
+        serverName: "HD-1",
+        serverType: "sub",
+        embedLink: "https://www.youtube.com/embed/aqz-KE-bpKQ"
+      }
+    ],
     thumbnailUrl: "https://images.unsplash.com/photo-1509205477838-a534e43a8ce9?auto=format&fit=crop&q=80&w=800",
     isFiller: false,
     createdAt: Date.now(),

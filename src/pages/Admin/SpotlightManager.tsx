@@ -713,8 +713,8 @@ export const SpotlightManager = () => {
                     onChange={(e) => setTargetSeasonId(e.target.value)}
                     className="w-full px-4 py-2.5 bg-yoru-surface-elevated border border-yoru-border focus:border-yoru-accent rounded-xl text-white text-sm outline-none"
                   >
-                    {selectedAnime.seasons.map(s => (
-                      <option key={s.id} value={s.id} className="bg-[#0D0F15]">
+                    {selectedAnime.seasons.map((s, idx) => (
+                      <option key={`${s.id}-${idx}`} value={s.id} className="bg-[#0D0F15]">
                         {s.name} (Order: {s.order})
                       </option>
                     ))}

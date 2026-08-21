@@ -38,17 +38,21 @@ export interface Anime {
   published: boolean;
 }
 
+export interface ServerLink {
+  serverName: string;
+  embedLink: string;
+  serverType?: 'sub' | 'dub' | 'multi';
+}
+
 export interface Episode {
   id: string;
   animeId: string;
   seasonId: string;
   episodeNumber: number;
   title: string;
-  embedLink: string;
-  serverName: string; // e.g., 'HD-1', 'Mega'
-  serverType?: 'sub' | 'dub' | 'multi';
-  thumbnailUrl: string;
   isFiller: boolean;
+  servers: ServerLink[];
+  thumbnailUrl: string;
   createdAt: number;
   published: boolean;
 }
