@@ -31,6 +31,17 @@ export const Watch = () => {
   const playerContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (isLightDimmed) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isLightDimmed]);
+
+  useEffect(() => {
     setIframeLoaded(false);
   }, [currentEpisode?.embedLink]);
 
@@ -234,7 +245,7 @@ export const Watch = () => {
           )}>
             {/* Player */}
             <div className={clsx("relative w-full bg-black transition-all duration-500", 
-              isTheaterMode ? "h-[40vh] sm:h-[60vh] md:h-[75vh] lg:h-[85vh]" : "aspect-video",
+              isTheaterMode ? "h-[40vh] sm:h-[60vh] md:h-[75vh] lg:h-[85vh] max-h-[calc(100vh-60px)] md:max-h-[calc(100vh-80px)]" : "aspect-video max-h-[calc(100vh-60px)] md:max-h-[calc(100vh-80px)]",
               isLightDimmed ? "z-[9999]" : "z-10"
             )}>
               {!iframeLoaded && (

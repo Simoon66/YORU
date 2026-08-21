@@ -313,19 +313,18 @@ export const Hero: React.FC<HeroProps> = () => {
                     )}
                   </div>
                   
-                  {/* Logo or Title */}
-                  {slide.logo ? (
+                  {/* Logo and Title */}
+                  {slide.logo && (
                     <img 
                       src={slide.logo} 
                       alt={slide.animeTitle || 'Anime Logo'} 
                       className="max-h-[40px] sm:max-h-[55px] mb-3 object-contain block pointer-events-none drop-shadow-lg" 
                       onError={(e) => { (e.target as any).style.display = 'none'; }}
                     />
-                  ) : (
-                    <h2 className="text-[18px] sm:text-[22px] md:text-[28px] font-bold text-white mb-2.5 leading-[1.2] drop-shadow-md">
-                      {slide.animeTitle}
-                    </h2>
                   )}
+                  <h2 className="text-[18px] sm:text-[22px] md:text-[28px] font-bold text-white mb-2.5 leading-[1.2] drop-shadow-md">
+                    {slide.animeTitle}
+                  </h2>
 
                   {/* Metadata Chips */}
                   <div className="flex flex-wrap items-center gap-2 mb-3">
