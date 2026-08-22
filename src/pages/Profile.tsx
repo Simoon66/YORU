@@ -36,7 +36,7 @@ import { AnimeCard } from '../components/AnimeCard';
 import { Button } from '../components/ui/Button';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db, logout } from '../lib/firebase';
-import { SPECIAL_EVENT_S1, SIMOON_ADMIN_AVATAR, STANDARD_ANIME_AVATARS } from '../data/avatarsData';
+import { SPECIAL_EVENT_S1, SIMOON_ADMIN_AVATAR, STANDARD_ANIME_AVATARS, GIRLS_ANIME_AVATARS } from '../data/avatarsData';
 import { CharacterLoreModal } from '../components/profile/CharacterLoreModal';
 import { ShareProfileModal } from '../components/profile/ShareProfileModal';
 import { PublicProfileView } from '../components/profile/PublicProfileView';
@@ -865,6 +865,57 @@ export const ProfilePage: React.FC = () => {
                         isSelected
                           ? 'border-yoru-accent scale-105 shadow-[0_0_15px_rgba(255,255,255,0.3)] ring-2 ring-yoru-accent/50'
                           : 'border-white/10 hover:border-white/40 hover:scale-102 bg-white/5'
+                      }`}
+                    >
+                      <img
+                        src={av.url}
+                        alt={av.name}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <div className="w-5 h-5 rounded-full bg-yoru-accent text-[#030407] flex items-center justify-center font-black">
+                            <Check className="w-3 h-3" />
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Girls Anime Avatars Section */}
+            <div className="bg-[#0A0B0E] border border-white/10 rounded-2xl p-5 sm:p-7 space-y-4 shadow-xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div>
+                  <h3 className="text-sm sm:text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-pink-400" />
+                    Girls Avatars
+                  </h3>
+                  <p className="text-[11px] text-yoru-text-muted">
+                    Tap any avatar to select and preview.
+                  </p>
+                </div>
+                <span className="text-[10px] font-bold text-pink-300 bg-pink-500/10 border border-pink-500/20 px-2.5 py-1 rounded-lg">
+                  {GIRLS_ANIME_AVATARS.length} Available
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2.5 sm:gap-3.5">
+                {GIRLS_ANIME_AVATARS.map((av) => {
+                  const isSelected = selectedPhotoURL === av.url;
+                  return (
+                    <button
+                      key={av.id}
+                      type="button"
+                      onClick={() => setSelectedPhotoURL(av.url)}
+                      className={`group relative rounded-xl overflow-hidden aspect-square border-2 transition-all duration-150 cursor-pointer ${
+                        isSelected
+                          ? 'border-yoru-accent scale-105 shadow-[0_0_15px_rgba(255,255,255,0.3)] ring-2 ring-yoru-accent/50'
+                          : 'border-white/10 hover:border-pink-400/40 hover:scale-102 bg-white/5'
                       }`}
                     >
                       <img

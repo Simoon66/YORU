@@ -67,6 +67,18 @@ export const SIMOON_ADMIN_AVATAR = {
   url: 'https://i.imgur.com/nHJox0D.jpeg'
 };
 
+export const GIRLS_ANIME_AVATARS = [
+  { id: 'girl_1', name: 'Anime Girl 1', url: 'https://i.imgur.com/EF3A6A0.png' },
+  { id: 'girl_2', name: 'Anime Girl 2', url: 'https://i.imgur.com/pP1Da9N.png' },
+  { id: 'girl_3', name: 'Anime Girl 3', url: 'https://i.imgur.com/UBheUtt.png' },
+  { id: 'girl_4', name: 'Anime Girl 4', url: 'https://i.imgur.com/pYOLPdG.png' },
+  { id: 'girl_5', name: 'Anime Girl 5', url: 'https://i.imgur.com/VrhB7lp.png' },
+  { id: 'girl_6', name: 'Anime Girl 6', url: 'https://i.imgur.com/LFsoGFd.png' },
+  { id: 'girl_7', name: 'Anime Girl 7', url: 'https://i.imgur.com/Bzx5L3h.png' },
+  { id: 'girl_8', name: 'Anime Girl 8', url: 'https://i.imgur.com/SUw4jTr.png' },
+  { id: 'girl_9', name: 'Anime Girl 9', url: 'https://i.imgur.com/Lw3zZvG.png' },
+];
+
 export const STANDARD_ANIME_AVATARS = [
   { id: '1', name: 'Anime Avatar 1', url: 'https://i.imgur.com/NCWFUpu.png' },
   { id: '2', name: 'Anime Avatar 2', url: 'https://i.imgur.com/Doknd92.png' },
