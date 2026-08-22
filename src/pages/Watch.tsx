@@ -9,6 +9,7 @@ import clsx from 'clsx';
 import { Button } from '../components/ui/Button';
 import { WatchlistButton } from '../components/WatchlistButton';
 import { normalizeEpisodes } from '../lib/episodeUtils';
+import { getServerConfig, applyDynamicDomainOverride, ServerConfig } from '../lib/serverSettings';
 
 export const Watch = () => {
   const { slug, episodeNum } = useParams();
@@ -22,6 +23,7 @@ export const Watch = () => {
   const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(null);
   const [activeServerIdx, setActiveServerIdx] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [serverConfig, setServerConfig] = useState<ServerConfig | null>(null);
   
   const [autoplay, setAutoplay] = useState(true);
   const [autoNext, setAutoNext] = useState(true);
@@ -47,6 +49,7 @@ export const Watch = () => {
     const fetchData = async () => {
       if (!slug) return;
       try {
+        getServerConfig().then(cfg => setServerConfig(cfg)).catch(() => {});
         const q = query(collection(db, 'anime'), where('slug', '==', slug));
         const querySnapshot = await getDocs(q);
         
@@ -188,7 +191,8 @@ export const Watch = () => {
 
   const currentEpisodeServers = currentEpisode?.servers || [];
   const activeServer = currentEpisodeServers[activeServerIdx] || currentEpisodeServers[0] || null;
-  const rawEmbedLink = activeServer?.embedLink || (currentEpisode as any)?.embedLink || '';
+  const initialEmbedLink = activeServer?.embedLink || (currentEpisode as any)?.embedLink || '';
+  const rawEmbedLink = applyDynamicDomainOverride(initialEmbedLink, serverConfig);
 
   const finalIframeSrc = rawEmbedLink ? (
     autoplay 

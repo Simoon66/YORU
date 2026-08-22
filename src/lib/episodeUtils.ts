@@ -1,6 +1,48 @@
 import { Episode, ServerLink } from '../types';
 
 /**
+ * Automatically detects server name and type from a given embed link.
+ */
+export function autoDetectServer(link: string): { serverName: string; serverType: 'sub' | 'dub' | 'multi' } {
+  const cleanLink = String(link || '').trim().toLowerCase();
+  let serverName = 'HD-1';
+  let serverType: 'sub' | 'dub' | 'multi' = 'sub';
+
+  if (
+    cleanLink.includes('as-cdn21.top') || 
+    cleanLink.includes('as-cdn') || 
+    cleanLink.includes('vidstream')
+  ) {
+    serverName = 'VidStream';
+  } else if (
+    cleanLink.includes('animesalt') ||
+    cleanLink.includes('multi-lang-plyr') ||
+    cleanLink.includes('player.php?data=')
+  ) {
+    serverName = 'Abyss';
+  } else if (cleanLink.includes('/ani/')) {
+    serverName = 'HD-1';
+  } else if (cleanLink.includes('/mal/')) {
+    serverName = 'HD-2';
+  }
+
+  if (cleanLink.includes('/dub') || cleanLink.includes('type=dub')) {
+    serverType = 'dub';
+  } else if (
+    cleanLink.includes('/multi') ||
+    cleanLink.includes('multi-lang') ||
+    serverName === 'Abyss' ||
+    serverName === 'VidStream'
+  ) {
+    serverType = 'multi';
+  } else {
+    serverType = 'sub';
+  }
+
+  return { serverName, serverType };
+}
+
+/**
  * Normalizes a single server link object to standard form:
  * - Names: "HD-1", "HD-2", "VidStream", "Abyss", etc.
  * - Types: 'sub' | 'dub' | 'multi'
@@ -29,23 +71,20 @@ export function normalizeServer(s: any): ServerLink | null {
     serverType = 'dub';
   }
 
-  // Infer serverType if missing or generic
-  if (!s.serverType) {
-    if (embedLink.includes('/dub') || serverName.toLowerCase().includes('dub')) {
-      serverType = 'dub';
-    } else if (embedLink.includes('/multi') || serverName.toLowerCase().includes('multi')) {
-      serverType = 'multi';
-    } else {
-      serverType = 'sub';
-    }
-  }
+  const detected = autoDetectServer(embedLink);
 
   if (!serverName) {
-    if (embedLink.includes('/ani/')) serverName = 'HD-1';
-    else if (embedLink.includes('/mal/')) serverName = 'HD-2';
-    else if (embedLink.includes('as-cdn21.top')) serverName = 'VidStream';
-    else if (embedLink.includes('animesalt.ac')) serverName = 'Abyss';
-    else serverName = 'HD-1';
+    serverName = detected.serverName;
+  }
+
+  // Infer serverType if missing or if server is VidStream/Abyss (default to multi)
+  if (!s.serverType) {
+    serverType = detected.serverType;
+  } else if (serverName === 'VidStream' || serverName === 'Abyss' || detected.serverName === 'VidStream' || detected.serverName === 'Abyss') {
+    // If not explicitly set to dub, default to multi for VidStream and Abyss
+    if (s.serverType !== 'dub') {
+      serverType = 'multi';
+    }
   }
 
   return { serverName, embedLink, serverType };

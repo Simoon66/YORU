@@ -5,7 +5,7 @@ import { collection, doc, getDoc, getDocs, setDoc, query, where, writeBatch, del
 import { db } from '../../lib/firebase';
 import { ArrowLeft, Save, Plus, Trash2, GripVertical, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
-import { normalizeEpisodes } from '../../lib/episodeUtils';
+import { normalizeEpisodes, autoDetectServer } from '../../lib/episodeUtils';
 
 export const EpisodeManager = () => {
   const { id } = useParams<{ id: string }>();
@@ -186,12 +186,6 @@ export const EpisodeManager = () => {
     }));
   };
 
-  const autoDetectServer = (link: string) => {
-    if (link.includes('as-cdn21.top')) return 'VidStream';
-    if (link.includes('animesalt.ac')) return 'Abyss';
-    return '';
-  };
-
   const updateServer = (epId: string, serverIndex: number, field: keyof ServerLink, value: any) => {
     setEpisodes(episodes.map(e => {
       if (e.id === epId) {
@@ -201,8 +195,16 @@ export const EpisodeManager = () => {
         // Auto-detect server logic
         if (field === 'embedLink') {
           const detected = autoDetectServer(value);
-          if (detected) {
-            newServers[serverIndex].serverName = detected;
+          if (detected.serverName) {
+            newServers[serverIndex].serverName = detected.serverName;
+            newServers[serverIndex].serverType = detected.serverType;
+          }
+        }
+
+        if (field === 'serverName') {
+          const nameLower = String(value || '').trim().toLowerCase();
+          if (nameLower === 'vidstream' || nameLower === 'abyss') {
+            newServers[serverIndex].serverType = 'multi';
           }
         }
         
@@ -321,15 +323,15 @@ export const EpisodeManager = () => {
         }
         
         // Handle server logic
-        const detectedName = autoDetectServer(val) || 'HD-1';
+        const detected = autoDetectServer(val);
         
         // Check if embedLink already exists in this episode
         const existingServerIdx = ep.servers.findIndex(s => s.embedLink === val);
         if (existingServerIdx === -1) {
           ep.servers.push({
-            serverName: detectedName,
+            serverName: detected.serverName || 'HD-1',
             embedLink: val,
-            serverType: 'sub'
+            serverType: detected.serverType || 'sub'
           });
         }
       });
@@ -575,8 +577,9 @@ export const EpisodeManager = () => {
                 <textarea 
                   value={bulkLinks}
                   onChange={e => setBulkLinks(e.target.value)}
-                  placeholder="1: 'https://as-cdn21.top/...'
-2: 'https://animesalt.ac/...'"
+                  placeholder="1: 'https://as-cdn21.top/video/...'
+1: 'https://animesalt.link/multi-lang-plyr/...'
+2: 'https://as-cdn21.top/video/...'"
                   className="w-full h-64 bg-yoru-bg border border-yoru-border p-3 text-sm text-white focus:outline-none focus:border-yoru-accent font-mono resize-none"
                 />
               </div>

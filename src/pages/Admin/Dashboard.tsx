@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, getCountFromServer } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Film, ListVideo, Users, Activity } from 'lucide-react';
+import { AbyssDomainManager } from '../../components/admin/AbyssDomainManager';
 
 export const Dashboard = () => {
   const [stats, setStats] = useState({ anime: 0, episodes: 0, users: 0 });
@@ -31,22 +32,28 @@ export const Dashboard = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard Overview</h1>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-black text-white tracking-tight">Dashboard Overview</h1>
+        <p className="text-xs text-yoru-text-muted mt-1">Platform management and server configuration</p>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {cards.map(c => (
-          <div key={c.title} className="bg-yoru-surface border border-yoru-border p-6 flex items-center gap-4">
+          <div key={c.title} className="bg-yoru-surface border border-yoru-border p-6 flex items-center gap-4 rounded-2xl shadow-xl">
             <div className={`p-4 bg-yoru-surface-elevated rounded-full ${c.color}`}>
               <c.icon className="w-6 h-6" />
             </div>
             <div>
-              <div className="text-sm font-bold uppercase tracking-widest text-yoru-text-muted">{c.title}</div>
-              <div className="text-2xl font-bold text-white">{c.value}</div>
+              <div className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted">{c.title}</div>
+              <div className="text-2xl font-black text-white mt-0.5">{c.value}</div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Global Abyss Domain Manager & Replacer */}
+      <AbyssDomainManager />
     </div>
   );
 };
