@@ -335,13 +335,14 @@ export async function handleMultiServerSync(event: MultiServerSyncEvent): Promis
         );
       }
 
-      // Add MultiServer using standard URL format
-      const epEmbed = buildMultiServerEmbedUrl(aniIdNum, epNum);
-      epServers.push({
-        serverName: serverName,
-        serverType: serverType,
-        embedLink: epEmbed
-      });
+      // Add MultiServer ONLY to the target episode requested by Manager
+      if (epNum === targetEpNum) {
+        epServers.push({
+          serverName: serverName,
+          serverType: serverType,
+          embedLink: embedUrl
+        });
+      }
 
       const epDocId = `${animeId}_s1_${epNum}`;
       const epDocRef = doc(db, 'episodes', epDocId);
