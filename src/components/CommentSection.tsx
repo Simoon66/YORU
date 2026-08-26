@@ -29,17 +29,32 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ animeId, episode
   const loadComments = async () => {
     setIsLoading(true);
     try {
-      const q = query(
-        collection(db, 'comments'),
-        where('animeId', '==', animeId),
-        where('episodeId', '==', episodeId),
-        orderBy('createdAt', 'desc')
-      );
-      const snap = await getDocs(q);
-      const loadedComments = snap.docs.map(d => ({
-        id: d.id,
-        ...d.data()
-      })) as Comment[];
+      let loadedComments: Comment[] = [];
+      try {
+        const q = query(
+          collection(db, 'comments'),
+          where('animeId', '==', animeId),
+          where('episodeId', '==', episodeId)
+        );
+        const snap = await getDocs(q);
+        loadedComments = snap.docs.map(d => ({
+          id: d.id,
+          ...d.data()
+        })) as Comment[];
+      } catch (innerErr) {
+        // Fallback in case of index constraint: query by episodeId only and filter in memory
+        const fallbackQ = query(
+          collection(db, 'comments'),
+          where('episodeId', '==', episodeId)
+        );
+        const snap = await getDocs(fallbackQ);
+        loadedComments = snap.docs
+          .map(d => ({ id: d.id, ...d.data() } as Comment))
+          .filter(c => !c.animeId || c.animeId === animeId);
+      }
+
+      // Sort comments descending by createdAt in memory
+      loadedComments.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       setComments(loadedComments);
       
       const userIds = Array.from(new Set(loadedComments.map(c => c.userId)));

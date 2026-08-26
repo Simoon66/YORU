@@ -39,17 +39,21 @@ export const getCommunityPosts = async (lastDoc?: any, maxLimit = 20) => {
 };
 
 export const getPinnedPosts = async () => {
-  const q = query(
-    collection(db, 'community_posts'),
-    where('isPinned', '==', true),
-    orderBy('createdAt', 'desc')
-  );
-  const snapshot = await getDocs(q);
-  const posts: CommunityPost[] = [];
-  snapshot.forEach(doc => {
-    posts.push({ id: doc.id, ...doc.data() } as CommunityPost);
-  });
-  return posts;
+  try {
+    const q = query(
+      collection(db, 'community_posts'),
+      where('isPinned', '==', true)
+    );
+    const snapshot = await getDocs(q);
+    const posts: CommunityPost[] = [];
+    snapshot.forEach(doc => {
+      posts.push({ id: doc.id, ...doc.data() } as CommunityPost);
+    });
+    return posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  } catch (err) {
+    console.error("Error getting pinned posts:", err);
+    return [];
+  }
 };
 
 export const createCommunityPost = async (post: Omit<CommunityPost, 'id' | 'createdAt' | 'updatedAt' | 'commentCount'>) => {

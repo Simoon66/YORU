@@ -5,11 +5,6 @@ const FIRESTORE_PROJECT_ID = "gen-lang-client-0419969788";
 const FIRESTORE_DATABASE_ID = "ai-studio-remixyoru-a104dab9-25b8-47f5-87dc-4ee5ad263997";
 const FIRESTORE_BASE_URL = `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT_ID}/databases/${FIRESTORE_DATABASE_ID}/documents`;
 
-const VALID_SYNC_KEYS = [
-  "yoru_embed_sync_secret_2026",
-  "mse_sync_secret_key_2026"
-];
-
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
@@ -41,18 +36,20 @@ export async function onRequestGet() {
   });
 }
 
-export async function onRequestPost({ request }: any) {
+export async function onRequestPost({ request, env }: any) {
   try {
     const url = new URL(request.url);
-    const syncKey = request.headers.get("x-sync-key") || 
-                    request.headers.get("x-api-key") || 
-                    url.searchParams.get("key") ||
-                    url.searchParams.get("secret");
+    const providedKey = request.headers.get("x-sync-key") || 
+                        request.headers.get("x-api-key") || 
+                        url.searchParams.get("key") ||
+                        url.searchParams.get("secret");
 
-    if (syncKey && !VALID_SYNC_KEYS.includes(syncKey) && !syncKey.includes("sync")) {
+    const expectedKey = env.SYNC_SECRET_KEY;
+
+    if (!providedKey || !expectedKey || providedKey !== expectedKey) {
       return new Response(JSON.stringify({
         success: false,
-        error: "Unauthorized: Invalid x-sync-key / x-api-key"
+        error: "Unauthorized: Invalid API sync token"
       }), {
         status: 401,
         headers: { ...corsHeaders(), "Content-Type": "application/json" }
