@@ -49,7 +49,12 @@ export async function onRequestPost({ request, env }: any) {
     if (!providedKey || !expectedKey || providedKey !== expectedKey) {
       return new Response(JSON.stringify({
         success: false,
-        error: "Unauthorized: Invalid API sync token"
+        error: "Unauthorized: Invalid API sync token",
+        diagnostic: {
+          xSyncKeyReceived: !!providedKey,
+          envSyncSecretKeyConfigured: !!expectedKey,
+          tokenMatched: providedKey === expectedKey
+        }
       }), {
         status: 401,
         headers: { ...corsHeaders(), "Content-Type": "application/json" }
