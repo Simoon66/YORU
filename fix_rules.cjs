@@ -1,4 +1,5 @@
-rules_version = '2';
+const fs = require('fs');
+const rules = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
@@ -83,12 +84,12 @@ service cloud.firestore {
 
     match /anime/{document=**} {
       allow read: if true;
-      allow write: if isAdmin() || request.auth == null || isSignedIn();
+      allow write: if isAdmin();
     }
 
     match /episodes/{document=**} {
       allow read: if true;
-      allow write: if isAdmin() || request.auth == null || isSignedIn();
+      allow write: if isAdmin();
     }
 
     match /comments/{document=**} {
@@ -114,11 +115,6 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    match /system_settings/{document=**} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
     match /audit_logs/{logId} {
       allow read: if isAdmin() || isModerator();
       allow create: if isAdmin() || isModerator();
@@ -138,3 +134,5 @@ service cloud.firestore {
     }
   }
 }
+`;
+fs.writeFileSync('firestore.rules', rules);

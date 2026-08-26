@@ -1,12 +1,12 @@
 {
-  "projectId": "serene-engine-qwjkk",
-  "appId": "1:305323543748:web:6df97c42d2c5fce3570d91",
-  "apiKey": "AIzaSyCoiv71rxoqxj_qTGkG7JUSonR8bG-pOcQ",
-  "authDomain": "serene-engine-qwjkk.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-yoru-9f4e83fe-8e44-4199-a791-8ee9e90063d7",
-  "storageBucket": "serene-engine-qwjkk.firebasestorage.app",
-  "messagingSenderId": "305323543748",
+  "projectId": "gen-lang-client-0419969788",
+  "appId": "1:812373472692:web:4c0381c37f95ac1d612ee1",
+  "apiKey": "AIzaSyCSctT9N4SoxwEFVtCS5oclR7H_bGsHhPQ",
+  "authDomain": "gen-lang-client-0419969788.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-remixyoru-a104dab9-25b8-47f5-87dc-4ee5ad263997",
+  "storageBucket": "gen-lang-client-0419969788.firebasestorage.app",
+  "messagingSenderId": "812373472692",
   "measurementId": "",
-  "oAuthClientId": "305323543748-jlv65okkesi5orao3uenv1bi2vqtgeoh.apps.googleusercontent.com",
+  "oAuthClientId": "812373472692-k481naqq5a1p8m65018gtvnnspoco34h.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

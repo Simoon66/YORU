@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, User, LogIn, Home, Compass, Download, Settings, X, Loader2 } from 'lucide-react';
+import { Search, User, LogIn, Home, Compass, Bookmark, Settings, X, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { signInWithGoogle, logout, db } from '../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -117,7 +117,7 @@ export const Navigation = () => {
   const mobileNav = [
     { name: 'Home', path: '/', icon: Home },
     { name: 'Browse', path: '/browse', icon: Compass },
-    { name: 'Settings', path: '/settings', icon: Settings },
+    { name: 'Watchlist', path: '/watchlist', icon: Bookmark },
     { name: 'Profile', path: user ? '/profile' : '#login', icon: User, action: !user ? handleLogin : undefined },
   ];
 

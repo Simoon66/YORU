@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import axios from "axios";
 import { createServer as createViteServer } from "vite";
+import { handleEmbedSync, verifySecretKey } from "./src/lib/syncService";
 
 async function startServer() {
   const app = express();
@@ -12,6 +13,157 @@ async function startServer() {
   // API Routes
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  // Embed Manager Webhook / Sync API
+  const handleSyncRequest = async (req: express.Request, res: express.Response) => {
+    try {
+      const apiKey = req.headers["x-sync-key"] || req.headers["x-api-key"] || req.query.key || req.body?.secretKey;
+      
+      // Verify authorization
+      if (!verifySecretKey(apiKey as string)) {
+        return res.status(401).json({
+          success: false,
+          error: "Unauthorized: Invalid or missing API key (provide 'x-sync-key' or 'x-api-key' header)"
+        });
+      }
+
+      const payload = req.body;
+      if (!payload || (!payload.anilistId && !payload.id)) {
+        return res.status(400).json({
+          success: false,
+          error: "Bad Request: 'anilistId' is required in JSON payload"
+        });
+      }
+
+      const syncResult = await handleEmbedSync({
+        eventId: payload.eventId || req.headers["x-event-id"] as string,
+        anilistId: payload.anilistId || payload.id,
+        episodeNumber: payload.episodeNumber || payload.episode,
+        embedUrl: payload.embedUrl || payload.url || payload.link,
+        serverName: payload.serverName || "MultiServer",
+        serverType: payload.serverType || "multi",
+        action: payload.action || "sync_episode",
+        customTitle: payload.customTitle || payload.title
+      });
+
+      return res.status(syncResult.success ? 200 : 400).json(syncResult);
+    } catch (error: any) {
+      console.error("Embed sync error:", error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || "Internal server error during sync"
+      });
+    }
+  };
+
+  // Webhook / Ingest listeners for MultiServer Manager
+  app.post("/api/sync-manager", handleSyncRequest);
+  app.post("/api/webhook/sync-manager", handleSyncRequest);
+  app.post("/api/sync/dispatch", handleSyncRequest);
+
+  // MultiServer Manager Direct Sync Connectors
+  app.get("/api/manager/sync/full", async (req, res) => {
+    try {
+      const apiKey = req.headers["x-api-key"] || req.query.key || "mse_sync_secret_key_2026";
+      const managerUrl = "https://multiserver.pages.dev/api/sync/full";
+      
+      const response = await axios.get(managerUrl, {
+        headers: { "x-api-key": apiKey as string, "Accept": "application/json" },
+        timeout: 15000,
+        validateStatus: () => true
+      });
+
+      return res.status(response.status).json(response.data);
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err.message || "Failed to contact MultiServer Manager" });
+    }
+  });
+
+  app.get("/api/manager/sync/events", async (req, res) => {
+    try {
+      const apiKey = req.headers["x-api-key"] || req.query.key || "mse_sync_secret_key_2026";
+      const managerUrl = "https://multiserver.pages.dev/api/sync/events";
+
+      const response = await axios.get(managerUrl, {
+        headers: { "x-api-key": apiKey as string, "Accept": "application/json" },
+        timeout: 15000,
+        validateStatus: () => true
+      });
+
+      return res.status(response.status).json(response.data);
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err.message || "Failed to contact MultiServer Manager events" });
+    }
+  });
+
+  app.post("/api/manager/sync/retry/:eventId", async (req, res) => {
+    try {
+      const { eventId } = req.params;
+      const apiKey = req.headers["x-api-key"] || "mse_sync_secret_key_2026";
+      const managerUrl = `https://multiserver.pages.dev/api/sync/retry/${eventId}`;
+
+      const response = await axios.post(managerUrl, req.body, {
+        headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
+        timeout: 15000,
+        validateStatus: () => true
+      });
+
+      return res.status(response.status).json(response.data);
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err.message || "Failed to retry event" });
+    }
+  });
+
+  // GitHub Repo fetch & sync endpoint
+  app.post("/api/github/fetch-repo", async (req, res) => {
+    try {
+      const { owner = "Simoon66", repo = "multiserver", path = "", token } = req.body;
+      const cleanPath = path.replace(/^\/+/, '');
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${cleanPath}`;
+
+      const activeToken = token && token.trim() 
+        ? token.trim() 
+        : (process.env.GITHUB_TOKEN || '');
+
+      const headers: Record<string, string> = {
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'Yoru-Streaming-App'
+      };
+      if (activeToken) {
+        headers['Authorization'] = `token ${activeToken}`;
+      }
+
+      const ghRes = await axios.get(url, { headers, timeout: 12000 });
+      return res.json({ success: true, data: ghRes.data });
+    } catch (err: any) {
+      const status = err.response?.status;
+      const ghMsg = err.response?.data?.message || err.message;
+      let friendlyError = ghMsg || "Failed to fetch from GitHub repository";
+
+      if (status === 404) {
+        friendlyError = "Repository not found or Private. If 'Simoon66/multiserver' is private, please provide a valid GitHub Personal Access Token (PAT).";
+      } else if (status === 401) {
+        friendlyError = "Invalid GitHub Token. Please check that your Personal Access Token has 'repo' scope permissions.";
+      } else if (status === 403) {
+        friendlyError = "GitHub API rate limit exceeded or access forbidden. Please provide a GitHub Personal Access Token.";
+      }
+
+      console.warn(`GitHub fetch warning (${status || 500}):`, friendlyError);
+      return res.status(status || 500).json({
+        success: false,
+        error: friendlyError
+      });
+    }
+  });
+
+  app.get("/api/sync-manager/status", (req, res) => {
+    res.json({
+      status: "online",
+      endpoint: "/api/sync-manager",
+      supportedServers: ["MultiServer", "HD-1", "HD-2"],
+      format: "{Domain}/{anilistId}/{episodeNumber}"
+    });
   });
 
   app.post("/api/verify-link", async (req, res) => {

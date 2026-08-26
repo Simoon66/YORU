@@ -118,7 +118,7 @@ export async function getAnimeBySlug(slug: string): Promise<Anime | null> {
 
 export async function getEpisodesForAnime(animeId: string): Promise<Episode[]> {
   try {
-    const q = query(collection(db, 'episodes'), where('animeId', '==', animeId), orderBy('episodeNumber', 'asc'));
+    const q = query(collection(db, 'episodes'), where('animeId', '==', animeId));
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) {
       return mockEpisodes.filter(e => e.animeId === animeId);

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, addDoc, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { Comment } from '../types';
-import { MessageSquare, Send, Trash2, User } from 'lucide-react';
+import { Comment, UserProfile } from '../types';
+import { MessageSquare, Send, Trash2, User, Image as ImageIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion } from 'motion/react';
+import { UserBadgeDisplay } from './UserBadgeDisplay';
 
 interface CommentSectionProps {
   animeId: string;
@@ -15,7 +16,9 @@ interface CommentSectionProps {
 export const CommentSection: React.FC<CommentSectionProps> = ({ animeId, episodeId }) => {
   const { user, profile } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
+  const [usersCache, setUsersCache] = useState<Record<string, UserProfile>>({});
   const [newComment, setNewComment] = useState('');
+  const [newCommentGif, setNewCommentGif] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -38,15 +41,37 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ animeId, episode
         ...d.data()
       })) as Comment[];
       setComments(loadedComments);
+      
+      const userIds = Array.from(new Set(loadedComments.map(c => c.userId)));
+      fetchUsers(userIds);
     } catch (e) {
       console.error("Error loading comments:", e);
     }
     setIsLoading(false);
   };
 
+  const fetchUsers = async (userIds: string[]) => {
+    const newCache = { ...usersCache };
+    let fetched = false;
+    for (const uid of userIds) {
+      if (!newCache[uid]) {
+        try {
+          const docSnap = await getDoc(doc(db, 'users', uid));
+          if (docSnap.exists()) {
+            newCache[uid] = docSnap.data() as UserProfile;
+            fetched = true;
+          }
+        } catch (e) {}
+      }
+    }
+    if (fetched) {
+      setUsersCache(prev => ({...prev, ...newCache}));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !newComment.trim()) return;
+    if (!user || (!newComment.trim() && !newCommentGif.trim())) return;
 
     setIsSubmitting(true);
     try {
@@ -57,12 +82,17 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ animeId, episode
         userDisplayName: profile?.displayName || user.displayName || 'Anonymous',
         userPhotoURL: profile?.photoURL || user.photoURL || null,
         text: newComment.trim(),
+        gifUrl: newCommentGif.trim() || null,
         createdAt: Date.now()
       };
       
       const docRef = await addDoc(collection(db, 'comments'), commentData);
       setComments([{ ...commentData, id: docRef.id } as Comment, ...comments]);
       setNewComment('');
+      setNewCommentGif('');
+      if (!usersCache[user.uid] && profile) {
+         setUsersCache(prev => ({...prev, [user.uid]: profile}));
+      }
     } catch (e) {
       console.error("Error adding comment:", e);
     }
@@ -91,6 +121,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ animeId, episode
     return new Date(ms).toLocaleDateString();
   };
 
+  const isStaff = profile?.role === 'admin' || profile?.role === 'moderator' || profile?.role === 'staff';
+
   return (
     <div className="glass-panel rounded-2xl p-6 md:p-8 mt-4 border border-white/5">
       <div className="flex items-center gap-3 mb-8 pb-4 border-b border-white/5">
@@ -111,21 +143,33 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ animeId, episode
               </div>
             )}
           </div>
-          <div className="flex-1 relative group">
+          <div className="flex-1 relative group flex flex-col gap-2">
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Leave a review or comment for this episode..."
-              className="w-full bg-[#050608] border border-white/10 rounded-xl text-white placeholder-white/30 px-5 py-4 min-h-[120px] md:min-h-[80px] focus:outline-none focus:border-white/30 focus:bg-[#08090c] resize-none transition-all shadow-inner"
+              className="w-full bg-[#050608] border border-white/10 rounded-xl text-white placeholder-white/30 px-5 py-4 min-h-[100px] md:min-h-[80px] focus:outline-none focus:border-white/30 focus:bg-[#08090c] resize-none transition-all shadow-inner"
               disabled={isSubmitting}
             />
-            <button
-              type="submit"
-              disabled={isSubmitting || !newComment.trim()}
-              className="absolute bottom-3 right-3 p-3 rounded-lg bg-yoru-accent hover:bg-white disabled:opacity-50 text-[#030407] transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] disabled:shadow-none"
-            >
-              <Send className="w-4 h-4 ml-0.5" />
-            </button>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <input 
+                  type="text" 
+                  placeholder="Paste GIF URL (optional)..."
+                  value={newCommentGif}
+                  onChange={e => setNewCommentGif(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/30 transition-all"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isSubmitting || (!newComment.trim() && !newCommentGif.trim())}
+                className="px-6 rounded-lg bg-yoru-accent hover:bg-white disabled:opacity-50 text-[#030407] transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] disabled:shadow-none font-bold text-xs"
+              >
+                Post
+              </button>
+            </div>
           </div>
         </form>
       ) : (
@@ -147,43 +191,52 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ animeId, episode
             <p className="text-xs uppercase tracking-widest font-bold">No comments yet. Be the first to share your thoughts!</p>
           </div>
         ) : (
-          comments.map((comment, i) => (
-            <motion.div 
-              key={comment.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: Math.min(i * 0.05, 0.5) }}
-              className="flex gap-5 p-5 rounded-xl bg-[#030407]/50 border border-white/5 group hover:border-white/10 transition-colors"
-            >
-              <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden shrink-0 border border-white/5">
-                {comment.userPhotoURL ? (
-                  <img src={comment.userPhotoURL} alt="avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-yoru-text-muted">
-                    <User className="w-5 h-5" />
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-white text-sm truncate">{comment.userDisplayName}</span>
-                    <span className="text-[10px] uppercase tracking-widest font-bold text-yoru-text-muted">{formatTime(comment.createdAt)}</span>
-                  </div>
-                  {(user?.uid === comment.userId || profile?.role === 'admin') && (
-                    <button 
-                      onClick={() => handleDelete(comment.id)}
-                      className="text-white/20 hover:text-yoru-error opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded-full hover:bg-yoru-error/10"
-                      title="Delete comment"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+          comments.map((comment, i) => {
+            const authorProfile = usersCache[comment.userId];
+            return (
+              <motion.div 
+                key={comment.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(i * 0.05, 0.5) }}
+                className="flex gap-5 p-5 rounded-xl bg-[#030407]/50 border border-white/5 group hover:border-white/10 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-full bg-white/5 overflow-hidden shrink-0 border border-white/5">
+                  {comment.userPhotoURL ? (
+                    <img src={comment.userPhotoURL} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-yoru-text-muted">
+                      <User className="w-5 h-5" />
+                    </div>
                   )}
                 </div>
-                <p className="text-sm text-yoru-text-muted leading-relaxed whitespace-pre-wrap">{comment.text}</p>
-              </div>
-            </motion.div>
-          ))
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-white text-sm truncate">{comment.userDisplayName}</span>
+                      <UserBadgeDisplay user={authorProfile} />
+                      <span className="text-[10px] uppercase tracking-widest font-bold text-yoru-text-muted ml-2">{formatTime(comment.createdAt)}</span>
+                    </div>
+                    {(user?.uid === comment.userId || isStaff) && (
+                      <button 
+                        onClick={() => handleDelete(comment.id)}
+                        className="text-white/20 hover:text-yoru-error opacity-0 group-hover:opacity-100 transition-all p-1.5 rounded-full hover:bg-yoru-error/10"
+                        title="Delete comment"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {comment.text && <p className="text-sm text-yoru-text-muted leading-relaxed whitespace-pre-wrap">{comment.text}</p>}
+                  {comment.gifUrl && (
+                    <div className="mt-3 rounded-xl overflow-hidden border border-white/10 inline-block max-w-[300px]">
+                      <img src={comment.gifUrl} alt="GIF" className="w-full h-auto object-cover" loading="lazy" />
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })
         )}
       </div>
     </div>

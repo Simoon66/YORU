@@ -3,20 +3,98 @@ export interface UserBadge {
   title: string;
   description: string;
   icon: string;
-  event: string;
-  unlockedAt: number;
+  event?: string;
+  unlockedAt?: number;
+  color?: string; // For community badges
 }
+
+export type UserRole = 'admin' | 'moderator' | 'staff' | 'special' | 'user' | 'guest';
 
 export interface UserProfile {
   uid: string;
   email: string | null;
   displayName: string | null;
+  username?: string;
   photoURL: string | null;
-  role: 'user' | 'admin';
+  role: UserRole;
   createdAt: number;
   claimedEvents?: string[];
   unlockedAvatars?: string[];
   badges?: UserBadge[];
+  activeBadgeId?: string;
+  // Community stats
+  postCount?: number;
+  commentCount?: number;
+  reactionsReceived?: number;
+  watchCount?: number; // total episodes completed
+  isBanned?: boolean;
+}
+
+export interface CommunityPost {
+  id: string;
+  userId: string;
+  title?: string;
+  content: string;
+  mediaUrl?: string;
+  gifUrl?: string;
+  hashtags?: string[];
+  status: 'active' | 'locked' | 'deleted';
+  commentsEnabled: boolean;
+  isPinned: boolean;
+  isAnnouncement: boolean;
+  commentCount: number;
+  reactions?: Record<string, number>;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CommunityComment {
+  id: string;
+  postId: string;
+  userId: string;
+  parentCommentId?: string | null;
+  content: string;
+  gifUrl?: string;
+  status: 'active' | 'deleted';
+  reactions?: Record<string, number>;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface CommunityReaction {
+  id: string; // userId_targetId
+  targetType: 'post' | 'comment';
+  targetId: string;
+  userId: string;
+  reactionType: string;
+  createdAt: number;
+}
+
+export interface ModerationLog {
+  id: string;
+  actorId: string;
+  action: string; // 'warn', 'ban', 'delete_post', 'delete_comment'
+  targetType: 'user' | 'post' | 'comment';
+  targetId: string;
+  reason?: string;
+  createdAt: number;
+}
+
+export interface RoleAuditLog {
+  id: string;
+  action: 'ROLE_CHANGE' | 'BAN_TOGGLE';
+  targetUserId: string;
+  targetUserEmail: string | null;
+  targetUserName?: string | null;
+  targetUserPhotoURL?: string | null;
+  oldRole?: string;
+  newRole?: string;
+  isBanned?: boolean;
+  performedByUid: string;
+  performedByEmail: string | null;
+  performedByName?: string | null;
+  performedByPhotoURL?: string | null;
+  timestamp: number;
 }
 
 export interface Season {
@@ -77,6 +155,7 @@ export interface Comment {
   userDisplayName: string | null;
   userPhotoURL: string | null;
   text: string;
+  gifUrl?: string;
   createdAt: number;
 }
 

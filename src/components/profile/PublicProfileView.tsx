@@ -17,7 +17,8 @@ import {
   Compass,
   Maximize2,
   Eye,
-  ArrowLeft
+  ArrowLeft,
+  MessageCircle
 } from 'lucide-react';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -25,6 +26,7 @@ import { UserProfile, Anime } from '../../types';
 import { SPECIAL_EVENT_S1 } from '../../data/avatarsData';
 import { CharacterLoreModal } from './CharacterLoreModal';
 import { Button } from '../ui/Button';
+import { UserBadgeDisplay } from '../UserBadgeDisplay';
 import { ShareProfileModal } from './ShareProfileModal';
 
 interface PublicProfileViewProps {
@@ -51,8 +53,20 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
       setNotFound(false);
       try {
         // 1. Fetch User Profile Document
-        const userRef = doc(db, 'users', userId);
-        const userSnap = await getDoc(userRef);
+        // Try looking up by username first
+        const qUsername = query(collection(db, 'users'), where('username', '==', userId));
+        const usernameSnap = await getDocs(qUsername);
+        
+        let userSnap;
+        let finalUserId = userId;
+
+        if (!usernameSnap.empty) {
+          userSnap = usernameSnap.docs[0];
+          finalUserId = userSnap.id;
+        } else {
+          const userRef = doc(db, 'users', userId);
+          userSnap = await getDoc(userRef);
+        }
 
         if (!userSnap.exists()) {
           setNotFound(true);
@@ -65,7 +79,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
 
         // 2. Fetch Watch Progress
         try {
-          const progressQ = query(collection(db, 'watchProgress'), where('userId', '==', userId));
+          const progressQ = query(collection(db, 'watchProgress'), where('userId', '==', finalUserId));
           const progressSnap = await getDocs(progressQ);
           let totalWatched = 0;
           progressSnap.forEach(d => {
@@ -85,7 +99,7 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
 
         // 3. Fetch Watchlist count
         try {
-          const watchlistQ = query(collection(db, 'watchlist'), where('userId', '==', userId));
+          const watchlistQ = query(collection(db, 'watchlist'), where('userId', '==', finalUserId));
           const watchlistSnap = await getDocs(watchlistQ);
           setWatchlistCount(watchlistSnap.size);
         } catch (e) {
@@ -107,8 +121,8 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
 
   const watchHours = (watchedCount * 23.5 / 60).toFixed(1);
   const isEventClaimed = (profileData?.claimedEvents || []).includes(SPECIAL_EVENT_S1.id);
-  const isAdmin = profileData?.role === 'admin' || profileData?.email === 'kamaluddin124578@gmail.com' || profileData?.email === 'simoonabdulla@gmail.com';
-  const isOwnProfile = currentAuthUserUid === userId;
+  const isAdmin = profileData?.role === 'admin' || profileData?.email === 'simoonabdulla@gmail.com' || profileData?.email === 'titumamma2425@gmail.com';
+  const isOwnProfile = currentAuthUserUid === profileData?.uid;
 
   const handleQuickCopy = async () => {
     try {
@@ -269,6 +283,18 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({
                   <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-yoru-text-muted block mb-0.5">Episodes</span>
                   <span className="text-sm sm:text-base font-black text-white truncate">
                     {watchedCount} <span className="text-xs text-white/50 font-medium">eps</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2.5 sm:py-3 rounded-2xl">
+                <div className="p-2 bg-rose-500/10 rounded-xl text-rose-400">
+                   <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <div className="text-left">
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-yoru-text-muted block mb-0.5">Comments</span>
+                  <span className="text-sm sm:text-base font-black text-white truncate">
+                    {profileData.commentCount || 0}
                   </span>
                 </div>
               </div>

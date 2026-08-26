@@ -32,7 +32,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
         
-        const isAdmin = email === 'simoonabdulla@gmail.com' || email === 'kamaluddin124578@gmail.com';
+        const isAdmin = email === 'simoonabdulla@gmail.com' || email === 'titumamma2425@gmail.com';
         await setDoc(doc(db, 'users', userCredential.user.uid), {
           uid: userCredential.user.uid,
           email: userCredential.user.email,
@@ -47,7 +47,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         const userRef = doc(db, 'users', userCredential.user.uid);
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists()) {
-          const isAdmin = email === 'simoonabdulla@gmail.com' || email === 'kamaluddin124578@gmail.com';
+          const isAdmin = email === 'simoonabdulla@gmail.com' || email === 'titumamma2425@gmail.com';
           await setDoc(userRef, {
             uid: userCredential.user.uid,
             email: userCredential.user.email,

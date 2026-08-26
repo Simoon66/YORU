@@ -3,12 +3,13 @@ import { User, onAuthStateChanged, updateProfile as updateAuthProfile } from 'fi
 import { doc, getDoc, setDoc, arrayUnion } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { UserProfile, UserBadge } from '../types';
+import { isSuperAdmin } from '../lib/admin';
 
 interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
-  updateUserProfile: (data: { displayName?: string; photoURL?: string | null }) => Promise<void>;
+  updateUserProfile: (data: { displayName?: string; photoURL?: string | null; username?: string }) => Promise<void>;
   claimEventRewards: (eventId: string, avatars: string[], badge?: UserBadge) => Promise<void>;
 }
 
@@ -34,21 +35,24 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
           const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             const data = docSnap.data() as UserProfile;
-            const isAdmin = currentUser.email === 'simoonabdulla@gmail.com' || currentUser.email === 'kamaluddin124578@gmail.com';
-            if (isAdmin) {
-              data.role = 'admin';
+            const isSuper = isSuperAdmin(currentUser.email);
+            if (isSuper && data.role !== 'admin') {
+               data.role = 'admin';
+               await setDoc(docRef, { role: 'admin' }, { merge: true });
             }
             setProfile(data);
           } else {
              // Fallback profile if doc doesn't exist yet (created during sign in)
-             setProfile({
+             const newProfile: UserProfile = {
                uid: currentUser.uid,
                email: currentUser.email,
                displayName: currentUser.displayName,
                photoURL: currentUser.photoURL,
-               role: (currentUser.email === 'simoonabdulla@gmail.com' || currentUser.email === 'kamaluddin124578@gmail.com') ? 'admin' : 'user',
+               role: isSuperAdmin(currentUser.email) ? 'admin' : 'user',
                createdAt: Date.now()
-             });
+             };
+             await setDoc(docRef, newProfile);
+             setProfile(newProfile);
           }
         } catch (e) {
           console.error("Error fetching user profile", e);
@@ -62,7 +66,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
     return () => unsubscribe();
   }, []);
 
-  const updateUserProfile = async (data: { displayName?: string; photoURL?: string | null }) => {
+  const updateUserProfile = async (data: { displayName?: string; photoURL?: string | null; username?: string }) => {
     if (!auth.currentUser) throw new Error("User not authenticated");
     
     // Update Firebase Auth user (only if photoURL is short standard URL <= 2000 chars and not data URL)
@@ -94,6 +98,7 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
     };
     if (data.displayName !== undefined) updatePayload.displayName = data.displayName;
     if (data.photoURL !== undefined) updatePayload.photoURL = data.photoURL || null;
+    if (data.username !== undefined) updatePayload.username = data.username;
 
     await setDoc(userRef, updatePayload, { merge: true });
 
@@ -103,7 +108,8 @@ export const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }
       return {
         ...prev,
         ...(data.displayName !== undefined ? { displayName: data.displayName } : {}),
-        ...(data.photoURL !== undefined ? { photoURL: data.photoURL || null } : {})
+        ...(data.photoURL !== undefined ? { photoURL: data.photoURL || null } : {}),
+        ...(data.username !== undefined ? { username: data.username } : {})
       };
     });
 

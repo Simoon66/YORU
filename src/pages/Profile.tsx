@@ -34,6 +34,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Anime } from '../types';
 import { AnimeCard } from '../components/AnimeCard';
 import { Button } from '../components/ui/Button';
+import { UserBadgeDisplay } from '../components/UserBadgeDisplay';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db, logout } from '../lib/firebase';
 import { SPECIAL_EVENT_S1, SIMOON_ADMIN_AVATAR, STANDARD_ANIME_AVATARS, GIRLS_ANIME_AVATARS } from '../data/avatarsData';
@@ -49,15 +50,16 @@ import {
 export const ProfilePage: React.FC = () => {
   const { user, profile, updateUserProfile, claimEventRewards } = useAuth();
   const navigate = useNavigate();
-  const routeParams = useParams<{ userId?: string }>();
+  const routeParams = useParams<{ userId?: string, username?: string }>();
   const [searchParams] = useSearchParams();
 
   // Determine if viewing public profile
-  const targetUserId = routeParams.userId || searchParams.get('u') || searchParams.get('user');
-  const isViewingPublicProfile = Boolean(targetUserId && (!user || targetUserId !== user.uid));
+  const targetUserId = routeParams.userId || routeParams.username || searchParams.get('u') || searchParams.get('user');
+  const isViewingPublicProfile = Boolean(targetUserId);
 
   // Form state
   const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
   const [selectedPhotoURL, setSelectedPhotoURL] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -89,12 +91,14 @@ export const ProfilePage: React.FC = () => {
 
   // Initial reference values
   const originalDisplayName = profile?.displayName || user?.displayName || '';
+  const originalUsername = profile?.username || '';
   const originalPhotoURL = profile?.photoURL || user?.photoURL || '';
 
   // Initialize values
   useEffect(() => {
     if (user) {
       setDisplayName(originalDisplayName);
+      setUsername(originalUsername);
       setSelectedPhotoURL(originalPhotoURL);
     }
   }, [user, profile]);
@@ -160,7 +164,7 @@ export const ProfilePage: React.FC = () => {
   const watchHours = (watchedCount * 23.5 / 60).toFixed(1);
 
   // Check if form has unsaved modifications
-  const hasChanges = (displayName.trim() !== originalDisplayName) || (selectedPhotoURL !== originalPhotoURL);
+  const hasChanges = (displayName.trim() !== originalDisplayName) || (username.trim() !== originalUsername) || (selectedPhotoURL !== originalPhotoURL);
 
   // If viewing someone else's public profile, render public showcase view
   if (isViewingPublicProfile && targetUserId) {
@@ -174,6 +178,7 @@ export const ProfilePage: React.FC = () => {
   // Handle Reset Changes
   const handleResetChanges = () => {
     setDisplayName(originalDisplayName);
+    setUsername(originalUsername);
     setSelectedPhotoURL(originalPhotoURL);
     setErrorMessage('');
   };
@@ -193,15 +198,27 @@ export const ProfilePage: React.FC = () => {
       setErrorMessage('Display name cannot exceed 50 characters.');
       return;
     }
+    
+    const trimmedUsername = username.trim();
+    if (trimmedUsername && !/^[a-zA-Z0-9_]{3,20}$/.test(trimmedUsername)) {
+      setErrorMessage('Username must be 3-20 characters long and can only contain letters, numbers, and underscores.');
+      return;
+    }
 
     setIsSaving(true);
     setErrorMessage('');
     setSaveSuccess(false);
 
     try {
+      if (trimmedUsername !== originalUsername && trimmedUsername !== '') {
+        const { reserveUsername } = await import('../lib/community');
+        await reserveUsername(user.uid, trimmedUsername);
+      }
+
       await updateUserProfile({
         displayName: trimmedName,
         photoURL: selectedPhotoURL || null,
+        ...(trimmedUsername !== originalUsername && trimmedUsername !== '' ? { username: trimmedUsername } : {})
       });
 
       setSaveSuccess(true);
@@ -320,7 +337,7 @@ export const ProfilePage: React.FC = () => {
 
   // Admin access validation (Strict: only admin sees Simoon avatar)
   const isSimoonAdmin = user.email === 'simoonabdulla@gmail.com';
-  const isAdmin = profile?.role === 'admin' || user.email === 'kamaluddin124578@gmail.com' || isSimoonAdmin;
+  const isAdmin = profile?.role === 'admin' || user.email === 'titumamma2425@gmail.com' || isSimoonAdmin;
 
   return (
     <div className="min-h-screen bg-[#030407] pt-24 sm:pt-28 pb-24 px-3.5 sm:px-6 lg:px-8 max-w-5xl mx-auto relative">
@@ -368,19 +385,7 @@ export const ProfilePage: React.FC = () => {
               <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-wide truncate max-w-full">
                 {profile?.displayName || user.displayName || 'Anime Fan'}
               </h1>
-              {isAdmin ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                  <ShieldCheck className="w-3 h-3" /> Admin
-                </span>
-              ) : isEventClaimed ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/15 text-rose-300 border border-rose-500/30">
-                  <Flame className="w-3 h-3 text-rose-400" /> S1 Pioneer
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/10 text-white/80 border border-white/10">
-                  <Sparkles className="w-3 h-3 text-yoru-accent" /> Member
-                </span>
-              )}
+              <UserBadgeDisplay user={profile || undefined} />
             </div>
 
             {/* Clean Statistics Row: Total Watch Time & Episodes */}
@@ -675,6 +680,30 @@ export const ProfilePage: React.FC = () => {
                       placeholder="Enter your display name"
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-base sm:text-sm text-white placeholder-white/20 focus:outline-none focus:border-yoru-accent transition-colors"
                     />
+                  </div>
+
+                  {/* Username Input */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold uppercase tracking-wider text-white/80">
+                        Username (Unique ID)
+                      </label>
+                      <span className="text-[10px] text-yoru-text-muted">
+                        {username.length}/20
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 text-sm font-bold">@</span>
+                      <input
+                        type="text"
+                        maxLength={20}
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                        placeholder="username"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-base sm:text-sm text-white placeholder-white/20 focus:outline-none focus:border-yoru-accent transition-colors"
+                      />
+                    </div>
+                    <p className="text-[10px] text-yoru-text-muted">Letters, numbers, and underscores only. Max 20 chars.</p>
                   </div>
 
                   {/* Email Address (Hidden with toggle) */}

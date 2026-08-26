@@ -1,8 +1,9 @@
 import React from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LayoutDashboard, Film, Plus, LogOut, DownloadCloud, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Film, Plus, LogOut, DownloadCloud, Sparkles, Shield, Radio } from 'lucide-react';
 import { Logo } from '../../components/Navigation';
+import { isSuperAdmin } from '../../lib/admin';
 
 export const AdminLayout = () => {
   const { profile, loading } = useAuth();
@@ -10,18 +11,25 @@ export const AdminLayout = () => {
 
   if (loading) return <div className="min-h-screen bg-yoru-bg" />;
   
-  // Note: Only users with profile role 'admin' can access this
-  if (!profile || profile.role !== 'admin') {
+  // Note: Only users with profile role 'admin' or 'moderator' or super admin can access this
+  const isSuper = isSuperAdmin(profile?.email);
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'moderator' && !isSuper)) {
     return <Navigate to="/" replace />;
   }
 
-  const navItems = [
+  const allNavItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Spotlight Sliders', path: '/admin/spotlights', icon: Sparkles },
     { name: 'Anime Library', path: '/admin/anime', icon: Film },
     { name: 'Add Anime', path: '/admin/anime/new', icon: Plus },
     { name: 'Auto Import', path: '/admin/auto-import', icon: DownloadCloud },
+    { name: 'Embed Sync Webhook', path: '/admin/sync', icon: Radio },
+    { name: 'Community', path: '/admin/community', icon: Shield },
   ];
+
+  const navItems = (profile.role === 'admin' || isSuper)
+    ? allNavItems 
+    : allNavItems.filter(item => ['Dashboard', 'Community'].includes(item.name));
 
   return (
     <div className="min-h-screen bg-yoru-bg flex font-sans text-yoru-text">

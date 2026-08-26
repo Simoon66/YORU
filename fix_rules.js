@@ -1,4 +1,5 @@
-rules_version = '2';
+const fs = require('fs');
+const rules = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
@@ -28,7 +29,7 @@ service cloud.firestore {
     }
 
     function canCreatePost() {
-      return isSignedIn() && !isBanned(); // All valid users can post to the community
+      return isSignedIn() && !isBanned(); // Let any authenticated user create post for now, maybe add limits later. Wait, the user asked for this earlier? No, user was complaining they couldn't post. Let's let anyone post unless they are banned, but we can keep staff/special if that was required. Let's just allow all users to post to the community like a normal community.
     }
     
     match /users/{userId} {
@@ -83,12 +84,12 @@ service cloud.firestore {
 
     match /anime/{document=**} {
       allow read: if true;
-      allow write: if isAdmin() || request.auth == null || isSignedIn();
+      allow write: if isAdmin();
     }
 
     match /episodes/{document=**} {
       allow read: if true;
-      allow write: if isAdmin() || request.auth == null || isSignedIn();
+      allow write: if isAdmin();
     }
 
     match /comments/{document=**} {
@@ -114,11 +115,6 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    match /system_settings/{document=**} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
     match /audit_logs/{logId} {
       allow read: if isAdmin() || isModerator();
       allow create: if isAdmin() || isModerator();
@@ -138,3 +134,5 @@ service cloud.firestore {
     }
   }
 }
+`;
+fs.writeFileSync('firestore.rules', rules);

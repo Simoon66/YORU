@@ -33,7 +33,7 @@ export const signInWithGoogle = async () => {
       const userRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userRef);
       
-      const isAdmin = user.email === 'simoonabdulla@gmail.com' || user.email === 'kamaluddin124578@gmail.com';
+      const isAdmin = user.email === 'simoonabdulla@gmail.com' || user.email === 'titumamma2425@gmail.com' || user.email === 'kamaluddin124578@gmail.com';
       let role = isAdmin ? 'admin' : 'user';
 
       if (!userSnap.exists()) {

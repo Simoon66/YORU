@@ -1,0 +1,2 @@
+[2026-08-24T04:59:32.859Z]  @firebase/firestore: Firestore (12.16.0): GrpcConnection RPC 'Write' stream 0x70c0f00b error. Code: 7 Message: 7 PERMISSION_DENIED: Missing or insufficient permissions.
+Error writing document: 7 PERMISSION_DENIED: Missing or insufficient permissions.

@@ -8,6 +8,7 @@ import { Maximize, SkipBack, SkipForward, Server, Flag, Lightbulb, PlayCircle, L
 import clsx from 'clsx';
 import { Button } from '../components/ui/Button';
 import { WatchlistButton } from '../components/WatchlistButton';
+import { CommentSection } from '../components/CommentSection';
 import { normalizeEpisodes } from '../lib/episodeUtils';
 import { getServerConfig, applyDynamicDomainOverride, ServerConfig } from '../lib/serverSettings';
 
@@ -211,7 +212,10 @@ export const Watch = () => {
       const epNumStr = String(currentEpisode.episodeNumber);
 
       const markWatched = async () => {
+        let isNewEpisode = false;
+        
         setWatchedEpisodes(prev => {
+          isNewEpisode = !prev.includes(epFullId);
           const updated = Array.from(new Set([...prev, epFullId, epKey, epNumStr]));
           try {
             localStorage.setItem(`yoru_watched_${anime.id}`, JSON.stringify(updated));
@@ -229,6 +233,13 @@ export const Watch = () => {
           }
           return updated;
         });
+
+        if (user && isNewEpisode) {
+          import('firebase/firestore').then(({ increment, updateDoc }) => {
+            const userRef = doc(db, 'users', user.uid);
+            updateDoc(userRef, { watchCount: increment(1) }).catch(e => console.warn("Failed to increment watch count", e));
+          });
+        }
 
         try {
           const history = JSON.parse(localStorage.getItem('yoru_watch_history') || '[]');
@@ -629,6 +640,7 @@ export const Watch = () => {
              )}
           </div>
 
+              <CommentSection animeId={anime.id} episodeId={currentEpisode.id} />
            </div>
         </div>
 

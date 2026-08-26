@@ -9,6 +9,10 @@ import { Search } from './pages/Search';
 import { Watchlist } from './pages/Watchlist';
 import { DownloadsPage, SettingsPage } from './pages/Placeholders';
 import { ProfilePage } from './pages/Profile';
+import { CommunityHome } from './pages/Community/CommunityHome';
+import { CommunityPostPage } from './pages/Community/CommunityPostPage';
+import { Leaderboard } from './pages/Community/Leaderboard';
+import { MembersDirectory } from './pages/Community/MembersDirectory';
 import { AdminLayout } from './pages/Admin/AdminLayout';
 import { Dashboard } from './pages/Admin/Dashboard';
 import { AnimeList } from './pages/Admin/AnimeList';
@@ -16,6 +20,8 @@ import { AnimeEditor } from './pages/Admin/AnimeEditor';
 import { EpisodeManager } from './pages/Admin/EpisodeManager';
 import { AutoImport } from './pages/Admin/AutoImport';
 import { SpotlightManager } from './pages/Admin/SpotlightManager';
+import { CommunityManager } from './pages/Admin/CommunityManager';
+import { EmbedSyncManager } from './pages/Admin/EmbedSyncManager';
 import ScrollToTop from './components/ScrollToTop';
 
 function AppLayout() {
@@ -36,7 +42,11 @@ function AppLayout() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/:userId" element={<ProfilePage />} />
-          <Route path="/user/:userId" element={<ProfilePage />} />
+          <Route path="/user/:username" element={<ProfilePage />} />
+          <Route path="/community" element={<CommunityHome />} />
+          <Route path="/community/post/:postId" element={<CommunityPostPage />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/members" element={<MembersDirectory />} />
         </Routes>
       </main>
       <Footer />
@@ -57,9 +67,11 @@ export default function App() {
           <Route path="/admin" element={<AdminLayout />}>
              <Route index element={<Dashboard />} />
              <Route path="spotlights" element={<SpotlightManager />} />
+             <Route path="community" element={<CommunityManager />} />
              <Route path="anime" element={<AnimeList />} />
              <Route path="anime/new" element={<AnimeEditor />} />
              <Route path="auto-import" element={<AutoImport />} />
+             <Route path="sync" element={<EmbedSyncManager />} />
              <Route path="anime/:id/edit" element={<AnimeEditor />} />
              <Route path="anime/:id/episodes" element={<EpisodeManager />} />
           </Route>

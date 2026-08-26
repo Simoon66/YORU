@@ -1,7 +1,5 @@
-const fs = require('fs');
-
-const content = `import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCommunityPosts, getPinnedPosts, createCommunityPost, deleteCommunityPost, toggleReaction } from '../../lib/community';
 import { CommunityPost, UserProfile } from '../../types';
@@ -75,16 +73,20 @@ export const CommunityHome = () => {
     
     setIsSubmitting(true);
     try {
-      const newPost = await createCommunityPost({
+      const postPayload: any = {
         userId: user.uid,
-        content: newPostContent,
-        gifUrl: newPostGif.trim() || undefined,
+        content: newPostContent.trim(),
         hashtags: newPostHashtags.length > 0 ? newPostHashtags : ['General'],
         status: 'active',
         commentsEnabled: true,
         isPinned: false,
         isAnnouncement: false
-      });
+      };
+      if (newPostGif.trim()) {
+        postPayload.gifUrl = newPostGif.trim();
+      }
+
+      const newPost = await createCommunityPost(postPayload);
       setPosts([newPost, ...posts]);
       setNewPostContent('');
       setNewPostGif('');
@@ -276,12 +278,14 @@ const PostCard: React.FC<{
   onUpdated: (post: CommunityPost) => void
 }> = ({ post, userProfile, currentUser, isAdminOrMod, onDeleted, onUpdated }) => {
   const isAuthor = currentUser?.uid === post.userId;
+  const navigate = useNavigate();
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
-        await deleteCommunityPost(post.id, currentUser?.uid);
+        await deleteCommunityPost(post.id, post.userId);
         onDeleted(post.id);
       } catch (err) {
         console.error(err);
@@ -292,6 +296,7 @@ const PostCard: React.FC<{
 
   const handleReact = async (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!currentUser) return alert('Please login to react');
     try {
       await toggleReaction(post.id, currentUser.uid);
@@ -310,14 +315,14 @@ const PostCard: React.FC<{
   };
 
   return (
-    <Link to={\`/community/post/\${post.id}\`} className={clsx(
-      "block bg-[#0A0B0E] border border-white/10 rounded-2xl p-5 hover:border-white/20 hover:bg-white/[0.02] transition-all group",
+    <div onClick={() => navigate(`/community/post/${post.id}`)} className={clsx(
+      "block bg-[#0A0B0E] cursor-pointer border border-white/10 rounded-2xl p-5 hover:border-white/20 hover:bg-white/[0.02] transition-all group",
       post.isPinned && "border-yoru-accent/30 bg-yoru-accent/[0.02] shadow-[0_4px_20px_rgba(var(--color-yoru-accent),0.05)]"
     )}>
       <div className="flex items-start gap-3 mb-3">
         {/* Avatar */}
         <div className="relative shrink-0 block" onClick={e => e.stopPropagation()}>
-          <Link to={\`/user/\${userProfile?.username || post.userId}\`} className="w-10 h-10 rounded-xl overflow-hidden border border-white/20 bg-black/50 block">
+          <Link to={`/user/${userProfile?.username || post.userId}`} className="w-10 h-10 rounded-xl overflow-hidden border border-white/20 bg-black/50 block">
             {userProfile?.photoURL ? (
               <img src={userProfile.photoURL} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
@@ -329,7 +334,7 @@ const PostCard: React.FC<{
         {/* Header Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-0.5" onClick={e => e.stopPropagation()}>
-            <Link to={\`/user/\${userProfile?.username || post.userId}\`} className="font-bold text-sm text-white hover:text-yoru-accent transition-colors truncate max-w-[150px]">
+            <Link to={`/user/${userProfile?.username || post.userId}`} className="font-bold text-sm text-white hover:text-yoru-accent transition-colors truncate max-w-[150px]">
               {userProfile?.username || userProfile?.displayName || 'Unknown User'}
             </Link>
             <UserBadgeDisplay user={userProfile} />
@@ -384,8 +389,6 @@ const PostCard: React.FC<{
           <Heart className={clsx("w-4 h-4", post.reactions?.[currentUser?.uid] && "fill-current")} /> {Object.keys(post.reactions || {}).length}
         </button>
       </div>
-    </Link>
+    </div>
   );
 };
-`
-fs.writeFileSync('./src/pages/Community/CommunityHome.tsx', content);
