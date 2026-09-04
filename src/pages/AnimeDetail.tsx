@@ -10,12 +10,87 @@ import { WatchlistButton } from '../components/WatchlistButton';
 import { motion } from 'motion/react';
 import clsx from 'clsx';
 
+interface EpisodeCardProps {
+  ep: Episode;
+  anime: Anime;
+  activeSeason: string;
+}
+
+const EpisodeCard: React.FC<EpisodeCardProps> = ({ ep, anime, activeSeason }) => {
+  const [imgError, setImgError] = useState(false);
+  const imageSrc = (!imgError && ep.thumbnailUrl) ? ep.thumbnailUrl : (anime.backdrop || anime.poster);
+
+  return (
+    <Link 
+      to={`/watch/${anime.slug}/${ep.episodeNumber}?season=${activeSeason}`}
+      className="group relative flex flex-col h-full rounded-2xl overflow-hidden bg-[#0A0B0F] border border-white/5 hover:border-white/20 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all duration-300"
+    >
+      <div className="w-full aspect-video relative overflow-hidden bg-[#14161F] shrink-0">
+        {imageSrc ? (
+          <img 
+            src={imageSrc} 
+            alt={`Episode ${ep.episodeNumber}`} 
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+            loading="lazy"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-white/5">
+            <PlayCircle className="w-8 h-8 text-white/20 mb-1" />
+            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Episode {ep.episodeNumber}</span>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0F] via-transparent to-transparent opacity-80" />
+        
+        {/* Play hover button */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/30">
+          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20 transform scale-75 group-hover:scale-100 transition-all">
+            <Play className="w-4 h-4 fill-current text-white ml-0.5" />
+          </div>
+        </div>
+        
+        {/* Subtle Watermark Tag for unique visual identification on shared backdrops (Issue 6) */}
+        <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white/90">
+          #{ep.episodeNumber}
+        </div>
+
+        {/* Status badges only — NO redundant 'EP XX' overlay on the thumbnail (fixes Issues 7 & 12) */}
+        {ep.isFiller && (
+          <div className="absolute top-2.5 right-2.5">
+            <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 backdrop-blur-md shadow-sm">
+              Filler
+            </span>
+          </div>
+        )}
+      </div>
+      
+      <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between gap-1.5 min-w-0">
+        <div>
+          <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-yoru-text-muted mb-1">
+            <span className="text-yoru-accent">EP {ep.episodeNumber}</span>
+            {ep.isFiller && <span className="text-amber-400">• Filler</span>}
+          </div>
+          <h3 className="text-xs sm:text-sm font-semibold text-white/90 group-hover:text-white transition-colors line-clamp-2 leading-snug">
+            {ep.title && ep.title !== `Episode ${ep.episodeNumber}` ? ep.title : `Episode ${ep.episodeNumber}`}
+          </h3>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
 export const AnimeDetail = () => {
   const { slug } = useParams();
   const [anime, setAnime] = useState<Anime | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSeason, setActiveSeason] = useState<string>('s1');
+  const [selectedChunkIdx, setSelectedChunkIdx] = useState<number>(0);
+  const [jumpInput, setJumpInput] = useState<string>('');
+
+  useEffect(() => {
+    setSelectedChunkIdx(0);
+  }, [activeSeason]);
 
   useEffect(() => {
     const fetchAnime = async () => {
@@ -62,8 +137,28 @@ export const AnimeDetail = () => {
   );
 
   const seasonEpisodes = episodes.filter(e => e.seasonId === activeSeason);
+  const cleanEpisodes = seasonEpisodes.filter(e => {
+    const title = (e.title || '').toLowerCase();
+    return !title.includes('facebook') && !title.includes('reel') && !title.includes('sponsor');
+  });
   const currentSeasonInfo = anime.seasons?.find(s => s.id === activeSeason);
-  const firstEpisodeOfSeason = seasonEpisodes[0];
+  const firstEpisodeOfSeason = cleanEpisodes[0] || seasonEpisodes[0];
+
+  const CHUNK_SIZE = 50;
+  const totalChunks = Math.ceil(cleanEpisodes.length / CHUNK_SIZE);
+  const displayedEpisodes = cleanEpisodes.length > CHUNK_SIZE
+    ? cleanEpisodes.slice(selectedChunkIdx * CHUNK_SIZE, (selectedChunkIdx + 1) * CHUNK_SIZE)
+    : cleanEpisodes;
+
+  const handleJumpSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const num = parseInt(jumpInput.trim(), 10);
+    if (!isNaN(num) && num >= 1 && num <= cleanEpisodes.length) {
+      const chunkIdx = Math.floor((num - 1) / CHUNK_SIZE);
+      setSelectedChunkIdx(chunkIdx);
+      setJumpInput('');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#030407] pb-24 md:pb-32 selection:bg-yoru-accent/30 selection:text-white">
@@ -103,15 +198,25 @@ export const AnimeDetail = () => {
               className="md:col-span-9 lg:col-span-8 space-y-4 md:space-y-6 pb-2 flex flex-col items-center md:items-start text-center md:text-left"
             >
               {/* Badges */}
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-[10px] sm:text-xs font-bold uppercase tracking-widest">
-                <span className="px-3 py-1 rounded bg-white/10 backdrop-blur-md text-white border border-white/5">{anime.format}</span>
-                <span className="px-3 py-1 rounded bg-yoru-accent/20 text-yoru-accent border border-yoru-accent/20">HD</span>
-                <span className="px-3 py-1 rounded bg-yoru-surface-elevated text-yoru-text-muted border border-white/5 flex items-center gap-1.5">
-                  <Star className="w-3.5 h-3.5 text-yoru-warning fill-current" /> {anime.averageScore}
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 sm:gap-3 text-xs sm:text-sm font-bold uppercase tracking-wider">
+                <span className="px-3.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-md text-white border border-white/20 shadow-sm">
+                  {anime.format || 'TV'}
                 </span>
-                <span className="px-3 py-1 rounded bg-yoru-surface-elevated text-yoru-text-muted border border-white/5 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" /> {anime.startDate?.substring(0,4)}
+                <span className="px-3 py-1.5 rounded-lg bg-yoru-accent text-[#030407] font-black shadow-[0_0_12px_rgba(255,255,255,0.3)]">
+                  HD
                 </span>
+                {anime.averageScore && (
+                  <span className="px-3.5 py-1.5 rounded-lg bg-white/10 backdrop-blur-md text-white border border-white/15 flex items-center gap-1.5 font-bold shadow-sm">
+                    <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    <span>{anime.averageScore}</span>
+                  </span>
+                )}
+                {anime.startDate && (
+                  <span className="px-3.5 py-1.5 rounded-lg bg-white/10 backdrop-blur-md text-white border border-white/15 flex items-center gap-1.5 font-bold shadow-sm">
+                    <Calendar className="w-4 h-4 text-white/80" />
+                    <span>{anime.startDate.substring(0, 4)}</span>
+                  </span>
+                )}
               </div>
 
               {/* Title */}
@@ -138,17 +243,27 @@ export const AnimeDetail = () => {
               <div className="flex flex-col sm:flex-row items-center w-full sm:w-auto gap-3 sm:gap-4 pt-2 md:pt-4">
                 {firstEpisodeOfSeason ? (
                   <Link to={`/watch/${anime.slug}`} className="w-full sm:w-auto">
-                    <Button size="lg" className="w-full sm:w-auto px-8 py-3.5 gap-2 shadow-xl shadow-white/5 text-sm sm:text-base">
-                      <Play className="w-5 h-5 fill-current" /> Watch Now
+                    <Button 
+                      size="lg" 
+                      className="w-full sm:w-auto h-12 sm:h-14 min-h-[48px] px-8 py-3.5 gap-2 shadow-xl shadow-white/5 text-xs sm:text-sm font-bold uppercase tracking-wider"
+                    >
+                      <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current" /> WATCH NOW
                     </Button>
                   </Link>
                 ) : (
-                   <Button size="lg" disabled className="w-full sm:w-auto px-8 py-3.5 gap-2 text-sm sm:text-base">
-                     <Play className="w-5 h-5" /> No Episodes Yet
+                   <Button 
+                     size="lg" 
+                     disabled 
+                     className="w-full sm:w-auto h-12 sm:h-14 min-h-[48px] px-8 py-3.5 gap-2 text-xs sm:text-sm font-bold uppercase tracking-wider"
+                   >
+                     <Play className="w-4 h-4 sm:w-5 sm:h-5" /> NO EPISODES YET
                    </Button>
                 )}
                 <div className="w-full sm:w-auto">
-                  <WatchlistButton animeId={anime.id!} className="w-full sm:w-auto px-8 py-3.5 backdrop-blur-md text-sm sm:text-base" />
+                  <WatchlistButton 
+                    animeId={anime.id!} 
+                    className="w-full sm:w-auto h-12 sm:h-14 min-h-[48px] px-8 py-3.5 backdrop-blur-md text-xs sm:text-sm font-bold uppercase tracking-wider" 
+                  />
                 </div>
               </div>
             </motion.div>
@@ -234,58 +349,68 @@ export const AnimeDetail = () => {
             )}
           </div>
 
-          {seasonEpisodes.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
-              {seasonEpisodes.map((ep) => (
-                <Link 
-                  key={ep.id}
-                  to={`/watch/${anime.slug}/${ep.episodeNumber}?season=${activeSeason}`}
-                  className="group relative block rounded-2xl overflow-hidden bg-[#0A0B0F] border border-white/5 hover:border-white/20 hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all duration-300 flex flex-row sm:flex-col h-24 sm:h-auto"
-                >
-                  <div className="w-32 sm:w-full sm:aspect-[16/9] shrink-0 relative overflow-hidden bg-[#111]">
-                    {ep.thumbnailUrl ? (
-                      <img 
-                        src={ep.thumbnailUrl} 
-                        alt={ep.title} 
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-white/5">
-                        <PlayCircle className="w-6 h-6 sm:w-8 sm:h-8 text-white/20" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#030407] via-transparent to-transparent opacity-80 hidden sm:block" />
-                    
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/20 transform scale-75 group-hover:scale-100 transition-all">
-                        <Play className="w-3 h-3 sm:w-4 sm:h-4 fill-current text-white ml-0.5" />
-                      </div>
-                    </div>
-                    
-                    <div className="absolute bottom-2 right-2 sm:left-3 sm:right-3 flex justify-between items-center">
-                      <span className="hidden sm:block text-xs font-black text-white tracking-widest drop-shadow-md">EP {ep.episodeNumber}</span>
-                      <span className="sm:hidden text-[10px] font-black text-white px-1.5 py-0.5 rounded bg-black/50 backdrop-blur-md">EP {ep.episodeNumber}</span>
-                      {ep.isFiller && (
-                        <span className="hidden sm:block text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-yoru-warning/20 text-yoru-warning border border-yoru-warning/30 backdrop-blur-md">
-                          Filler
-                        </span>
-                      )}
-                    </div>
+          {cleanEpisodes.length > 0 ? (
+            <div className="space-y-6">
+              {/* Pagination & Jump-to Controls (Addresses Issue 3 & Issue 8) */}
+              {totalChunks > 1 && (
+                <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {Array.from({ length: totalChunks }).map((_, idx) => {
+                      const start = idx * CHUNK_SIZE + 1;
+                      const end = Math.min((idx + 1) * CHUNK_SIZE, cleanEpisodes.length);
+                      const isActive = selectedChunkIdx === idx;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setSelectedChunkIdx(idx)}
+                          className={clsx(
+                            "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                            isActive
+                              ? "bg-white text-[#030407] shadow-sm font-bold"
+                              : "bg-white/5 text-yoru-text-muted hover:text-white hover:bg-white/10"
+                          )}
+                        >
+                          {start}–{end}
+                        </button>
+                      );
+                    })}
                   </div>
                   
-                  <div className="p-3 sm:p-4 flex flex-col justify-center sm:justify-start flex-1 min-w-0">
-                    <h3 className="text-xs sm:text-sm font-semibold text-white/90 group-hover:text-white transition-colors line-clamp-2 leading-snug">
-                      {ep.title}
-                    </h3>
-                    {ep.isFiller && (
-                      <span className="sm:hidden self-start mt-1.5 text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-yoru-warning/20 text-yoru-warning border border-yoru-warning/30">
-                        Filler
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              ))}
+                  {/* Jump-to episode input */}
+                  <form onSubmit={handleJumpSubmit} className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min={1}
+                      max={cleanEpisodes.length}
+                      value={jumpInput}
+                      onChange={(e) => setJumpInput(e.target.value)}
+                      placeholder="Jump to ep..."
+                      className="w-28 h-8 px-2.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/30 transition-colors"
+                      aria-label="Jump to episode number"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!jumpInput.trim()}
+                      className="h-8 px-3 bg-white/10 hover:bg-white/20 disabled:opacity-30 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      Go
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* Uniform Episode Grid (Addresses Issue 1, 2, 4, 6, 7, 8, 9, 12) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+                {displayedEpisodes.map((ep) => (
+                  <EpisodeCard 
+                    key={ep.id}
+                    ep={ep}
+                    anime={anime}
+                    activeSeason={activeSeason}
+                  />
+                ))}
+              </div>
             </div>
           ) : (
             <div className="py-16 sm:py-24 text-center border border-white/5 bg-white/5 rounded-2xl">

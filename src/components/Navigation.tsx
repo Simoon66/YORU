@@ -296,7 +296,7 @@ export const Navigation = () => {
                     <Link to="/admin" className="relative group">
                       <span className={cn(
                         "text-xs font-bold uppercase tracking-widest transition-colors duration-300",
-                        location.pathname.startsWith('/admin') ? "text-white" : "text-yoru-accent group-hover:text-white"
+                        location.pathname.startsWith('/admin') ? "text-white" : "text-yoru-text-muted group-hover:text-white"
                       )}>
                         Admin
                       </span>

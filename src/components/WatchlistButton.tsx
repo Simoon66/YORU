@@ -53,7 +53,7 @@ export const WatchlistButton: React.FC<WatchlistButtonProps> = ({
         )}
       </div>
       {showText && (
-        <span className="ml-2 font-bold uppercase tracking-widest text-[10px] md:text-xs relative z-10">
+        <span className="ml-2 font-bold uppercase tracking-wider text-xs sm:text-sm relative z-10">
           {isInWatchlist ? 'Added' : 'Watchlist'}
         </span>
       )}
