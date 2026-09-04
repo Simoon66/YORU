@@ -276,16 +276,40 @@ export const Navigation = () => {
               </div>
               
               {user ? (
-                <div className="flex items-center gap-6">
-                  <Link to="/watchlist" className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted hover:text-white transition-colors">
-                    Watchlist
+                <div className="flex items-center gap-8">
+                  <Link to="/watchlist" className="relative group">
+                    <span className={cn(
+                      "text-xs font-bold uppercase tracking-widest transition-colors duration-300",
+                      location.pathname === '/watchlist' ? "text-white" : "text-yoru-text-muted group-hover:text-white"
+                    )}>
+                      Watchlist
+                    </span>
+                    {location.pathname === '/watchlist' && (
+                      <motion.div
+                        layoutId="nav-indicator"
+                        className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-yoru-accent rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      />
+                    )}
                   </Link>
                   {profile?.role === 'admin' && (
-                    <Link to="/admin" className="text-xs font-bold uppercase tracking-widest text-yoru-accent hover:text-white transition-colors">
-                      Admin
+                    <Link to="/admin" className="relative group">
+                      <span className={cn(
+                        "text-xs font-bold uppercase tracking-widest transition-colors duration-300",
+                        location.pathname.startsWith('/admin') ? "text-white" : "text-yoru-accent group-hover:text-white"
+                      )}>
+                        Admin
+                      </span>
+                      {location.pathname.startsWith('/admin') && (
+                        <motion.div
+                          layoutId="nav-indicator"
+                          className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-yoru-accent rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        />
+                      )}
                     </Link>
                   )}
-                  <Link to="/profile" className="w-10 h-10 rounded-full overflow-hidden border-2 border-white/10 hover:border-yoru-accent transition-all duration-300 shadow-lg block">
+                  <Link to="/profile" className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/10 hover:border-yoru-accent transition-all duration-300 shadow-lg block shrink-0" aria-label="User Profile">
                     {profile?.photoURL || user.photoURL ? (
                       <img src={(profile?.photoURL || user.photoURL) as string} alt="Profile" className="w-full h-full object-cover" />
                     ) : (

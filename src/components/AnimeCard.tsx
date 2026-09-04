@@ -3,7 +3,7 @@ import { Anime } from '../types';
 import { Link } from 'react-router-dom';
 import { Play, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { cn, normalizeTitle } from '../lib/utils';
 import { Button } from './ui/Button';
 import { WatchlistButton } from './WatchlistButton';
 
@@ -25,6 +25,8 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
     }
   };
 
+  const displayTitle = normalizeTitle(anime.title);
+
   return (
     <div 
       ref={cardRef}
@@ -35,12 +37,13 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
       <Link 
         to={`/anime/${anime.slug}`} 
         className="block w-full transition-all duration-300"
+        aria-label={`${displayTitle}, ${anime.format || 'Anime'}, ${anime.status || ''}`}
       >
         <div className="relative aspect-[2/3] w-full overflow-hidden bg-yoru-surface-elevated ring-1 ring-yoru-border group-hover:ring-yoru-accent/50 group-hover:shadow-[0_8px_30px_rgb(0,0,0,0.5)] transition-all duration-500 rounded-lg">
           
           <img 
             src={anime.poster} 
-            alt={anime.title} 
+            alt="" 
             className={cn(
               "absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out",
               isHovered ? "scale-105 opacity-0" : "scale-100 opacity-100"
@@ -50,7 +53,7 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
           
           <img 
             src={anime.backdrop} 
-            alt={`${anime.title} Backdrop`} 
+            alt="" 
             className={cn(
               "absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out",
               isHovered ? "scale-100 opacity-100" : "scale-105 opacity-0"
@@ -58,28 +61,36 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
             loading="lazy"
           />
           
+          {/* Persistent Quality & Format Badges (Visible to all users) */}
+          <div className="absolute top-2 left-2 flex items-center gap-1 z-10" aria-hidden="true">
+             <span className="px-1.5 py-0.5 rounded bg-black/70 backdrop-blur-md text-yoru-accent text-[10px] font-bold tracking-wider border border-white/10">HD</span>
+             {anime.format && (
+               <span className="text-[10px] font-medium tracking-wider bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-white/90 border border-white/10">{anime.format}</span>
+             )}
+          </div>
+          
           <div className="absolute inset-0 bg-gradient-to-t from-[#030407] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300" aria-hidden="true">
             <div className="bg-white/10 backdrop-blur-md p-4 rounded-full border border-white/20 text-white transform scale-75 group-hover:scale-100 transition-all duration-500 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
               <Play className="w-5 h-5 fill-current ml-0.5" />
             </div>
           </div>
-
-          <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-             <div className="flex items-center gap-1.5">
-                <span className="px-1.5 py-0.5 rounded bg-yoru-accent text-yoru-accent-content text-[10px] font-bold tracking-widest shadow-lg">HD</span>
-             </div>
-             <span className="text-[10px] font-bold uppercase tracking-widest bg-yoru-surface/80 backdrop-blur-md px-1.5 py-0.5 rounded text-white shadow-lg border border-white/10">{anime.format}</span>
-          </div>
         </div>
         
         <div className="mt-3.5 space-y-1">
-          <h4 className="text-[13px] md:text-sm font-semibold leading-tight line-clamp-2 text-white group-hover:text-yoru-accent transition-colors duration-300">
-            {anime.title}
-          </h4>
+          <h3 className="text-[13px] md:text-sm font-semibold leading-tight line-clamp-2 text-white group-hover:text-yoru-accent transition-colors duration-300">
+            {displayTitle}
+          </h3>
           <div className="flex gap-2 items-center text-xs font-medium text-yoru-text-muted">
-            <span>{anime.status}</span>
+            {anime.status && anime.status !== 'FINISHED' && (
+              <span className="px-1.5 py-0.5 rounded bg-white/10 text-white text-[10px] font-semibold tracking-wider">
+                {anime.status}
+              </span>
+            )}
+            {(anime.startDate?.substring(0, 4) || anime.season) && (
+              <span className="text-[11px] text-yoru-text-muted">{anime.startDate?.substring(0, 4) || anime.season}</span>
+            )}
           </div>
         </div>
       </Link>

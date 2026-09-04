@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { Anime, SpotlightSlide } from '../types';
 import { getSpotlightSlides, getEpisodesForAnime, getWatchHistory } from '../lib/data';
 import { useAuth } from '../contexts/AuthContext';
-import { Play, ChevronUp, ChevronDown } from 'lucide-react';
+import { Play, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Fallback curated slides in case database has no spotlights yet
 const FALLBACK_SLIDES: SpotlightSlide[] = [
@@ -317,9 +317,9 @@ export const Hero: React.FC<HeroProps> = () => {
                       onError={(e) => { (e.target as any).style.display = 'none'; }}
                     />
                   )}
-                  <h2 className="text-[18px] sm:text-[22px] md:text-[28px] font-bold text-white mb-2.5 leading-[1.2] drop-shadow-md">
+                  <h1 className="text-[18px] sm:text-[22px] md:text-[28px] font-bold text-white mb-2.5 leading-[1.2] drop-shadow-md">
                     {slide.animeTitle}
-                  </h2>
+                  </h1>
 
                   {/* Metadata Chips */}
                   <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -348,7 +348,7 @@ export const Hero: React.FC<HeroProps> = () => {
                   <button 
                     onClick={(e) => handleWatchNow(slide, e)}
                     disabled={isNavigating}
-                    className="inline-flex items-center gap-[8px] bg-yoru-accent text-[#030407] px-[22px] py-[10px] rounded-[30px] font-bold text-[13px] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_0_22px_rgba(226,232,240,0.75)] cursor-pointer"
+                    className="inline-flex items-center gap-2 bg-yoru-accent text-[#030407] hover:bg-white px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 shadow-lg hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
                     onMouseDown={(e) => e.stopPropagation()}
                   >
                     <Play className="w-4 h-4 fill-current" /> Watch Now
@@ -359,38 +359,47 @@ export const Hero: React.FC<HeroProps> = () => {
           })}
         </div>
 
-        {/* Nav Arrows Stack (Right edge) */}
+        {/* Nav Arrows (Horizontal: Left and Right sides) */}
         {slides.length > 1 && (
-          <div className="absolute right-[18px] top-1/2 -translate-y-1/2 flex flex-col gap-1.5 z-20">
+          <>
             <button 
               onClick={(e) => { e.stopPropagation(); handleMove(-1); }}
-              className="w-[30px] h-[30px] sm:w-[36px] sm:h-[36px] rounded-lg bg-[#141414]/65 text-white flex items-center justify-center opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-yoru-accent hover:text-[#030407] hover:shadow-[0_0_14px_rgba(226,232,240,0.65)] border-none outline-none cursor-pointer"
+              className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center opacity-80 hover:opacity-100 transition-all duration-300 hover:bg-yoru-accent hover:text-[#030407] border border-white/10 shadow-lg z-20 cursor-pointer"
               title="Previous Slide"
+              aria-label="Previous Slide"
             >
-              <ChevronUp className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" aria-hidden="true" />
             </button>
             <button 
               onClick={(e) => { e.stopPropagation(); handleMove(1); }}
-              className="w-[30px] h-[30px] sm:w-[36px] sm:h-[36px] rounded-lg bg-[#141414]/65 text-white flex items-center justify-center opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-yoru-accent hover:text-[#030407] hover:shadow-[0_0_14px_rgba(226,232,240,0.65)] border-none outline-none cursor-pointer"
+              className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center opacity-80 hover:opacity-100 transition-all duration-300 hover:bg-yoru-accent hover:text-[#030407] border border-white/10 shadow-lg z-20 cursor-pointer"
               title="Next Slide"
+              aria-label="Next Slide"
             >
-              <ChevronDown className="w-4 h-4" />
+              <ChevronRight className="w-5 h-5" aria-hidden="true" />
             </button>
-          </div>
+          </>
         )}
 
-        {/* Dots (Bottom center) */}
+        {/* Dots (Bottom center inside high-contrast pill container) */}
         {slides.length > 1 && (
-          <div className="absolute bottom-[16px] left-1/2 -translate-x-1/2 flex gap-[7px] z-20">
-            {slides.map((_, idx) => (
+          <div 
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 z-20"
+            role="tablist"
+            aria-label="Spotlight carousel slides"
+          >
+            {slides.map((slide, idx) => (
               <button
                 key={idx}
+                role="tab"
+                aria-selected={idx === currentIndex}
+                aria-label={`Slide ${idx + 1}: ${slide.animeTitle}`}
                 onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx); }}
                 className={clsx(
-                  "w-[7px] h-[7px] rounded-full transition-all duration-300 outline-none border-none cursor-pointer",
+                  "h-2 rounded-full transition-all duration-300 outline-none cursor-pointer focus:ring-1 focus:ring-white/60",
                   idx === currentIndex 
-                    ? "bg-yoru-accent scale-[1.35] shadow-[0_0_7px_rgba(226,232,240,0.8)]" 
-                    : "bg-white/35 hover:bg-white/60"
+                    ? "w-6 bg-yoru-accent shadow-[0_0_8px_rgba(255,255,255,0.7)]" 
+                    : "w-2 bg-white/40 hover:bg-white/80"
                 )}
               />
             ))}

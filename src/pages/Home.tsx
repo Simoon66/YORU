@@ -36,7 +36,17 @@ export const Home = () => {
         getAllAnime()
       ]);
       setTrending(trendingData);
-      setLatest(allData); // In a real app, this would be a separate query sorting by createdAt
+      
+      // Ensure Latest Releases is distinct from Trending Now (sorted chronologically)
+      const sortedLatest = [...allData]
+        .sort((a, b) => {
+          const dateA = a.createdAt || (a.startDate ? new Date(a.startDate).getTime() : 0);
+          const dateB = b.createdAt || (b.startDate ? new Date(b.startDate).getTime() : 0);
+          return dateB - dateA;
+        })
+        .filter(anime => !trendingData.slice(0, 3).some(t => t.id === anime.id));
+
+      setLatest(sortedLatest.length > 0 ? sortedLatest : allData.slice().reverse());
       
       try {
         if (user) {
@@ -73,14 +83,14 @@ export const Home = () => {
 
   const SectionHeader = ({ title, linkTo, action }: { title: string, linkTo?: string, action?: React.ReactNode }) => (
     <div className="flex items-center justify-between mb-6">
-      <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-yoru-accent">
+      <h2 className="text-sm font-semibold tracking-wide text-yoru-accent">
         {title}
-      </h3>
+      </h2>
       <div className="flex items-center gap-4">
         {action}
         {linkTo && (
-          <Link to={linkTo} className="flex items-center text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted hover:text-white transition-colors">
-            View All <ChevronRight className="w-3 h-3 ml-1" />
+          <Link to={linkTo} className="flex items-center text-xs font-medium text-yoru-text-muted hover:text-white transition-colors">
+            View All <ChevronRight className="w-3.5 h-3.5 ml-0.5" aria-hidden="true" />
           </Link>
         )}
       </div>
@@ -112,7 +122,8 @@ export const Home = () => {
   }
 
   return (
-    <div className="min-h-screen bg-yoru-bg pb-20">
+    <main className="min-h-screen bg-yoru-bg pb-20">
+      <h1 className="sr-only">YORU — Stream Anime Online</h1>
       <Hero featured={trending.slice(0, 5)} />
       
       <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-8 mt-12 space-y-20">
@@ -126,11 +137,16 @@ export const Home = () => {
                 <button
                   onClick={handleClearHistory}
                   disabled={isClearing}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full ${confirmClear ? 'bg-red-500/20 text-red-400 border-red-500/50' : 'bg-white/5 hover:bg-red-500/10 text-yoru-text-muted hover:text-red-400 border-white/5 hover:border-red-500/20'} border text-[10px] font-bold uppercase tracking-wider transition-all duration-200`}
+                  aria-label="Clear all watch history"
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-red-400/30 ${
+                    confirmClear 
+                      ? 'bg-red-500/20 text-red-400 border border-red-500/40' 
+                      : 'text-yoru-text-muted hover:text-red-400 hover:bg-red-500/10'
+                  }`}
                   title="Clear all watch history"
                 >
-                  <Trash2 className="w-3 h-3" />
-                  <span>{isClearing ? 'Clearing...' : confirmClear ? 'Click again to confirm' : 'Clear History'}</span>
+                  <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>{isClearing ? 'Clearing...' : confirmClear ? 'Confirm Clear?' : 'Clear History'}</span>
                 </button>
               }
             />
@@ -190,6 +206,6 @@ export const Home = () => {
         </section>
         
       </div>
-    </div>
+    </main>
   );
 };

@@ -25,3 +25,16 @@ export function formatDistanceToNow(date: number | Date) {
   if (minutes > 0) return `${minutes}m`;
   return `${seconds}s`;
 }
+
+export function normalizeTitle(title: string): string {
+  if (!title) return '';
+  const lettersOnly = title.replace(/[^a-zA-Z]/g, '');
+  if (lettersOnly.length > 3 && lettersOnly === lettersOnly.toUpperCase()) {
+    return title
+      .toLowerCase()
+      .split(' ')
+      .map(word => (word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : ''))
+      .join(' ');
+  }
+  return title;
+}
