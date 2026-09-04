@@ -149,7 +149,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ animeId, episode
 
       {user ? (
         <form onSubmit={handleSubmit} className="mb-10 flex flex-col md:flex-row gap-4 relative z-10">
-          <div className="w-12 h-12 rounded-full bg-yoru-surface-elevated overflow-hidden shrink-0 hidden md:block border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+          <div className="w-10 h-10 rounded-full bg-yoru-surface-elevated overflow-hidden shrink-0 hidden md:block border border-white/10 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
             {profile?.photoURL || user.photoURL ? (
               <img src={(profile?.photoURL || user.photoURL) as string} alt="avatar" className="w-full h-full object-cover" />
             ) : (
@@ -158,16 +158,17 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ animeId, episode
               </div>
             )}
           </div>
-          <div className="flex-1 relative group flex flex-col gap-2">
+          <div className="flex-1 relative group flex flex-col gap-3">
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Leave a review or comment for this episode..."
-              className="w-full bg-[#050608] border border-white/10 rounded-xl text-white placeholder-white/30 px-5 py-4 min-h-[100px] md:min-h-[80px] focus:outline-none focus:border-white/30 focus:bg-[#08090c] resize-none transition-all shadow-inner"
+              className="w-full bg-[#050608] border border-white/10 rounded-xl text-white placeholder-white/30 px-4 py-3 min-h-[90px] focus:outline-none focus:border-white/30 focus:bg-[#08090c] resize-none transition-all shadow-inner text-sm"
               disabled={isSubmitting}
             />
-            <div className="flex gap-2">
-              <div className="relative flex-1">
+            {/* Bottom toolbar with GIF input on left and Post button anchored at bottom-right */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="relative flex-1 max-w-md">
                 <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <input 
                   type="text" 
@@ -180,9 +181,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ animeId, episode
               <button
                 type="submit"
                 disabled={isSubmitting || (!newComment.trim() && !newCommentGif.trim())}
-                className="px-6 rounded-lg bg-yoru-accent hover:bg-white disabled:opacity-50 text-[#030407] transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] disabled:shadow-none font-bold text-xs"
+                className="self-end sm:self-auto px-5 py-2 rounded-lg bg-yoru-accent hover:bg-white disabled:opacity-40 text-[#030407] transition-all font-semibold text-xs shadow-md cursor-pointer disabled:cursor-not-allowed"
               >
-                Post
+                {isSubmitting ? 'Posting...' : 'Post Comment'}
               </button>
             </div>
           </div>
@@ -190,7 +191,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ animeId, episode
       ) : (
         <div className="mb-10 p-6 rounded-xl bg-white/5 border border-white/5 text-center flex flex-col items-center justify-center gap-3">
           <User className="w-6 h-6 text-white/30" />
-          <p className="text-yoru-text-muted text-sm font-medium tracking-wide">Please log in to join the discussion.</p>
+          <p className="text-yoru-text-muted text-sm font-medium">Please log in to join the discussion.</p>
         </div>
       )}
 
@@ -198,12 +199,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ animeId, episode
         {isLoading ? (
           <div className="py-12 flex flex-col items-center text-white/30 animate-pulse">
             <MessageSquare className="w-8 h-8 mb-3" />
-            <p className="text-xs uppercase tracking-widest font-bold">Loading comments...</p>
+            <p className="text-sm font-medium text-yoru-text-muted">Loading comments...</p>
           </div>
         ) : comments.length === 0 ? (
           <div className="py-12 flex flex-col items-center text-white/20">
-            <MessageSquare className="w-8 h-8 mb-3" />
-            <p className="text-xs uppercase tracking-widest font-bold">No comments yet. Be the first to share your thoughts!</p>
+            <MessageSquare className="w-8 h-8 mb-3 text-yoru-text-muted/40" />
+            <p className="text-sm font-medium text-yoru-text-muted text-center">No comments yet. Be the first to share your thoughts!</p>
           </div>
         ) : (
           comments.map((comment, i) => {

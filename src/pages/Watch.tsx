@@ -32,8 +32,19 @@ export const Watch = () => {
   const [watchedEpisodes, setWatchedEpisodes] = useState<string[]>([]);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  
+  const CHUNK_SIZE = 50;
+  const [selectedChunkIdx, setSelectedChunkIdx] = useState(0);
+  const [jumpInput, setJumpInput] = useState('');
 
   const playerContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (currentEpisode) {
+      const chunkForCurrent = Math.max(0, Math.floor((currentEpisode.episodeNumber - 1) / CHUNK_SIZE));
+      setSelectedChunkIdx(chunkForCurrent);
+    }
+  }, [currentEpisode?.episodeNumber]);
 
   useEffect(() => {
     if (isLightDimmed) {
@@ -302,7 +313,24 @@ export const Watch = () => {
   const prevEpisode = currentIndex > 0 ? uniqueEpisodes[currentIndex - 1] : null;
 
   const toggleTheaterMode = () => setIsTheaterMode(!isTheaterMode);
-  const isCompact = uniqueEpisodes.length > 100;
+  const isCompact = uniqueEpisodes.length > 30;
+  const totalChunks = Math.ceil(uniqueEpisodes.length / CHUNK_SIZE);
+
+  const handleJumpSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const num = parseInt(jumpInput.trim(), 10);
+    if (!isNaN(num) && num >= 1 && num <= uniqueEpisodes.length) {
+      const targetEp = uniqueEpisodes.find(ep => ep.episodeNumber === num);
+      if (targetEp) {
+        navigate(`/watch/${anime.slug}/${targetEp.episodeNumber}?season=${currentSeasonId}`);
+        setJumpInput('');
+      }
+    }
+  };
+
+  const displayedEpisodes = uniqueEpisodes.length > CHUNK_SIZE
+    ? uniqueEpisodes.slice(selectedChunkIdx * CHUNK_SIZE, (selectedChunkIdx + 1) * CHUNK_SIZE)
+    : uniqueEpisodes;
 
   return (
     <div className={clsx("min-h-screen pt-[60px] md:pt-[72px] pb-24 transition-colors duration-500", isLightDimmed ? "bg-[#030407]" : "bg-[#0A0B0E]")}>
@@ -319,8 +347,27 @@ export const Watch = () => {
         
         {/* TOP SECTION: Player & Toolbar */}
         <div className={clsx("w-full mx-auto transition-all duration-500 flex flex-col",
-          isTheaterMode ? "max-w-full" : "max-w-[1440px] px-0 md:px-6 lg:px-8 pt-0 md:pt-8"
+          isTheaterMode ? "max-w-full" : "max-w-[1440px] px-0 md:px-6 lg:px-8 pt-0 md:pt-6"
         )}>
+          {/* Accessible Primary Page Heading H1 */}
+          <div className="w-full max-w-[1100px] mx-auto px-4 md:px-0 mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-semibold text-yoru-text-muted">
+                <span>{anime.title}</span>
+                <span>•</span>
+                <span className="uppercase">{currentSeasonId}</span>
+              </div>
+              <h1 className="text-base sm:text-lg md:text-xl font-bold text-white tracking-tight mt-0.5">
+                {currentEpisode.title && currentEpisode.title !== `Episode ${currentEpisode.episodeNumber}`
+                  ? `Episode ${currentEpisode.episodeNumber}: ${currentEpisode.title}`
+                  : `${anime.title} — Episode ${currentEpisode.episodeNumber}`}
+              </h1>
+            </div>
+            <div className="hidden sm:flex items-center gap-2">
+              <WatchlistButton animeId={anime.id} size="sm" variant="secondary" />
+            </div>
+          </div>
+
           <div className={clsx("w-full mx-auto flex flex-col bg-[#0F1117] shadow-2xl transition-all duration-500",
             !isLightDimmed && "overflow-hidden",
             isTheaterMode ? "max-w-full rounded-none border-0" : "max-w-[1100px] rounded-none md:rounded-2xl border-0 md:border border-white/5"
@@ -359,83 +406,94 @@ export const Watch = () => {
               )}
             </div>
 
-            {/* Quick Control Ribbon */}
-            <div className="flex flex-wrap items-center justify-between p-3 md:p-4 gap-4 bg-[#0F1117] relative z-10 border-t border-white/5">
-              <div className="flex items-center gap-4">
+            {/* Quick Control Ribbon - Standardized button heights and normalized grouping */}
+            <div className="flex flex-wrap items-center justify-between p-3 md:p-3.5 gap-3 bg-[#0F1117] relative z-10 border-t border-white/5">
+              <div className="flex items-center gap-2.5 flex-wrap">
                 <button 
                   onClick={toggleTheaterMode} 
-                  className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-yoru-text-muted hover:text-white transition-colors"
+                  className="h-9 min-h-[36px] px-3 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium text-yoru-text-muted hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
                   title="Toggle Theater Mode"
+                  aria-label="Toggle Theater Mode"
                 >
-                  <Maximize className="w-4 h-4" /> <span className="hidden sm:inline">{isTheaterMode ? 'Collapse' : 'Expand'}</span>
+                  <Maximize className="w-4 h-4" /> 
+                  <span className="hidden sm:inline">{isTheaterMode ? 'Collapse' : 'Expand'}</span>
                 </button>
                 
-                <div className="h-4 w-px bg-white/10 hidden sm:block"></div>
-                
-                <label className="flex items-center gap-2 cursor-pointer group" onClick={(e) => { e.preventDefault(); setAutoplay(!autoplay); }}>
-                  <div className={clsx("w-7 h-4 rounded-full relative transition-colors duration-300", autoplay ? "bg-yoru-accent" : "bg-white/10")}>
-                    <div className={clsx("absolute top-[2px] w-3 h-3 rounded-full shadow-md transition-all duration-300", autoplay ? "left-[14px] bg-black" : "left-[2px] bg-white")} />
-                  </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted group-hover:text-white transition-colors">Auto Play</span>
-                </label>
+                {/* Unified playback controls group */}
+                <div className="flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-lg min-h-[36px]">
+                  <label className="flex items-center gap-2 cursor-pointer group" onClick={(e) => { e.preventDefault(); setAutoplay(!autoplay); }}>
+                    <div className={clsx("w-7 h-4 rounded-full relative transition-colors duration-300", autoplay ? "bg-yoru-accent" : "bg-white/20")}>
+                      <div className={clsx("absolute top-[2px] w-3 h-3 rounded-full shadow-md transition-all duration-300", autoplay ? "left-[14px] bg-black" : "left-[2px] bg-white")} />
+                    </div>
+                    <span className="text-xs font-medium text-yoru-text-muted group-hover:text-white transition-colors">Auto Play</span>
+                  </label>
 
-                <label className="flex items-center gap-2 cursor-pointer group" onClick={(e) => { e.preventDefault(); setAutoNext(!autoNext); }}>
-                  <div className={clsx("w-7 h-4 rounded-full relative transition-colors duration-300", autoNext ? "bg-yoru-accent" : "bg-white/10")}>
-                    <div className={clsx("absolute top-[2px] w-3 h-3 rounded-full shadow-md transition-all duration-300", autoNext ? "left-[14px] bg-black" : "left-[2px] bg-white")} />
-                  </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted group-hover:text-white transition-colors hidden sm:inline">Auto Next</span>
-                </label>
+                  <label className="flex items-center gap-2 cursor-pointer group" onClick={(e) => { e.preventDefault(); setAutoNext(!autoNext); }}>
+                    <div className={clsx("w-7 h-4 rounded-full relative transition-colors duration-300", autoNext ? "bg-yoru-accent" : "bg-white/20")}>
+                      <div className={clsx("absolute top-[2px] w-3 h-3 rounded-full shadow-md transition-all duration-300", autoNext ? "left-[14px] bg-black" : "left-[2px] bg-white")} />
+                    </div>
+                    <span className="text-xs font-medium text-yoru-text-muted group-hover:text-white transition-colors hidden sm:inline">Auto Next</span>
+                  </label>
+                </div>
 
                 <button 
                   onClick={() => setIsLightDimmed(!isLightDimmed)} 
-                  className={clsx("flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest transition-colors", isLightDimmed ? "text-yoru-accent font-bold" : "text-yoru-text-muted hover:text-white")}
+                  className={clsx(
+                    "h-9 min-h-[36px] px-3 rounded-lg text-xs font-medium transition-colors flex items-center gap-2 cursor-pointer",
+                    isLightDimmed ? "bg-yoru-accent/15 text-yoru-accent font-bold" : "bg-white/5 text-yoru-text-muted hover:bg-white/10 hover:text-white"
+                  )}
                   title="Dim Background Lights"
+                  aria-label="Dim Background Lights"
                 >
-                  <Lightbulb className={clsx("w-4 h-4", isLightDimmed && "fill-yoru-accent")} /> <span className="hidden sm:inline">Light</span>
+                  <Lightbulb className={clsx("w-4 h-4", isLightDimmed && "fill-yoru-accent")} /> 
+                  <span className="hidden sm:inline">Light</span>
                 </button>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <button 
                   disabled={!prevEpisode}
                   onClick={() => prevEpisode && navigate(`/watch/${anime.slug}/${prevEpisode.episodeNumber}?season=${currentSeasonId}`)}
-                  className="p-1.5 text-yoru-text-muted hover:text-white disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                  className="h-9 w-9 min-h-[36px] min-w-[36px] rounded-lg bg-white/5 hover:bg-white/10 text-yoru-text-muted hover:text-white disabled:opacity-25 disabled:cursor-not-allowed transition-colors flex items-center justify-center cursor-pointer"
                   title="Previous Episode"
+                  aria-label="Previous Episode"
                 >
-                  <SkipBack className="w-5 h-5 fill-current" />
+                  <SkipBack className="w-4 h-4 fill-current" />
                 </button>
                 <button 
                   disabled={!nextEpisode}
                   onClick={() => nextEpisode && navigate(`/watch/${anime.slug}/${nextEpisode.episodeNumber}?season=${currentSeasonId}`)}
-                  className="p-1.5 text-yoru-text-muted hover:text-white disabled:opacity-25 disabled:cursor-not-allowed transition-colors"
+                  className="h-9 w-9 min-h-[36px] min-w-[36px] rounded-lg bg-white/5 hover:bg-white/10 text-yoru-text-muted hover:text-white disabled:opacity-25 disabled:cursor-not-allowed transition-colors flex items-center justify-center cursor-pointer"
                   title="Next Episode"
+                  aria-label="Next Episode"
                 >
-                  <SkipForward className="w-5 h-5 fill-current" />
+                  <SkipForward className="w-4 h-4 fill-current" />
                 </button>
-                <div className="h-4 w-px bg-white/10 hidden sm:block mx-1"></div>
-                <button className="hidden sm:flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted hover:text-white transition-colors">
-                  <Flag className="w-3.5 h-3.5" /> Report
+                
+                <button 
+                  className="h-9 min-h-[36px] px-3 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium text-yoru-text-muted hover:text-white transition-colors hidden sm:flex items-center gap-1.5 cursor-pointer"
+                  title="Report playback issue"
+                  aria-label="Report playback issue"
+                >
+                  <Flag className="w-3.5 h-3.5" /> <span>Report</span>
                 </button>
-                <div className="hidden sm:block">
-                  <WatchlistButton animeId={anime.id} size="sm" variant="secondary" />
-                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* BOTTOM SECTION: Servers & Episodes */}
-        <div className="w-full max-w-[1440px] mx-auto px-0 md:px-6 lg:px-8 mt-2 md:mt-8">
+        <div className="w-full max-w-[1440px] mx-auto px-0 md:px-6 lg:px-8 mt-2 md:mt-6">
            <div className="w-full max-w-[1100px] mx-auto flex flex-col gap-3 md:gap-4">
 
           {/* 2. Server Selection Hub */}
           <div className="bg-[#0F1117] md:rounded-2xl p-4 md:p-6 border-b md:border border-white/5 flex flex-col gap-4">
              <div className="flex items-center justify-between">
-               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-yoru-text-muted">
-                 <Server className="w-3.5 h-3.5 text-yoru-accent" /> Servers
+               <div className="flex items-center gap-2 text-xs font-semibold text-yoru-text-muted">
+                 <Server className="w-4 h-4 text-yoru-accent" /> Servers
                </div>
                {currentEpisodeServers.length > 0 && (
-                 <span className="text-[10px] font-bold uppercase tracking-widest text-white/50 bg-white/5 px-2 py-0.5 rounded">
+                 <span className="text-xs font-medium text-white/60 bg-white/5 px-2.5 py-1 rounded-md">
                    {currentEpisodeServers.length} Available
                  </span>
                )}
@@ -452,7 +510,7 @@ export const Watch = () => {
 
                    return (
                      <div key={type} className="flex items-center gap-3">
-                       <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 w-14 shrink-0">
+                       <span className="text-xs font-semibold text-white/50 w-14 shrink-0 uppercase tracking-wide">
                          {type}:
                        </span>
                        <div className="flex flex-wrap gap-2">
@@ -463,9 +521,9 @@ export const Watch = () => {
                                key={`${type}-${originalIdx}-${serverEp.serverName}`}
                                onClick={() => handleServerChange(originalIdx)}
                                className={clsx(
-                                 "px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded transition-all duration-200 border",
+                                 "h-9 min-h-[36px] px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200 border flex items-center justify-center cursor-pointer",
                                  isActive
-                                   ? "bg-yoru-accent text-[#030407] border-yoru-accent font-black shadow-[0_0_12px_rgba(244,117,33,0.35)]"
+                                   ? "bg-yoru-accent text-[#030407] border-yoru-accent font-bold shadow-[0_0_12px_rgba(255,255,255,0.25)]"
                                    : "bg-white/5 text-yoru-text-muted border-transparent hover:bg-white/10 hover:text-white"
                                )}
                              >
@@ -487,33 +545,111 @@ export const Watch = () => {
 
           {/* 3. Dynamic Episode Selector */}
           <div className="bg-[#0F1117] md:rounded-2xl p-4 md:p-6 border-b md:border border-white/5 mt-2 md:mt-0">
-             <div className="flex items-center justify-between mb-6">
+             {/* Header with Title, Count, Season, and Jump-to-Episode */}
+             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                 <div className="flex items-center gap-3">
                   <h2 className="text-sm font-bold uppercase tracking-widest text-white">Episodes</h2>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted px-2 py-1 bg-white/5 rounded">
+                  <span className="text-xs font-semibold text-yoru-text-muted px-2.5 py-1 bg-white/5 rounded-md">
                     {uniqueEpisodes.length} {uniqueEpisodes.length === 1 ? 'Episode' : 'Episodes'}
                   </span>
                 </div>
 
-                {/* Season selector */}
-                {anime.seasons && anime.seasons.length > 1 && (
-                  <select 
-                    value={currentSeasonId}
-                    onChange={(e) => {
-                      const newSeason = e.target.value;
-                      const targetEpInNewSeason = episodes.find(ep => ep.seasonId === newSeason)?.episodeNumber || 1;
-                      navigate(`/watch/${anime.slug}/${targetEpInNewSeason}?season=${newSeason}`);
-                    }}
-                    className="bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-widest text-white rounded px-3 py-1.5 outline-none hover:border-yoru-accent/50 focus:border-yoru-accent transition-colors"
-                  >
-                    {anime.seasons.sort((a,b)=>a.order-b.order).map((s, idx) => (
-                      <option key={`${s.id}-${idx}`} value={s.id} className="bg-[#0F1117] text-white">
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  {/* Jump to Episode input */}
+                  {uniqueEpisodes.length > 20 && (
+                    <form onSubmit={handleJumpSubmit} className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={1}
+                        max={uniqueEpisodes.length}
+                        value={jumpInput}
+                        onChange={(e) => setJumpInput(e.target.value)}
+                        placeholder="Jump to ep..."
+                        className="w-24 sm:w-28 h-8 px-2.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/30 transition-colors"
+                        aria-label="Jump to episode number"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!jumpInput.trim()}
+                        className="h-8 px-2.5 bg-white/10 hover:bg-white/20 disabled:opacity-30 text-white rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
+                      >
+                        Go
+                      </button>
+                    </form>
+                  )}
+
+                  {/* Season selector */}
+                  {anime.seasons && anime.seasons.length > 1 && (
+                    <select 
+                      value={currentSeasonId}
+                      onChange={(e) => {
+                        const newSeason = e.target.value;
+                        const targetEpInNewSeason = episodes.find(ep => ep.seasonId === newSeason)?.episodeNumber || 1;
+                        navigate(`/watch/${anime.slug}/${targetEpInNewSeason}?season=${newSeason}`);
+                      }}
+                      className="bg-white/5 border border-white/10 text-xs font-medium text-white rounded-lg px-3 py-1.5 h-8 outline-none hover:border-white/20 focus:border-white/30 transition-colors cursor-pointer"
+                    >
+                      {anime.seasons.sort((a,b)=>a.order-b.order).map((s, idx) => (
+                        <option key={`${s.id}-${idx}`} value={s.id} className="bg-[#0F1117] text-white">
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
              </div>
+
+             {/* Episode Status Legend */}
+             <div className="flex flex-wrap items-center gap-4 text-xs text-yoru-text-muted mb-4 pb-3 border-b border-white/5">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded bg-yoru-accent text-[#030407] font-bold text-[9px] flex items-center justify-center shadow-sm">
+                    ●
+                  </span>
+                  <span className="text-white/90 font-medium">Currently Playing</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded bg-white/10 border border-white/10 text-white/50 flex items-center justify-center text-[9px] font-bold">
+                    ✓
+                  </span>
+                  <span>Watched</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded bg-amber-500/15 border border-amber-500/40 flex items-center justify-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  </span>
+                  <span>Filler</span>
+                </div>
+             </div>
+
+             {/* Range / Chunk selector tabs for large anime */}
+             {uniqueEpisodes.length > CHUNK_SIZE && (
+               <div className="flex flex-wrap items-center gap-1.5 mb-5">
+                 {Array.from({ length: totalChunks }).map((_, idx) => {
+                   const start = idx * CHUNK_SIZE + 1;
+                   const end = Math.min((idx + 1) * CHUNK_SIZE, uniqueEpisodes.length);
+                   const isSelected = idx === selectedChunkIdx;
+                   const containsActive = currentEpisode.episodeNumber >= start && currentEpisode.episodeNumber <= end;
+
+                   return (
+                     <button
+                       key={idx}
+                       onClick={() => setSelectedChunkIdx(idx)}
+                       className={clsx(
+                         "h-8 px-3 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer",
+                         isSelected
+                           ? "bg-white text-[#030407] font-bold shadow-sm"
+                           : "bg-white/5 text-yoru-text-muted hover:bg-white/10 hover:text-white"
+                       )}
+                     >
+                       <span>{start}–{end}</span>
+                       {containsActive && (
+                         <span className={clsx("w-1.5 h-1.5 rounded-full", isSelected ? "bg-[#030407]" : "bg-yoru-accent animate-pulse")} />
+                       )}
+                     </button>
+                   );
+                 })}
+               </div>
+             )}
 
              {/* Render Grid or List based on episode count */}
              {uniqueEpisodes.length === 0 ? (
@@ -521,8 +657,8 @@ export const Watch = () => {
                  No episodes found in this season.
                </div>
              ) : isCompact ? (
-               <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
-                 {uniqueEpisodes.map((ep) => {
+               <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                 {displayedEpisodes.map((ep) => {
                     const isActive = ep.episodeNumber === currentEpisode.episodeNumber;
                     const isWatched = watchedEpisodes.includes(ep.id) ||
                       watchedEpisodes.includes(`${ep.seasonId}_${ep.episodeNumber}`) ||
@@ -533,46 +669,41 @@ export const Watch = () => {
                         wid.endsWith(`_${ep.seasonId}_${ep.episodeNumber}`) ||
                         wid.endsWith(`_${ep.episodeNumber}`)
                       );
-                    
-                    let btnClass = "bg-white/5 text-yoru-text-muted hover:bg-white/10 hover:text-white";
-                    if (isActive) {
-                      if (ep.isFiller) {
-                        btnClass = "bg-amber-500 text-[#030407] shadow-[0_0_12px_rgba(245,158,11,0.35)] relative overflow-hidden font-black";
-                      } else {
-                        btnClass = "bg-yoru-accent text-[#030407] shadow-[0_0_10px_rgba(255,255,255,0.2)] relative overflow-hidden font-black";
-                      }
-                    } else if (isWatched) {
-                      if (ep.isFiller) {
-                        btnClass = "bg-amber-950/30 text-amber-500/60 border border-amber-900/50 hover:bg-amber-950/40 hover:text-amber-400";
-                      } else {
-                        btnClass = "bg-white/5 text-white/30 border border-white/5";
-                      }
-                    } else if (ep.isFiller) {
-                      btnClass = "bg-white/5 text-yoru-text-muted border border-amber-500/35 hover:bg-white/10 hover:text-white";
-                    }
 
                     return (
                       <button
                         key={`${ep.seasonId}_${ep.episodeNumber}`}
                         onClick={() => navigate(`/watch/${anime.slug}/${ep.episodeNumber}?season=${currentSeasonId}`)}
-                        className={clsx("aspect-square flex items-center justify-center rounded text-[11px] font-bold transition-all duration-200", btnClass)}
-                      >
-                        {isActive ? (
-                           <div className="flex items-end gap-[2px] h-3">
-                             <div className="w-[2px] bg-[#030407] animate-[pulse_1s_ease-in-out_infinite]" style={{height: '60%'}}></div>
-                             <div className="w-[2px] bg-[#030407] animate-[pulse_1s_ease-in-out_infinite_0.2s]" style={{height: '100%'}}></div>
-                             <div className="w-[2px] bg-[#030407] animate-[pulse_1s_ease-in-out_infinite_0.4s]" style={{height: '40%'}}></div>
-                           </div>
-                        ) : (
-                          ep.episodeNumber
+                        title={`Episode ${ep.episodeNumber}${ep.isFiller ? ' (Filler)' : ''}${isActive ? ' (Currently playing)' : isWatched ? ' (Watched)' : ''}`}
+                        aria-label={`Episode ${ep.episodeNumber}${ep.isFiller ? ' (Filler)' : ''}${isActive ? ' (Currently playing)' : isWatched ? ' (Watched)' : ''}`}
+                        aria-current={isActive ? 'true' : undefined}
+                        className={clsx(
+                          "aspect-square min-h-[38px] flex flex-col items-center justify-center rounded-lg text-xs font-bold transition-all duration-200 relative cursor-pointer",
+                          isActive
+                            ? "bg-yoru-accent text-[#030407] font-black shadow-[0_0_14px_rgba(255,255,255,0.4)] ring-2 ring-white/60 scale-105 z-10"
+                            : isWatched
+                              ? "bg-white/5 text-white/40 border border-white/5 hover:bg-white/10 hover:text-white"
+                              : ep.isFiller
+                                ? "bg-amber-500/10 text-amber-200/90 border border-amber-500/35 hover:bg-amber-500/20 hover:text-white"
+                                : "bg-white/5 text-yoru-text-muted hover:bg-white/10 hover:text-white"
                         )}
+                      >
+                        {/* Always display the episode number clearly */}
+                        <span className="leading-none">{ep.episodeNumber}</span>
+                        {isActive ? (
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#030407] mt-1" />
+                        ) : ep.isFiller ? (
+                          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400" />
+                        ) : isWatched ? (
+                          <span className="text-[8px] text-white/30 leading-none mt-0.5">✓</span>
+                        ) : null}
                       </button>
-                    )
+                    );
                  })}
                </div>
              ) : (
                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {uniqueEpisodes.map((ep) => {
+                  {displayedEpisodes.map((ep) => {
                     const isActive = ep.episodeNumber === currentEpisode.episodeNumber;
                     const isWatched = watchedEpisodes.includes(ep.id) ||
                       watchedEpisodes.includes(`${ep.seasonId}_${ep.episodeNumber}`) ||
@@ -583,59 +714,51 @@ export const Watch = () => {
                         wid.endsWith(`_${ep.seasonId}_${ep.episodeNumber}`) ||
                         wid.endsWith(`_${ep.episodeNumber}`)
                       );
-                    
-                    let btnClass = "bg-white/5 text-yoru-text-muted hover:bg-white/10 hover:text-white";
-                    let badgeClass = "bg-black/20 text-yoru-text-muted";
-
-                    if (isActive) {
-                      if (ep.isFiller) {
-                        btnClass = "bg-amber-500/10 text-yoru-accent border-amber-500/80 shadow-[0_0_12px_rgba(245,158,11,0.15)] relative overflow-hidden font-bold";
-                        badgeClass = "bg-amber-500 text-[#030407]";
-                      } else {
-                        btnClass = "bg-yoru-accent/10 text-yoru-accent border-yoru-accent shadow-[0_0_10px_rgba(255,255,255,0.1)] relative overflow-hidden font-bold";
-                        badgeClass = "bg-yoru-accent text-[#030407]";
-                      }
-                    } else if (isWatched) {
-                      if (ep.isFiller) {
-                        btnClass = "bg-amber-950/20 text-amber-500/60 border border-amber-900/40 hover:bg-amber-950/30 hover:text-amber-400";
-                        badgeClass = "bg-amber-950/40 text-amber-600/70 border border-amber-900/30";
-                      } else {
-                        btnClass = "bg-white/5 text-white/30 border border-white/5";
-                        badgeClass = "bg-white/5 text-white/30";
-                      }
-                    } else if (ep.isFiller) {
-                      btnClass = "bg-white/5 text-yoru-text-muted border border-amber-500/25 hover:bg-white/10 hover:text-white";
-                      badgeClass = "bg-amber-500/15 text-amber-400/90 border border-amber-500/30";
-                    }
 
                     return (
                       <button
                         key={`${ep.seasonId}_${ep.episodeNumber}`}
                         onClick={() => navigate(`/watch/${anime.slug}/${ep.episodeNumber}?season=${currentSeasonId}`)}
-                        className={clsx("flex items-center justify-between p-3 rounded-lg text-left transition-all duration-200 border border-transparent", btnClass)}
+                        title={`Episode ${ep.episodeNumber}${ep.isFiller ? ' (Filler)' : ''}${isActive ? ' (Currently playing)' : isWatched ? ' (Watched)' : ''}`}
+                        aria-label={`Episode ${ep.episodeNumber}${ep.isFiller ? ' (Filler)' : ''}${isActive ? ' (Currently playing)' : isWatched ? ' (Watched)' : ''}`}
+                        aria-current={isActive ? 'true' : undefined}
+                        className={clsx(
+                          "flex items-center justify-between p-3 rounded-lg text-left transition-all duration-200 border cursor-pointer",
+                          isActive
+                            ? "bg-yoru-accent/15 text-white border-yoru-accent shadow-[0_0_12px_rgba(255,255,255,0.15)] font-bold"
+                            : isWatched
+                              ? "bg-white/5 text-white/40 border-white/5 hover:bg-white/10 hover:text-white"
+                              : ep.isFiller
+                                ? "bg-amber-500/10 text-amber-200/90 border-amber-500/30 hover:bg-amber-500/20"
+                                : "bg-white/5 text-yoru-text-muted border-transparent hover:bg-white/10 hover:text-white"
+                        )}
                       >
                         <div className="flex items-center gap-3 overflow-hidden">
-                           <div className={clsx("w-8 h-8 rounded shrink-0 flex items-center justify-center font-bold text-[10px]", badgeClass)}>
-                             {isActive ? (
-                                <div className="flex items-end gap-[2px] h-3">
-                                  <div className="w-[2px] bg-[#030407] animate-[pulse_1s_ease-in-out_infinite]" style={{height: '60%'}}></div>
-                                  <div className="w-[2px] bg-[#030407] animate-[pulse_1s_ease-in-out_infinite_0.2s]" style={{height: '100%'}}></div>
-                                  <div className="w-[2px] bg-[#030407] animate-[pulse_1s_ease-in-out_infinite_0.4s]" style={{height: '40%'}}></div>
-                                </div>
-                             ) : (
-                               ep.episodeNumber
-                             )}
+                           <div className={clsx(
+                             "w-8 h-8 rounded-lg shrink-0 flex items-center justify-center font-bold text-xs",
+                             isActive
+                               ? "bg-yoru-accent text-[#030407] font-black"
+                               : ep.isFiller
+                                 ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                                 : isWatched
+                                   ? "bg-white/5 text-white/30"
+                                   : "bg-white/10 text-white"
+                           )}>
+                             {/* Always show episode number */}
+                             {ep.episodeNumber}
                            </div>
                            <span className="text-xs font-semibold truncate leading-tight flex-1">
                              {ep.title || `Episode ${ep.episodeNumber}`}
                            </span>
                         </div>
-                        {isWatched && !isActive && (
-                          <Check className={clsx("w-4 h-4 shrink-0 ml-2", ep.isFiller ? "text-amber-500/50" : "text-white/20")} />
-                        )}
+                        {isActive ? (
+                          <span className="w-2 h-2 rounded-full bg-yoru-accent animate-pulse shrink-0 ml-2" />
+                        ) : isWatched ? (
+                          <Check className="w-4 h-4 shrink-0 ml-2 text-white/30" />
+                        ) : null}
                       </button>
-                    )
-                 })}
+                    );
+                  })}
                </div>
              )}
           </div>
