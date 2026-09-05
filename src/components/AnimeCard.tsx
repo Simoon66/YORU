@@ -63,9 +63,9 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
           
           {/* Persistent Quality & Format Badges (Visible to all users) */}
           <div className="absolute top-2 left-2 flex items-center gap-1 z-10" aria-hidden="true">
-             <span className="px-1.5 py-0.5 rounded bg-black/70 backdrop-blur-md text-yoru-accent text-[10px] font-bold tracking-wider border border-white/10">HD</span>
+             <span className="px-1.5 py-0.5 rounded bg-[#030407] text-yoru-accent text-[10px] font-bold tracking-wider border border-white/20">HD</span>
              {anime.format && (
-               <span className="text-[10px] font-medium tracking-wider bg-black/60 backdrop-blur-md px-1.5 py-0.5 rounded text-white/90 border border-white/10">{anime.format}</span>
+               <span className="text-[10px] font-medium tracking-wider bg-[#030407] px-1.5 py-0.5 rounded text-white border border-white/20">{anime.format}</span>
              )}
           </div>
           
@@ -78,8 +78,8 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
           </div>
         </div>
         
-        <div className="mt-3.5 space-y-1">
-          <h3 className="text-[13px] md:text-sm font-semibold leading-tight line-clamp-2 text-white group-hover:text-yoru-accent transition-colors duration-300">
+        <div className="mt-3.5 space-y-1 flex flex-col justify-between">
+          <h3 className="text-[13px] md:text-sm font-semibold leading-tight line-clamp-2 text-white group-hover:text-yoru-accent transition-colors duration-300 min-h-[2.5rem]">
             {displayTitle}
           </h3>
           <div className="flex gap-2 items-center text-xs font-medium text-yoru-text-muted">

@@ -86,16 +86,19 @@ export const Search = () => {
   return (
     <div className="min-h-screen bg-yoru-bg pt-28 pb-24 px-4 md:px-6 lg:px-8 max-w-[1440px] mx-auto">
       
+      {/* Page Title (Addresses Issue 1) */}
+      <h1 className="text-3xl md:text-4xl font-black text-white uppercase tracking-tight mb-8">Browse</h1>
+
       {/* Search Header */}
       <div className="flex flex-col gap-6 mb-12 relative z-20">
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-yoru-surface-elevated p-2 rounded-2xl border border-white/5 shadow-xl">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-yoru-surface-elevated pr-2 py-2 pl-4 rounded-2xl border border-white/5 shadow-xl">
           <div className="relative w-full max-w-2xl flex-1 flex items-center">
-            <div className="pl-6 flex items-center pointer-events-none">
-              <SearchIcon className="h-5 w-5 text-yoru-text-muted" />
+            <div className="flex items-center pointer-events-none text-yoru-accent">
+              <SearchIcon className="h-5 w-5" />
             </div>
             <input
               type="text"
-              className="block w-full pl-4 pr-12 py-4 bg-transparent border-none text-white placeholder-white/30 focus:outline-none focus:ring-0 text-lg font-bold tracking-wide"
+              className="block w-full pl-3 pr-12 py-3 bg-transparent border-none text-white placeholder-white/30 focus:outline-none focus:ring-0 text-lg font-bold tracking-wide"
               placeholder="Search anime, genres, or years..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -110,12 +113,12 @@ export const Search = () => {
             )}
           </div>
           
-          <div className="flex items-center gap-2 w-full md:w-auto px-4 md:px-0 md:pr-4 pb-4 md:pb-0 border-t md:border-t-0 md:border-l border-white/5 pt-4 md:pt-0">
+          <div className="flex items-center gap-2 w-full md:w-auto px-4 md:px-0 md:pr-4 pb-2 md:pb-0 border-t md:border-t-0 md:border-l border-white/5 pt-4 md:pt-0">
             <SlidersHorizontal className="w-5 h-5 text-yoru-text-muted ml-2" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="bg-transparent border-none text-white text-xs font-bold uppercase tracking-widest py-3 px-2 focus:outline-none focus:ring-0 flex-1 md:flex-none appearance-none cursor-pointer hover:text-yoru-accent transition-colors"
+              className="bg-transparent border-none text-white text-xs font-bold py-3 px-2 focus:outline-none focus:ring-0 flex-1 md:flex-none appearance-none cursor-pointer hover:text-yoru-accent transition-colors"
             >
               <option value="relevance" className="bg-[#0a0b10]">Sort by Relevance</option>
               <option value="score" className="bg-[#0a0b10]">Highest Rated</option>

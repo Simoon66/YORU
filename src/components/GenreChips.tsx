@@ -18,8 +18,8 @@ export const GenreChips: React.FC<GenreChipsProps> = ({
   if (!availableGenres.length) return null;
 
   return (
-    <div className="flex items-center gap-2 flex-wrap bg-yoru-surface-elevated/50 p-4 rounded-xl border border-white/5">
-      <div className="flex items-center gap-2 mr-2 text-yoru-text-muted">
+    <div className="flex items-center gap-2 flex-wrap bg-yoru-surface-elevated/50 p-6 rounded-xl border border-white/5">
+      <div className="flex items-center gap-3 mr-6 text-yoru-text-muted">
         <Tag className="w-4 h-4" />
         <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Genres</span>
       </div>
