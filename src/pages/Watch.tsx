@@ -199,11 +199,26 @@ export const Watch = () => {
   const initialEmbedLink = activeServer?.embedLink || (currentEpisode as any)?.embedLink || '';
   const rawEmbedLink = applyDynamicDomainOverride(initialEmbedLink, serverConfig);
 
-  const finalIframeSrc = rawEmbedLink ? (
-    autoplay 
-      ? (rawEmbedLink.includes('?') ? `${rawEmbedLink}&autoplay=1&autoPlay=1` : `${rawEmbedLink}?autoplay=1&autoPlay=1`)
-      : rawEmbedLink
-  ) : '';
+  let finalIframeSrc = '';
+  if (rawEmbedLink) {
+    try {
+      const url = new URL(rawEmbedLink.startsWith('//') ? `https:${rawEmbedLink}` : rawEmbedLink);
+      if (autoplay) {
+        url.searchParams.set('autoplay', '1');
+        url.searchParams.set('autoPlay', '1');
+        url.searchParams.set('autostart', 'true');
+      } else {
+        url.searchParams.set('autoplay', '0');
+        url.searchParams.set('autoPlay', '0');
+        url.searchParams.set('autostart', 'false');
+      }
+      finalIframeSrc = url.toString();
+    } catch (e) {
+      finalIframeSrc = autoplay 
+        ? (rawEmbedLink.includes('?') ? `${rawEmbedLink}&autoplay=1&autoPlay=1` : `${rawEmbedLink}?autoplay=1&autoPlay=1`)
+        : (rawEmbedLink.includes('?') ? `${rawEmbedLink}&autoplay=0&autoPlay=0` : `${rawEmbedLink}?autoplay=0&autoPlay=0`);
+    }
+  }
 
   useEffect(() => {
     setIframeLoaded(false);
@@ -304,6 +319,41 @@ export const Watch = () => {
   const currentIndex = uniqueEpisodes.findIndex(e => e.episodeNumber === currentEpisode.episodeNumber);
   const nextEpisode = currentIndex >= 0 && currentIndex < uniqueEpisodes.length - 1 ? uniqueEpisodes[currentIndex + 1] : null;
   const prevEpisode = currentIndex > 0 ? uniqueEpisodes[currentIndex - 1] : null;
+
+  // Listen for iframe postMessage events (e.g., video ended) for Auto Next
+  useEffect(() => {
+    if (!autoNext || !nextEpisode || !anime) return;
+
+    const handleMessage = (e: MessageEvent) => {
+      let isEnded = false;
+      try {
+        if (typeof e.data === 'string') {
+          const data = e.data.toLowerCase();
+          if (data === 'end' || data === 'ended' || data === 'video_end' || data.includes('episode_ended')) {
+            isEnded = true;
+          } else if (data.includes('{')) {
+            const parsed = JSON.parse(data);
+            if (parsed.event === 'complete' || parsed.event === 'ended' || parsed.name === 'ended' || parsed.type === 'ended') {
+              isEnded = true;
+            }
+          }
+        } else if (typeof e.data === 'object' && e.data !== null) {
+          if (e.data.event === 'complete' || e.data.event === 'ended' || e.data.name === 'ended' || e.data.type === 'ended' || e.data.action === 'ended') {
+            isEnded = true;
+          }
+        }
+      } catch (err) {
+        // ignore parse error
+      }
+
+      if (isEnded) {
+        navigate(`/watch/${anime.slug}/${nextEpisode.episodeNumber}?season=${currentSeasonId}`);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [autoNext, nextEpisode, anime, currentSeasonId, navigate]);
 
   const toggleTheaterMode = () => setIsTheaterMode(!isTheaterMode);
   const isCompact = uniqueEpisodes.length > 30;
