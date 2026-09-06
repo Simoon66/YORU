@@ -23,7 +23,7 @@ export const EpisodeManager = () => {
   const [bulkTitles, setBulkTitles] = useState('');
   const [bulkLinks, setBulkLinks] = useState('');
   const [showAutoAddModal, setShowAutoAddModal] = useState(false);
-  const [autoAddConfig, setAutoAddConfig] = useState({ startEp: 1, endEp: 12, anilistId: '', malId: '' });
+  const [autoAddConfig, setAutoAddConfig] = useState({ startEp: 1, endEpSub: 12, endEpDub: 12, endEpMulti: 12, anilistId: '', malId: '' });
 
   useEffect(() => {
     if (!id) return;
@@ -215,10 +215,11 @@ export const EpisodeManager = () => {
   };
 
   const handleAutoGenerate = () => {
-    const { startEp, endEp, anilistId, malId } = autoAddConfig;
+    const { startEp, endEpSub, endEpDub, endEpMulti, anilistId, malId } = autoAddConfig;
+    const maxEp = Math.max(endEpSub, endEpDub, endEpMulti);
     let newEps = [...episodes];
     
-    for (let i = startEp; i <= endEp; i++) {
+    for (let i = startEp; i <= maxEp; i++) {
       let ep = newEps.find(e => e.episodeNumber === i && e.seasonId === activeSeason);
       if (!ep) {
         ep = {
@@ -238,21 +239,21 @@ export const EpisodeManager = () => {
       
       // We only add new servers if they don't already exist in this episode to avoid dupes
       if (anilistId) {
-        if (!ep.servers.some(s => s.serverName === 'HD-1' && s.serverType === 'sub')) {
+        if (i <= endEpSub && !ep.servers.some(s => s.serverName === 'HD-1' && s.serverType === 'sub')) {
           ep.servers.push({ serverName: 'HD-1', embedLink: `https://megaplay.buzz/stream/ani/${anilistId}/${i}/sub`, serverType: 'sub' });
         }
-        if (!ep.servers.some(s => s.serverName === 'HD-1' && s.serverType === 'dub')) {
+        if (i <= endEpDub && !ep.servers.some(s => s.serverName === 'HD-1' && s.serverType === 'dub')) {
           ep.servers.push({ serverName: 'HD-1', embedLink: `https://megaplay.buzz/stream/ani/${anilistId}/${i}/dub`, serverType: 'dub' });
         }
-        if (!ep.servers.some(s => s.serverName === 'Multi' && s.serverType === 'multi')) {
+        if (i <= endEpMulti && !ep.servers.some(s => s.serverName === 'Multi' && s.serverType === 'multi')) {
           ep.servers.push({ serverName: 'Multi', embedLink: `https://multiserver.pages.dev/${anilistId}/${i}`, serverType: 'multi' });
         }
       }
       if (malId) {
-        if (!ep.servers.some(s => s.serverName === 'HD-2' && s.serverType === 'sub')) {
+        if (i <= endEpSub && !ep.servers.some(s => s.serverName === 'HD-2' && s.serverType === 'sub')) {
           ep.servers.push({ serverName: 'HD-2', embedLink: `https://megaplay.buzz/stream/mal/${malId}/${i}/sub`, serverType: 'sub' });
         }
-        if (!ep.servers.some(s => s.serverName === 'HD-2' && s.serverType === 'dub')) {
+        if (i <= endEpDub && !ep.servers.some(s => s.serverName === 'HD-2' && s.serverType === 'dub')) {
           ep.servers.push({ serverName: 'HD-2', embedLink: `https://megaplay.buzz/stream/mal/${malId}/${i}/dub`, serverType: 'dub' });
         }
       }
@@ -623,11 +624,29 @@ export const EpisodeManager = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted">End Ep</label>
+                <label className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted">End Ep (Sub)</label>
                 <input 
                   type="number" 
-                  value={autoAddConfig.endEp} 
-                  onChange={e => setAutoAddConfig({...autoAddConfig, endEp: parseInt(e.target.value) || 12})}
+                  value={autoAddConfig.endEpSub} 
+                  onChange={e => setAutoAddConfig({...autoAddConfig, endEpSub: parseInt(e.target.value) || 12})}
+                  className="w-full bg-yoru-bg border border-yoru-border px-4 py-2 text-sm text-white focus:outline-none focus:border-yoru-accent"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted">End Ep (Dub)</label>
+                <input 
+                  type="number" 
+                  value={autoAddConfig.endEpDub} 
+                  onChange={e => setAutoAddConfig({...autoAddConfig, endEpDub: parseInt(e.target.value) || 12})}
+                  className="w-full bg-yoru-bg border border-yoru-border px-4 py-2 text-sm text-white focus:outline-none focus:border-yoru-accent"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted">End Ep (Multi)</label>
+                <input 
+                  type="number" 
+                  value={autoAddConfig.endEpMulti} 
+                  onChange={e => setAutoAddConfig({...autoAddConfig, endEpMulti: parseInt(e.target.value) || 12})}
                   className="w-full bg-yoru-bg border border-yoru-border px-4 py-2 text-sm text-white focus:outline-none focus:border-yoru-accent"
                 />
               </div>
