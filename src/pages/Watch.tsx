@@ -26,12 +26,34 @@ export const Watch = () => {
   const [loading, setLoading] = useState(true);
   const [serverConfig, setServerConfig] = useState<ServerConfig | null>(null);
   
-  const [autoplay, setAutoplay] = useState(true);
-  const [autoNext, setAutoNext] = useState(true);
+  const [autoplay, setAutoplay] = useState(() => {
+    try {
+      const stored = localStorage.getItem('yoru_autoplay');
+      return stored !== null ? stored === 'true' : true;
+    } catch { return true; }
+  });
+  const [autoNext, setAutoNext] = useState(() => {
+    try {
+      const stored = localStorage.getItem('yoru_autonext');
+      return stored !== null ? stored === 'true' : true;
+    } catch { return true; }
+  });
   const [isLightDimmed, setIsLightDimmed] = useState(false);
   const [watchedEpisodes, setWatchedEpisodes] = useState<string[]>([]);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
+
+  const toggleAutoplay = () => {
+    const next = !autoplay;
+    setAutoplay(next);
+    try { localStorage.setItem('yoru_autoplay', String(next)); } catch {}
+  };
+
+  const toggleAutoNext = () => {
+    const next = !autoNext;
+    setAutoNext(next);
+    try { localStorage.setItem('yoru_autonext', String(next)); } catch {}
+  };
   
   const CHUNK_SIZE = 50;
   const [selectedChunkIdx, setSelectedChunkIdx] = useState(0);
@@ -203,20 +225,19 @@ export const Watch = () => {
   if (rawEmbedLink) {
     try {
       const url = new URL(rawEmbedLink.startsWith('//') ? `https:${rawEmbedLink}` : rawEmbedLink);
-      if (autoplay) {
-        url.searchParams.set('autoplay', '1');
-        url.searchParams.set('autoPlay', '1');
-        url.searchParams.set('autostart', 'true');
-      } else {
-        url.searchParams.set('autoplay', '0');
-        url.searchParams.set('autoPlay', '0');
-        url.searchParams.set('autostart', 'false');
+      // Only inject autoplay parameters for known providers (like YouTube) that support it.
+      // Other third-party anime embeds (like Megaplay, AnimeSalt) either don't support it 
+      // or don't use standard parameters, so we gracefully leave them unmodified to prevent breaking.
+      if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
+        if (autoplay) {
+          url.searchParams.set('autoplay', '1');
+        } else {
+          url.searchParams.set('autoplay', '0');
+        }
       }
       finalIframeSrc = url.toString();
     } catch (e) {
-      finalIframeSrc = autoplay 
-        ? (rawEmbedLink.includes('?') ? `${rawEmbedLink}&autoplay=1&autoPlay=1` : `${rawEmbedLink}?autoplay=1&autoPlay=1`)
-        : (rawEmbedLink.includes('?') ? `${rawEmbedLink}&autoplay=0&autoPlay=0` : `${rawEmbedLink}?autoplay=0&autoPlay=0`);
+      finalIframeSrc = rawEmbedLink;
     }
   }
 
@@ -286,6 +307,17 @@ export const Watch = () => {
     }
   }, [currentEpisode?.id, currentEpisode?.seasonId, currentEpisode?.episodeNumber, user?.uid, anime?.id]);
 
+  const currentIndex = currentEpisode ? uniqueEpisodes.findIndex(e => e.episodeNumber === currentEpisode.episodeNumber) : -1;
+  const nextEpisode = currentIndex >= 0 && currentIndex < uniqueEpisodes.length - 1 ? uniqueEpisodes[currentIndex + 1] : null;
+  const prevEpisode = currentIndex > 0 ? uniqueEpisodes[currentIndex - 1] : null;
+
+  // Note: Third-party cross-origin embeds (Megaplay, AnimeSalt, etc.) in this app
+  // do not expose a reliable public API or standard postMessage for "ended" events.
+  // As per strict instructions, we gracefully leave Auto Next functionally unsupported 
+  // for these providers rather than falsely triggering it with generic hacks or timers.
+  // The toggle state remains in the UI and persists, but will only be active if a provider 
+  // with a documented API is implemented in the future.
+
   if (loading) return (
     <div className="min-h-screen bg-[#0A0B0E] flex items-center justify-center">
       <Loader2 className="w-8 h-8 text-yoru-accent animate-spin" />
@@ -315,45 +347,6 @@ export const Watch = () => {
       if (newServer.serverName) localStorage.setItem('preferredServerName', newServer.serverName);
     }
   };
-
-  const currentIndex = uniqueEpisodes.findIndex(e => e.episodeNumber === currentEpisode.episodeNumber);
-  const nextEpisode = currentIndex >= 0 && currentIndex < uniqueEpisodes.length - 1 ? uniqueEpisodes[currentIndex + 1] : null;
-  const prevEpisode = currentIndex > 0 ? uniqueEpisodes[currentIndex - 1] : null;
-
-  // Listen for iframe postMessage events (e.g., video ended) for Auto Next
-  useEffect(() => {
-    if (!autoNext || !nextEpisode || !anime) return;
-
-    const handleMessage = (e: MessageEvent) => {
-      let isEnded = false;
-      try {
-        if (typeof e.data === 'string') {
-          const data = e.data.toLowerCase();
-          if (data === 'end' || data === 'ended' || data === 'video_end' || data.includes('episode_ended')) {
-            isEnded = true;
-          } else if (data.includes('{')) {
-            const parsed = JSON.parse(data);
-            if (parsed.event === 'complete' || parsed.event === 'ended' || parsed.name === 'ended' || parsed.type === 'ended') {
-              isEnded = true;
-            }
-          }
-        } else if (typeof e.data === 'object' && e.data !== null) {
-          if (e.data.event === 'complete' || e.data.event === 'ended' || e.data.name === 'ended' || e.data.type === 'ended' || e.data.action === 'ended') {
-            isEnded = true;
-          }
-        }
-      } catch (err) {
-        // ignore parse error
-      }
-
-      if (isEnded) {
-        navigate(`/watch/${anime.slug}/${nextEpisode.episodeNumber}?season=${currentSeasonId}`);
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [autoNext, nextEpisode, anime, currentSeasonId, navigate]);
 
   const toggleTheaterMode = () => setIsTheaterMode(!isTheaterMode);
   const isCompact = uniqueEpisodes.length > 30;
@@ -462,14 +455,14 @@ export const Watch = () => {
                 
                 {/* Unified playback controls group */}
                 <div className="flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-lg min-h-[36px]">
-                  <label className="flex items-center gap-2 cursor-pointer group" onClick={(e) => { e.preventDefault(); setAutoplay(!autoplay); }}>
+                  <label className="flex items-center gap-2 cursor-pointer group" onClick={(e) => { e.preventDefault(); toggleAutoplay(); }}>
                     <div className={clsx("w-7 h-4 rounded-full relative transition-colors duration-300", autoplay ? "bg-yoru-accent" : "bg-white/20")}>
                       <div className={clsx("absolute top-[2px] w-3 h-3 rounded-full shadow-md transition-all duration-300", autoplay ? "left-[14px] bg-black" : "left-[2px] bg-white")} />
                     </div>
                     <span className="text-xs font-medium text-yoru-text-muted group-hover:text-white transition-colors">Auto Play</span>
                   </label>
 
-                  <label className="flex items-center gap-2 cursor-pointer group" onClick={(e) => { e.preventDefault(); setAutoNext(!autoNext); }}>
+                  <label className="flex items-center gap-2 cursor-pointer group" onClick={(e) => { e.preventDefault(); toggleAutoNext(); }}>
                     <div className={clsx("w-7 h-4 rounded-full relative transition-colors duration-300", autoNext ? "bg-yoru-accent" : "bg-white/20")}>
                       <div className={clsx("absolute top-[2px] w-3 h-3 rounded-full shadow-md transition-all duration-300", autoNext ? "left-[14px] bg-black" : "left-[2px] bg-white")} />
                     </div>
