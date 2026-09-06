@@ -47,14 +47,7 @@ export const Watch = () => {
   }, [currentEpisode?.episodeNumber]);
 
   useEffect(() => {
-    if (isLightDimmed) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
+    // Removed document.body.style.overflow = 'hidden' to allow scrolling in light mode
   }, [isLightDimmed]);
 
   useEffect(() => {
@@ -347,35 +340,17 @@ export const Watch = () => {
         
         {/* TOP SECTION: Player & Toolbar */}
         <div className={clsx("w-full mx-auto transition-all duration-500 flex flex-col",
-          isTheaterMode ? "max-w-full" : "max-w-[1440px] px-0 md:px-6 lg:px-8 pt-0 md:pt-6"
+          isTheaterMode ? "max-w-full" : "max-w-[1440px] px-0 md:px-6 lg:px-8 pt-0 md:pt-4"
         )}>
-          {/* Accessible Primary Page Heading H1 */}
-          <div className="w-full max-w-[1100px] mx-auto px-4 md:px-0 mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-yoru-text-muted">
-                <span>{anime.title}</span>
-                <span>•</span>
-                <span className="uppercase">{currentSeasonId}</span>
-              </div>
-              <h1 className="text-base sm:text-lg md:text-xl font-bold text-white tracking-tight mt-0.5">
-                {currentEpisode.title && currentEpisode.title !== `Episode ${currentEpisode.episodeNumber}`
-                  ? `Episode ${currentEpisode.episodeNumber}: ${currentEpisode.title}`
-                  : `${anime.title} — Episode ${currentEpisode.episodeNumber}`}
-              </h1>
-            </div>
-            <div className="hidden sm:flex items-center gap-2">
-              <WatchlistButton animeId={anime.id} size="sm" variant="secondary" />
-            </div>
-          </div>
-
           <div className={clsx("w-full mx-auto flex flex-col bg-[#0F1117] shadow-2xl transition-all duration-500",
             !isLightDimmed && "overflow-hidden",
-            isTheaterMode ? "max-w-full rounded-none border-0" : "max-w-[1100px] rounded-none md:rounded-2xl border-0 md:border border-white/5"
+            isTheaterMode ? "max-w-full rounded-none border-0" : "max-w-[1100px] rounded-none md:rounded-2xl border-0 md:border border-white/5",
+            isLightDimmed && "relative z-[9999]"
           )}>
             {/* Player */}
             <div className={clsx("relative w-full bg-black transition-all duration-500", 
-              isTheaterMode ? "h-[40vh] sm:h-[60vh] md:h-[75vh] lg:h-[85vh] max-h-[calc(100vh-60px)] md:max-h-[calc(100vh-80px)]" : "aspect-video max-h-[calc(100vh-60px)] md:max-h-[calc(100vh-80px)]",
-              isLightDimmed ? "z-[9999]" : "z-10"
+              isTheaterMode ? "h-[40vh] sm:h-[60vh] md:h-[75vh] lg:h-[85vh] max-h-[calc(100vh-60px)] md:max-h-[calc(100vh-80px)]" : "aspect-video max-h-[calc(100vh-140px)] md:max-h-[calc(100vh-160px)]",
+              "z-10"
             )}>
               {finalIframeSrc ? (
                 <>
@@ -478,6 +453,25 @@ export const Watch = () => {
                   <Flag className="w-3.5 h-3.5" /> <span>Report</span>
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Accessible Primary Page Heading H1 */}
+          <div className="w-full max-w-[1100px] mx-auto px-4 md:px-0 mt-4 md:mt-5 mb-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-semibold text-yoru-text-muted">
+                <span>{anime.title}</span>
+                <span>•</span>
+                <span className="uppercase">{currentSeasonId}</span>
+              </div>
+              <h1 className="text-base sm:text-lg md:text-xl font-bold text-white tracking-tight mt-0.5">
+                {currentEpisode.title && currentEpisode.title !== `Episode ${currentEpisode.episodeNumber}`
+                  ? `Episode ${currentEpisode.episodeNumber}: ${currentEpisode.title}`
+                  : `${anime.title} — Episode ${currentEpisode.episodeNumber}`}
+              </h1>
+            </div>
+            <div className="hidden sm:flex items-center gap-2">
+              <WatchlistButton animeId={anime.id} size="sm" variant="secondary" />
             </div>
           </div>
         </div>
