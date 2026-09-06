@@ -159,7 +159,8 @@ export const AutoImport = () => {
           aniSub: false,
           aniDub: false,
           malSub: false,
-          malDub: false
+          malDub: false,
+          multi: false
         };
 
         if (totalEpisodes > 0) {
@@ -168,6 +169,9 @@ export const AutoImport = () => {
           
           servers.aniDub = await verifyLink(`https://megaplay.buzz/stream/ani/${aniId}/1/dub`);
           if (servers.aniDub) addLog(`✓ HD-1 (Dub) server verified`, 'success');
+
+          servers.multi = await verifyLink(`https://multiserver.pages.dev/${aniId}/1`);
+          if (servers.multi) addLog(`✓ Multi server verified`, 'success');
 
           if (meta.idMal) {
             servers.malSub = await verifyLink(`https://megaplay.buzz/stream/mal/${meta.idMal}/1/sub`);
@@ -178,7 +182,7 @@ export const AutoImport = () => {
           }
         }
 
-        if (!servers.aniSub && !servers.aniDub && !servers.malSub && !servers.malDub && totalEpisodes > 0) {
+        if (!servers.aniSub && !servers.aniDub && !servers.malSub && !servers.malDub && !servers.multi && totalEpisodes > 0) {
           addLog(`No valid servers found for Episode 1. Anime will be added but without episodes.`, 'warning');
         }
 
@@ -277,6 +281,7 @@ export const AutoImport = () => {
             
             if (servers.aniSub) availableServers.push({ serverName: 'HD-1', serverType: 'sub', embedLink: `https://megaplay.buzz/stream/ani/${aniId}/${epNum}/sub` });
             if (servers.aniDub) availableServers.push({ serverName: 'HD-1', serverType: 'dub', embedLink: `https://megaplay.buzz/stream/ani/${aniId}/${epNum}/dub` });
+            if (servers.multi) availableServers.push({ serverName: 'Multi', serverType: 'multi', embedLink: `https://multiserver.pages.dev/${aniId}/${epNum}` });
             if (servers.malSub) availableServers.push({ serverName: 'HD-2', serverType: 'sub', embedLink: `https://megaplay.buzz/stream/mal/${meta.idMal}/${epNum}/sub` });
             if (servers.malDub) availableServers.push({ serverName: 'HD-2', serverType: 'dub', embedLink: `https://megaplay.buzz/stream/mal/${meta.idMal}/${epNum}/dub` });
 

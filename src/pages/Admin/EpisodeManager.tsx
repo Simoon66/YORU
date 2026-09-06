@@ -244,6 +244,9 @@ export const EpisodeManager = () => {
         if (!ep.servers.some(s => s.serverName === 'HD-1' && s.serverType === 'dub')) {
           ep.servers.push({ serverName: 'HD-1', embedLink: `https://megaplay.buzz/stream/ani/${anilistId}/${i}/dub`, serverType: 'dub' });
         }
+        if (!ep.servers.some(s => s.serverName === 'Multi' && s.serverType === 'multi')) {
+          ep.servers.push({ serverName: 'Multi', embedLink: `https://multiserver.pages.dev/${anilistId}/${i}`, serverType: 'multi' });
+        }
       }
       if (malId) {
         if (!ep.servers.some(s => s.serverName === 'HD-2' && s.serverType === 'sub')) {

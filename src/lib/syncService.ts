@@ -325,7 +325,8 @@ export async function handleMultiServerSync(event: MultiServerSyncEvent): Promis
     for (let epNum = 1; epNum <= epsToCreate; epNum++) {
       const epServers: ServerLink[] = [
         { serverName: 'HD-1', serverType: 'sub', embedLink: `https://megaplay.buzz/stream/ani/${aniIdNum}/${epNum}/sub` },
-        { serverName: 'HD-1', serverType: 'dub', embedLink: `https://megaplay.buzz/stream/ani/${aniIdNum}/${epNum}/dub` }
+        { serverName: 'HD-1', serverType: 'dub', embedLink: `https://megaplay.buzz/stream/ani/${aniIdNum}/${epNum}/dub` },
+        { serverName: 'Multi', serverType: 'multi', embedLink: `https://multiserver.pages.dev/${aniIdNum}/${epNum}` }
       ];
 
       if (meta.idMal) {
