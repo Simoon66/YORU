@@ -342,10 +342,13 @@ export const Watch = () => {
         <div className={clsx("w-full mx-auto transition-all duration-500 flex flex-col",
           isTheaterMode ? "max-w-full" : "max-w-[1440px] px-0 md:px-6 lg:px-8 pt-0 md:pt-4"
         )}>
-          <div className={clsx("w-full mx-auto flex flex-col bg-[#0F1117] shadow-2xl transition-all duration-500",
+          <div className={clsx("w-full mx-auto flex flex-col shadow-2xl transition-all duration-500",
             !isLightDimmed && "overflow-hidden",
-            isTheaterMode ? "max-w-full rounded-none border-0" : "max-w-[1100px] rounded-none md:rounded-2xl border-0 md:border border-white/5",
-            isLightDimmed && "relative z-[9999]"
+            isLightDimmed ? "bg-transparent relative z-[9999]" : "bg-[#0F1117]",
+            isTheaterMode ? "max-w-full rounded-none border-0" : clsx(
+              "max-w-[1100px] rounded-none md:rounded-2xl border-0 md:border",
+              isLightDimmed ? "border-transparent" : "border-white/5"
+            )
           )}>
             {/* Player */}
             <div className={clsx("relative w-full bg-black transition-all duration-500", 
@@ -382,8 +385,21 @@ export const Watch = () => {
             </div>
 
             {/* Quick Control Ribbon - Standardized button heights and normalized grouping */}
-            <div className="flex flex-wrap items-center justify-between p-3 md:p-3.5 gap-3 bg-[#0F1117] relative z-10 border-t border-white/5">
-              <div className="flex items-center gap-2.5 flex-wrap">
+            <div 
+              className={clsx(
+                "flex flex-wrap items-center justify-between p-3 md:p-3.5 gap-3 relative z-10 border-t overflow-hidden transition-colors duration-500",
+                isLightDimmed ? "bg-transparent border-transparent" : "bg-[#0F1117] border-white/5"
+              )}
+              onClick={(e) => {
+                if (isLightDimmed) {
+                  setIsLightDimmed(false);
+                }
+              }}
+            >
+              {isLightDimmed && (
+                <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-transparent pointer-events-none z-0 transition-opacity duration-500" />
+              )}
+              <div className="flex items-center gap-2.5 flex-wrap relative z-10">
                 <button 
                   onClick={toggleTheaterMode} 
                   className="h-9 min-h-[36px] px-3 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium text-yoru-text-muted hover:text-white transition-colors flex items-center gap-2 cursor-pointer"
@@ -425,7 +441,7 @@ export const Watch = () => {
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 relative z-10">
                 <button 
                   disabled={!prevEpisode}
                   onClick={() => prevEpisode && navigate(`/watch/${anime.slug}/${prevEpisode.episodeNumber}?season=${currentSeasonId}`)}
