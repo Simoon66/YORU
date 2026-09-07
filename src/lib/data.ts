@@ -218,6 +218,39 @@ export async function clearWatchHistory(userId?: string): Promise<boolean> {
   }
 }
 
+export async function removeWatchHistoryItem(animeId: string, userId?: string): Promise<boolean> {
+  try {
+    try {
+      const history = JSON.parse(localStorage.getItem('yoru_watch_history') || '[]');
+      const filtered = history.filter((h: any) => h.animeId !== animeId);
+      localStorage.setItem('yoru_watch_history', JSON.stringify(filtered));
+      localStorage.removeItem(`yoru_watched_${animeId}`);
+    } catch (e) {
+      console.warn("Failed to remove from local watch history:", e);
+    }
+
+    if (userId) {
+      const q = query(
+        collection(db, 'watchProgress'),
+        where('userId', '==', userId),
+        where('animeId', '==', animeId)
+      );
+      const snap = await getDocs(q);
+      const deletePromises = snap.docs.map(d => deleteDoc(d.ref));
+      await Promise.all(deletePromises);
+      try {
+        await deleteDoc(doc(db, 'watchProgress', `${userId}_${animeId}`));
+      } catch (err) {
+        // Document might already be deleted by the query batch
+      }
+    }
+    return true;
+  } catch (e) {
+    console.error("Failed to remove watch history item:", e);
+    return false;
+  }
+}
+
 export async function getSpotlightSlides(): Promise<SpotlightSlide[]> {
   try {
     const q = query(

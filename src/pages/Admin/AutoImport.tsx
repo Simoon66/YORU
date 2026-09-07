@@ -335,6 +335,28 @@ export const AutoImport = () => {
           }
         }
 
+        // Aggregate and update episode counts for the Anime
+        if (animeId && animeDocRef) {
+          const allEpsQuery = query(collection(db, 'episodes'), where('animeId', '==', animeId));
+          const allEpsSnap = await getDocs(allEpsQuery);
+          let subCount = 0;
+          let dubCount = 0;
+          let multiCount = 0;
+          
+          allEpsSnap.forEach(d => {
+            const data = d.data();
+            if (data.servers?.some((s: any) => s.serverType === 'sub')) subCount++;
+            if (data.servers?.some((s: any) => s.serverType === 'dub')) dubCount++;
+            if (data.servers?.some((s: any) => s.serverType === 'multi')) multiCount++;
+          });
+
+          await setDoc(animeDocRef, { 
+            subEpisodesCount: subCount,
+            dubEpisodesCount: dubCount,
+            multiEpisodesCount: multiCount
+          }, { merge: true });
+        }
+
         addLog(`Finished processing ${title}!`, 'success');
 
       } catch (err: any) {

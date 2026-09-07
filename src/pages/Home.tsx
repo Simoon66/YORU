@@ -4,7 +4,7 @@ import { AnimeCard } from '../components/AnimeCard';
 import { ContinueWatchingCard } from '../components/ContinueWatchingCard';
 import { SkeletonAnimeCard } from '../components/SkeletonAnimeCard';
 import { Anime } from '../types';
-import { getTrendingAnime, getAllAnime, getWatchHistory, clearWatchHistory } from '../lib/data';
+import { getTrendingAnime, getAllAnime, getWatchHistory, clearWatchHistory, removeWatchHistoryItem } from '../lib/data';
 import { ChevronRight, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -65,20 +65,25 @@ export const Home = () => {
     loadData();
   }, [user]);
 
-  const [confirmClear, setConfirmClear] = useState(false);
+  const [isClearMode, setIsClearMode] = useState(false);
 
-  const handleClearHistory = async () => {
-    if (!confirmClear) {
-      setConfirmClear(true);
-      setTimeout(() => setConfirmClear(false), 3000);
-      return;
-    }
-    
+  const handleClearAllHistory = async () => {
     setIsClearing(true);
     await clearWatchHistory(user?.uid);
     setWatchHistory([]);
     setIsClearing(false);
-    setConfirmClear(false);
+    setIsClearMode(false);
+  };
+
+  const handleRemoveSingleItem = async (animeId: string) => {
+    setWatchHistory(prev => {
+      const updated = prev.filter(item => item.animeId !== animeId);
+      if (updated.length === 0) {
+        setIsClearMode(false);
+      }
+      return updated;
+    });
+    await removeWatchHistoryItem(animeId, user?.uid);
   };
 
   const SectionHeader = ({ title, linkTo, action }: { title: string, linkTo?: string, action?: React.ReactNode }) => (
@@ -134,34 +139,56 @@ export const Home = () => {
             <SectionHeader 
               title="Continue Watching" 
               action={
-                <button
-                  onClick={handleClearHistory}
-                  disabled={isClearing}
-                  aria-label="Clear all watch history"
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-red-400/30 ${
-                    confirmClear 
-                      ? 'bg-red-500/20 text-red-400 border border-red-500/40' 
-                      : 'text-yoru-text-muted hover:text-red-400 hover:bg-red-500/10'
-                  }`}
-                  title="Clear all watch history"
-                >
-                  <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
-                  <span>{isClearing ? 'Clearing...' : confirmClear ? 'Confirm Clear?' : 'Clear History'}</span>
-                </button>
+                isClearMode ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleClearAllHistory}
+                      disabled={isClearing}
+                      aria-label="Clear all watch history?"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500 hover:text-white transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400/30"
+                      title="Clear all watch history?"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span>{isClearing ? 'Clearing...' : 'Clear all watch history?'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsClearMode(false)}
+                      className="px-2.5 py-1 rounded-md text-xs font-medium text-yoru-text-muted hover:text-white hover:bg-white/10 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsClearMode(true)}
+                    disabled={isClearing}
+                    aria-label="Clear history"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-yoru-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400/30"
+                    title="Clear history"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span>Clear History</span>
+                  </button>
+                )
               }
             />
             <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               <AnimatePresence>
-                {watchHistory.map((item, index) => (
+                {watchHistory.map((item) => (
                   <motion.div
                     key={item.animeId}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9, width: 0, marginLeft: 0, marginRight: 0, padding: 0 }}
-                    transition={{ duration: 0.3 }}
+                    exit={{ opacity: 0, scale: 0.85, width: 0, marginLeft: 0, marginRight: 0, padding: 0 }}
+                    transition={{ duration: 0.25 }}
                     className="min-w-[280px] sm:min-w-[320px] snap-start"
                   >
-                    <ContinueWatchingCard item={item} />
+                    <ContinueWatchingCard 
+                      item={item} 
+                      showRemove={isClearMode}
+                      onRemove={handleRemoveSingleItem}
+                    />
                   </motion.div>
                 ))}
               </AnimatePresence>

@@ -123,6 +123,9 @@ export interface Anime {
   backdrop: string;
   synopsis: string;
   seasons: Season[];
+  subEpisodesCount?: number;
+  dubEpisodesCount?: number;
+  multiEpisodesCount?: number;
   createdAt: number;
   updatedAt: number;
   published: boolean;

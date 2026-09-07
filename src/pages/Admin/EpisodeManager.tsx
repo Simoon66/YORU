@@ -97,9 +97,24 @@ export const EpisodeManager = () => {
 
       const batch = writeBatch(db);
       
-      // Save seasons
+      let subCount = 0;
+      let dubCount = 0;
+      let multiCount = 0;
+
+      for (const ep of episodes) {
+        if (ep.servers?.some(s => s.serverType === 'sub')) subCount++;
+        if (ep.servers?.some(s => s.serverType === 'dub')) dubCount++;
+        if (ep.servers?.some(s => s.serverType === 'multi')) multiCount++;
+      }
+
+      // Save seasons and counts
       const animeRef = doc(db, 'anime', id);
-      batch.update(animeRef, { seasons });
+      batch.update(animeRef, { 
+        seasons,
+        subEpisodesCount: subCount,
+        dubEpisodesCount: dubCount,
+        multiEpisodesCount: multiCount
+      });
 
       // Keep track of valid new doc IDs
       const validDocIds = new Set<string>();
