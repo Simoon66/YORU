@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
+import { Landing } from './pages/Landing';
 import { Home } from './pages/Home';
 import { AnimeDetail } from './pages/AnimeDetail';
 import { Watch } from './pages/Watch';
@@ -30,7 +31,8 @@ function AppLayout() {
       <Navigation />
       <main className="flex-1">
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/browse" element={<Search />} />
           <Route path="/genres" element={<Search />} />
           <Route path="/search" element={<Search />} />

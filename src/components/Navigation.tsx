@@ -106,7 +106,7 @@ export const Navigation = () => {
   }, []);
 
   const navLinks = [
-    { name: 'Home', path: '/' },
+    { name: 'Home', path: '/home' },
     { name: 'Browse', path: '/browse' },
   ];
 
@@ -115,7 +115,7 @@ export const Navigation = () => {
   };
 
   const mobileNav = [
-    { name: 'Home', path: '/', icon: Home },
+    { name: 'Home', path: '/home', icon: Home },
     { name: 'Browse', path: '/browse', icon: Compass },
     { name: 'Watchlist', path: '/watchlist', icon: Bookmark },
     { name: 'Profile', path: user ? '/profile' : '#login', icon: User, action: !user ? handleLogin : undefined },
@@ -136,7 +136,7 @@ export const Navigation = () => {
           <div className="flex justify-between items-center">
             
             <div className="flex items-center gap-12">
-              <Link to="/">
+              <Link to="/home">
                 <Logo />
               </Link>
               
@@ -335,7 +335,7 @@ export const Navigation = () => {
           isScrolled ? "bg-yoru-bg/90 backdrop-blur-2xl border-b border-white/5 py-3" : "bg-gradient-to-b from-yoru-bg/90 to-transparent py-4"
         )}>
          <div className="px-5 flex justify-between items-center">
-            <Link to="/">
+            <Link to="/home">
               <Logo className="scale-90 origin-left" />
             </Link>
             <Link to="/search" className="p-2.5 text-white/70 hover:text-white bg-white/5 backdrop-blur-md rounded-full border border-white/10">
@@ -348,7 +348,7 @@ export const Navigation = () => {
       <div className="fixed bottom-0 left-0 right-0 z-[100] bg-yoru-bg/90 backdrop-blur-2xl border-t border-white/10 md:hidden shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
         <div className="flex items-center justify-around px-2 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
           {mobileNav.map((item) => {
-            const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+            const isActive = location.pathname === item.path || (item.path !== '/' && item.path !== '/home' && location.pathname.startsWith(item.path));
             const Icon = item.icon;
             return (
               <button

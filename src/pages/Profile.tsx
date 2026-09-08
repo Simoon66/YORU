@@ -310,7 +310,7 @@ export const ProfilePage: React.FC = () => {
     try {
       await logout();
       setIsSignOutModalOpen(false);
-      navigate('/');
+      navigate('/home');
     } catch (e) {
       console.error("Logout error", e);
     }
@@ -326,7 +326,7 @@ export const ProfilePage: React.FC = () => {
         <p className="text-xs sm:text-sm font-medium text-yoru-text-muted max-w-sm mb-8">
           Please sign in to manage your anime profile, watch history, and account settings.
         </p>
-        <Link to="/">
+        <Link to="/home">
           <Button size="lg" className="px-8 font-bold">
             Back to Home
           </Button>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Anime } from '../types';
 import { getAllAnime } from '../lib/data';
 import { AnimeCard } from '../components/AnimeCard';
@@ -11,9 +12,18 @@ import { cn } from '../lib/utils';
 type SortOption = 'relevance' | 'score' | 'newest' | 'release';
 
 export const Search = () => {
-  const [query, setQuery] = useState('');
+  const [searchParams] = useSearchParams();
+  const initialQuery = searchParams.get('q') || searchParams.get('search') || '';
+  const [query, setQuery] = useState(initialQuery);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('relevance');
+
+  useEffect(() => {
+    const qParam = searchParams.get('q') || searchParams.get('search');
+    if (qParam !== null && qParam !== query) {
+      setQuery(qParam);
+    }
+  }, [searchParams]);
   
   const [allAnime, setAllAnime] = useState<Anime[]>([]);
   const [results, setResults] = useState<Anime[]>([]);

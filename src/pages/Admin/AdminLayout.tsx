@@ -37,7 +37,7 @@ export const AdminLayout = () => {
       {/* Sidebar */}
       <aside className="w-64 bg-yoru-surface border-r border-yoru-border flex flex-col hidden md:flex fixed h-full z-10">
         <div className="p-6">
-          <Link to="/">
+          <Link to="/home">
             <Logo />
           </Link>
           <div className="mt-2 text-xs font-semibold text-yoru-accent tracking-widest uppercase">Admin Panel</div>
@@ -60,7 +60,7 @@ export const AdminLayout = () => {
         </nav>
         
         <div className="p-4 border-t border-yoru-border">
-          <Link to="/" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-yoru-text-muted hover:bg-yoru-surface-elevated hover:text-white transition-colors text-sm font-medium">
+          <Link to="/home" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-yoru-text-muted hover:bg-yoru-surface-elevated hover:text-white transition-colors text-sm font-medium">
              <LogOut className="w-5 h-5" /> Back to App
           </Link>
         </div>
