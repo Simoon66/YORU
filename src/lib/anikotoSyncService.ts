@@ -1,4 +1,4 @@
-import { collection, doc, setDoc, query, where, getDocs, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, query, where, getDocs, updateDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { Anime, Episode, ServerLink, AnikotoSyncSettings, AnikotoSyncStats } from '../types';
 import axios from 'axios';
@@ -252,13 +252,24 @@ export async function runAnikotoRecentSync(options?: {
         // ==========================================
         // NEW ANIME: Add to Firestore
         // ==========================================
+        let subCount = 0;
+        let dubCount = 0;
+        
+        for (const ep of episodesFromApi) {
+          if (ep.embed_url?.sub) subCount++;
+          if (ep.embed_url?.dub) dubCount++;
+        }
+
+        if (subCount === 0 && dubCount === 0) {
+          log(`Skipped new anime "${item.title}" (0 sub and dub episodes)`, 'warning');
+          stats.skippedCount++;
+          continue;
+        }
+
         log(`[NEW] Adding new anime: "${item.title}"...`, 'info');
 
         const newAnimeId = directId;
         const finalSlug = item.slug || item.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-
-        let subCount = 0;
-        let dubCount = 0;
 
         // Create episode documents
         for (const ep of episodesFromApi) {
@@ -324,6 +335,12 @@ export async function runAnikotoRecentSync(options?: {
           updatedAt: Date.now(),
           published: true,
         };
+
+        Object.keys(newAnime).forEach(key => {
+          if (newAnime[key as keyof Anime] === undefined) {
+            delete newAnime[key as keyof Anime];
+          }
+        });
 
         await setDoc(doc(db, 'anime', newAnimeId), newAnime);
 
@@ -512,3 +529,42 @@ export async function runAnikotoRecentSync(options?: {
     };
   }
 }
+
+/**
+ * Cleanup Utility: Finds and removes Anime documents that have 0 Sub and 0 Dub episodes.
+ */
+export async function cleanupEmptyAnime(
+  onLog: (message: string, type: 'info' | 'success' | 'warning' | 'error') => void
+): Promise<{ success: boolean; removedCount: number }> {
+  try {
+    onLog('Starting cleanup: scanning for anime with 0 episodes...', 'info');
+    const animeCollection = collection(db, 'anime');
+    const snap = await getDocs(animeCollection);
+    
+    let removedCount = 0;
+    for (const d of snap.docs) {
+      const anime = d.data() as Anime;
+      const subCount = anime.subEpisodesCount || 0;
+      const dubCount = anime.dubEpisodesCount || 0;
+      const totalCount = anime.totalEpisodes || 0;
+      
+      // Target anikoto imported empty ones (also any others with zero counts)
+      if (subCount === 0 && dubCount === 0 && (totalCount === 0 || anime.id.startsWith('anikoto_'))) {
+        try {
+          await deleteDoc(doc(db, 'anime', anime.id));
+          removedCount++;
+          onLog(`Removed empty anime: "${anime.title}"`, 'warning');
+        } catch (delErr: any) {
+          onLog(`Failed to remove "${anime.title}": ${delErr.message}`, 'error');
+        }
+      }
+    }
+    
+    onLog(`Cleanup complete. Removed ${removedCount} empty anime.`, 'success');
+    return { success: true, removedCount };
+  } catch (err: any) {
+    onLog(`Cleanup error: ${err.message}`, 'error');
+    return { success: false, removedCount: 0 };
+  }
+}
+

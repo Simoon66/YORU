@@ -17,7 +17,8 @@ import { Button } from '../../components/ui/Button';
 import { 
   getAnikotoSyncSettings, 
   saveAnikotoSyncSettings, 
-  runAnikotoRecentSync 
+  runAnikotoRecentSync,
+  cleanupEmptyAnime
 } from '../../lib/anikotoSyncService';
 import { AnikotoSyncSettings, AnikotoSyncStats } from '../../types';
 import axios from 'axios';
@@ -131,6 +132,22 @@ export const RecentAnimeSync: React.FC = () => {
     }
   };
 
+  const handleRunCleanup = async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    addLog('Initiating cleanup of empty anime (0 episodes)...', 'info');
+    try {
+      const result = await cleanupEmptyAnime((msg, type) => addLog(msg, type));
+      if (result.success) {
+        addLog(`Cleanup successful. Removed ${result.removedCount} anime.`, 'success');
+      }
+    } catch (e: any) {
+      addLog(`Cleanup failed: ${e.message}`, 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const stats = settings.lastSyncStats;
 
   return (
@@ -162,6 +179,15 @@ export const RecentAnimeSync: React.FC = () => {
 
         {/* Sync Now Trigger */}
         <div className="flex items-center gap-3">
+          <Button
+            onClick={handleRunCleanup}
+            disabled={isSyncing}
+            className="flex items-center gap-2 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 font-semibold"
+            title="Removes any existing anime from the database that currently have 0 sub and dub episodes."
+          >
+            <ShieldCheck className={`w-4 h-4 ${isSyncing ? 'animate-pulse' : ''}`} />
+            <span>Cleanup Empty Anime</span>
+          </Button>
           <Button
             onClick={handleRunSyncNow}
             disabled={isSyncing}

@@ -3,6 +3,7 @@ import { Hero } from '../components/Hero';
 import { AnimeCard } from '../components/AnimeCard';
 import { ContinueWatchingCard } from '../components/ContinueWatchingCard';
 import { SkeletonAnimeCard } from '../components/SkeletonAnimeCard';
+import { HorizontalAnimeRow } from '../components/HorizontalAnimeRow';
 import { Anime } from '../types';
 import { getTrendingAnime, getAllAnime, getRecentlyAddedAnime, getWatchHistory, clearWatchHistory, removeWatchHistoryItem } from '../lib/data';
 import { ChevronRight, Trash2, Sparkles } from 'lucide-react';
@@ -35,7 +36,7 @@ export const Home = () => {
       const [trendingData, allData, recentData] = await Promise.all([
         getTrendingAnime(),
         getAllAnime(),
-        getRecentlyAddedAnime(18)
+        getRecentlyAddedAnime(10)
       ]);
       setTrending(trendingData);
       setRecentlyAdded(recentData);
@@ -202,57 +203,21 @@ export const Home = () => {
         {/* Recently Added Section */}
         {recentlyAdded.length > 0 && (
           <section id="recently-added-section">
-            <SectionHeader title="Recently Added" linkTo="/browse" />
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-              {recentlyAdded.map((anime, index) => (
-                <motion.div
-                  key={anime.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.4) }}
-                >
-                  <AnimeCard anime={anime} />
-                </motion.div>
-              ))}
-            </div>
+            <SectionHeader title="Recently Added" linkTo="/recent" />
+            <HorizontalAnimeRow animeList={recentlyAdded} maxItems={10} />
           </section>
         )}
 
         {/* Trending Section */}
         <section>
           <SectionHeader title="Trending Now" linkTo="/browse" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-            {trending.map((anime, index) => (
-              <motion.div
-                key={anime.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <AnimeCard anime={anime} />
-              </motion.div>
-            ))}
-          </div>
+          <HorizontalAnimeRow animeList={trending} maxItems={10} />
         </section>
 
         {/* Latest Releases Section */}
         <section>
           <SectionHeader title="Latest Releases" linkTo="/browse" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
-            {latest.map((anime, index) => (
-              <motion.div
-                key={anime.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <AnimeCard anime={anime} />
-              </motion.div>
-            ))}
-          </div>
+          <HorizontalAnimeRow animeList={latest} maxItems={10} />
         </section>
         
       </div>

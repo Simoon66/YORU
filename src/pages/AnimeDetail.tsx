@@ -312,8 +312,34 @@ export const AnimeDetail = () => {
               )}
             </div>
             
-            {/* Season Selector */}
-            {anime.seasons && anime.seasons.length > 1 && (
+            {/* Season Selector / Franchise Linked Seasons */}
+            {anime.linkedSeasons && anime.linkedSeasons.length > 1 ? (
+              <div className="flex w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0">
+                <div className="flex gap-2 bg-yoru-surface p-1 rounded-xl border border-white/5 min-w-max">
+                  {anime.linkedSeasons
+                    .sort((a, b) => (a.seasonNumber || 1) - (b.seasonNumber || 1))
+                    .map((s, idx) => {
+                      const isCurrent = s.animeId === anime.id;
+                      return isCurrent ? (
+                        <span
+                          key={`${s.animeId}-${idx}`}
+                          className="px-4 py-2.5 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-white text-[#030407] rounded-lg shadow-md whitespace-nowrap"
+                        >
+                          Season {s.seasonNumber}
+                        </span>
+                      ) : (
+                        <Link
+                          key={`${s.animeId}-${idx}`}
+                          to={`/anime/${s.slug}`}
+                          className="px-4 py-2.5 text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-lg whitespace-nowrap text-yoru-text-muted hover:text-white hover:bg-white/5"
+                        >
+                          Season {s.seasonNumber}
+                        </Link>
+                      );
+                    })}
+                </div>
+              </div>
+            ) : anime.seasons && anime.seasons.length > 1 ? (
               <div className="flex w-full sm:w-auto overflow-x-auto hide-scrollbar pb-1 sm:pb-0">
                 {anime.seasons.length > 4 ? (
                   <select
@@ -346,7 +372,7 @@ export const AnimeDetail = () => {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
           </div>
 
           {cleanEpisodes.length > 0 ? (

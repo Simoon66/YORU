@@ -140,22 +140,55 @@ export async function getAllAnime(): Promise<Anime[]> {
   }
 }
 
-export async function getRecentlyAddedAnime(maxCount = 18): Promise<Anime[]> {
+export function isRecentRelease(anime: Anime): boolean {
+  // Extract release year from startDate (e.g. "2003", "2003-10-03") or season (e.g. "Fall 2003")
+  let releaseYear: number | null = null;
+  if (anime.startDate) {
+    const match = anime.startDate.match(/\b(19\d\d|20\d\d)\b/);
+    if (match) releaseYear = parseInt(match[1], 10);
+  }
+  if (!releaseYear && anime.season) {
+    const match = anime.season.match(/\b(19\d\d|20\d\d)\b/);
+    if (match) releaseYear = parseInt(match[1], 10);
+  }
+
+  // If the anime has a vintage release year (e.g., 2003, older catalog before 2024), it's not a recent release
+  if (releaseYear && releaseYear < 2024) {
+    return false;
+  }
+  return true;
+}
+
+export async function getRecentlyAddedAnime(maxCount = 10): Promise<Anime[]> {
   try {
     const q = query(collection(db, 'anime'), where('published', '==', true));
     const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) return mockAnimeList;
+    if (querySnapshot.empty) return [];
+    
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const all = querySnapshot.docs.map(doc => doc.data() as Anime);
-    // Sort descending by recentlyAddedAt, or updatedAt, or createdAt
-    all.sort((a, b) => {
-      const timeA = a.recentlyAddedAt || a.updatedAt || a.createdAt || 0;
-      const timeB = b.recentlyAddedAt || b.updatedAt || b.createdAt || 0;
+
+    // Strictly filter:
+    // 1. Added within the last 1 week (createdAt or recentlyAddedAt >= oneWeekAgo) - NOT updatedAt!
+    // 2. Not an old catalog anime (e.g. release year from 2003)
+    const recentWeekly = all.filter(anime => {
+      const addedTime = anime.recentlyAddedAt || anime.createdAt || 0;
+      const isAddedWithinOneWeek = addedTime >= oneWeekAgo;
+      const notVintage = isRecentRelease(anime);
+      return isAddedWithinOneWeek && notVintage;
+    });
+
+    // Sort descending by creation/addition time
+    recentWeekly.sort((a, b) => {
+      const timeA = a.recentlyAddedAt || a.createdAt || 0;
+      const timeB = b.recentlyAddedAt || b.createdAt || 0;
       return timeB - timeA;
     });
-    return all.slice(0, maxCount);
+
+    return typeof maxCount === 'number' && maxCount > 0 ? recentWeekly.slice(0, maxCount) : recentWeekly;
   } catch (e) {
     console.warn("Failed to fetch recently added from Firebase", e);
-    return mockAnimeList;
+    return [];
   }
 }
 

@@ -212,19 +212,34 @@ async function startServer() {
 
   app.get("/api/anikoto/proxy/*all", async (req, res) => {
     try {
-      const targetPath = (req.params as Record<string, string>).all || req.params[0];
-      const targetUrl = `https://anikotoapi.site/${targetPath}`;
-      const response = await axios.get(targetUrl, {
-        params: req.query,
-        timeout: 15000,
+      const allParam = (req.params as any).all;
+      let targetPath = Array.isArray(allParam) ? allParam.join('/') : (allParam || req.params[0] || '');
+      
+      if (typeof targetPath === 'string' && targetPath.startsWith('/')) {
+        targetPath = targetPath.substring(1);
+      }
+      
+      const targetUrl = new URL(`https://anikotoapi.site/${targetPath}`);
+      for (const [key, value] of Object.entries(req.query)) {
+        targetUrl.searchParams.append(key, String(value));
+      }
+      console.log(`[Proxy] Fetching: ${targetUrl.toString()}`);
+      
+      const response = await fetch(targetUrl.toString(), {
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'YORU-Anime-Sync/1.0',
+          'User-Agent': 'curl/7.88.1',
         },
       });
-      res.json(response.data);
+      
+      const data = await response.json();
+      if (!response.ok) {
+        return res.status(response.status).json({ error: 'API Error', data });
+      }
+      res.json(data);
     } catch (err: any) {
-      res.status(err.response?.status || 500).json({ error: err.message, data: err.response?.data });
+      console.error(`[Proxy Error] ${err.message} for ${req.url}`);
+      res.status(500).json({ error: err.message });
     }
   });
 

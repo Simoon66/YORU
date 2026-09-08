@@ -103,6 +103,14 @@ export interface Season {
   order: number;
 }
 
+export interface LinkedSeason {
+  animeId: string;
+  seasonNumber: number;
+  seasonName: string;
+  slug: string;
+  title: string;
+}
+
 export interface Anime {
   id: string;
   title: string;
@@ -123,6 +131,9 @@ export interface Anime {
   backdrop: string;
   synopsis: string;
   seasons: Season[];
+  seasonGroupId?: string;
+  seasonNumber?: number;
+  linkedSeasons?: LinkedSeason[];
   subEpisodesCount?: number;
   dubEpisodesCount?: number;
   multiEpisodesCount?: number;

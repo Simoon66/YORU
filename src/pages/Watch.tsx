@@ -520,8 +520,17 @@ export const Watch = () => {
             <div>
               <div className="flex items-center gap-2 text-xs font-semibold text-yoru-text-muted">
                 <span>{anime.title}</span>
-                <span>•</span>
-                <span className="uppercase">{currentSeasonId}</span>
+                {anime.seasonNumber ? (
+                  <>
+                    <span>•</span>
+                    <span className="uppercase text-yoru-accent font-bold">Season {anime.seasonNumber}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>•</span>
+                    <span className="uppercase">{currentSeasonId}</span>
+                  </>
+                )}
               </div>
               <h1 className="text-base sm:text-lg md:text-xl font-bold text-white tracking-tight mt-0.5">
                 {currentEpisode.title && currentEpisode.title !== `Episode ${currentEpisode.episodeNumber}`
@@ -631,8 +640,29 @@ export const Watch = () => {
                     </form>
                   )}
 
-                  {/* Season selector */}
-                  {anime.seasons && anime.seasons.length > 1 && (
+                  {/* Franchise / Linked Season Selector (Cross-Anime Seasons) */}
+                  {anime.linkedSeasons && anime.linkedSeasons.length > 1 ? (
+                    <select 
+                      value={anime.id}
+                      onChange={(e) => {
+                        const targetAnimeId = e.target.value;
+                        const targetSeason = anime.linkedSeasons?.find(ls => ls.animeId === targetAnimeId);
+                        if (targetSeason && targetSeason.slug) {
+                          navigate(`/watch/${targetSeason.slug}/1`);
+                        }
+                      }}
+                      className="bg-white/5 border border-white/10 text-xs font-semibold text-white rounded-lg px-3 py-1.5 h-8 outline-none hover:border-white/20 focus:border-white/30 transition-colors cursor-pointer"
+                      aria-label="Select Franchise Season"
+                    >
+                      {anime.linkedSeasons
+                        .sort((a, b) => (a.seasonNumber || 1) - (b.seasonNumber || 1))
+                        .map((s, idx) => (
+                          <option key={`${s.animeId}-${idx}`} value={s.animeId} className="bg-[#0F1117] text-white">
+                            Season {s.seasonNumber}: {s.title}
+                          </option>
+                        ))}
+                    </select>
+                  ) : anime.seasons && anime.seasons.length > 1 ? (
                     <select 
                       value={currentSeasonId}
                       onChange={(e) => {
@@ -648,7 +678,7 @@ export const Watch = () => {
                         </option>
                       ))}
                     </select>
-                  )}
+                  ) : null}
                 </div>
              </div>
 

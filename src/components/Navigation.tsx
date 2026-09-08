@@ -107,6 +107,7 @@ export const Navigation = () => {
 
   const navLinks = [
     { name: 'Home', path: '/home' },
+    { name: 'Recent', path: '/recent' },
     { name: 'Browse', path: '/browse' },
   ];
 

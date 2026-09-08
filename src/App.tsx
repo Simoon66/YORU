@@ -24,6 +24,7 @@ import { SpotlightManager } from './pages/Admin/SpotlightManager';
 import { CommunityManager } from './pages/Admin/CommunityManager';
 import { EmbedSyncManager } from './pages/Admin/EmbedSyncManager';
 import { RecentAnimeSync } from './pages/Admin/RecentAnimeSync';
+import { RecentAnime } from './pages/RecentAnime';
 import ScrollToTop from './components/ScrollToTop';
 
 function AppLayout() {
@@ -33,6 +34,7 @@ function AppLayout() {
       <main className="flex-1">
         <Routes>
           <Route path="/home" element={<Home />} />
+          <Route path="/recent" element={<RecentAnime />} />
           <Route path="/browse" element={<Search />} />
           <Route path="/genres" element={<Search />} />
           <Route path="/search" element={<Search />} />
