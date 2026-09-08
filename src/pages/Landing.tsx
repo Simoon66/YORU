@@ -10,7 +10,8 @@ import {
 } from 'lucide-react';
 import { Logo } from '../components/Navigation';
 import { motion } from 'motion/react';
-import masterpieceMoonBg from '../assets/images/yoru_masterpiece_moon_1788861224846.jpg';
+import desktopMoonBg from '../assets/images/yoru_desktop_moon_opt.webp';
+import mobileMoonBg from '../assets/images/yoru_mobile_moon_opt.webp';
 
 export const Landing: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -76,13 +77,18 @@ export const Landing: React.FC = () => {
 
   return (
     <div className="relative h-[100dvh] w-full flex items-center justify-center p-4 sm:p-6 overflow-hidden select-none">
-      {/* Cinematic Night Background Layer */}
+      {/* Cinematic Night Background Layer (Responsive Desktop / Mobile Wallpaper) */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <img
-          src={masterpieceMoonBg}
-          alt="YORU Night Backdrop"
-          className="w-full h-full object-cover object-center opacity-85"
-        />
+        <picture className="w-full h-full block">
+          <source media="(max-width: 640px)" srcSet={mobileMoonBg} type="image/webp" />
+          <img
+            src={desktopMoonBg}
+            alt="YORU Night Backdrop"
+            loading="eager"
+            decoding="async"
+            className="w-full h-full object-cover object-[center_top] sm:object-center opacity-90 transition-opacity duration-500"
+          />
+        </picture>
         {/* Subtle Dark Vignette (Monochrome, no red) */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#030407] via-[#030407]/40 to-[#030407]/80" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_30%,_rgba(3,4,7,0.8)_85%)]" />
