@@ -126,9 +126,28 @@ export interface Anime {
   subEpisodesCount?: number;
   dubEpisodesCount?: number;
   multiEpisodesCount?: number;
+  recentlyAddedAt?: number;
   createdAt: number;
   updatedAt: number;
   published: boolean;
+}
+
+export interface AnikotoSyncStats {
+  totalChecked: number;
+  newAnimeAdded: number;
+  episodesAdded: number;
+  episodesUpdated: number;
+  skippedCount: number;
+  durationMs?: number;
+}
+
+export interface AnikotoSyncSettings {
+  autoSyncEnabled: boolean;
+  intervalMinutes: number;
+  lastSyncTimestamp?: number;
+  lastSyncStatus?: 'idle' | 'running' | 'success' | 'error';
+  lastSyncMessage?: string;
+  lastSyncStats?: AnikotoSyncStats;
 }
 
 export interface ServerLink {

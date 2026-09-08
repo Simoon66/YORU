@@ -3,6 +3,7 @@ import path from "path";
 import axios from "axios";
 import { createServer as createViteServer } from "vite";
 import { handleEmbedSync, verifySecretKey } from "./src/lib/syncService";
+import { runAnikotoRecentSync, getAnikotoSyncSettings, saveAnikotoSyncSettings } from "./src/lib/anikotoSyncService";
 
 async function startServer() {
   const app = express();
@@ -203,6 +204,82 @@ async function startServer() {
       return res.json({ status: "alive" });
     } catch (error: any) {
       return res.json({ status: "dead", reason: error.message });
+    }
+  });
+
+  // Anikoto 24x Daily Auto-Sync API Routes
+  let isAnikotoSyncing = false;
+
+  app.get("/api/anikoto/proxy/*all", async (req, res) => {
+    try {
+      const targetPath = (req.params as Record<string, string>).all || req.params[0];
+      const targetUrl = `https://anikotoapi.site/${targetPath}`;
+      const response = await axios.get(targetUrl, {
+        params: req.query,
+        timeout: 15000,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'YORU-Anime-Sync/1.0',
+        },
+      });
+      res.json(response.data);
+    } catch (err: any) {
+      res.status(err.response?.status || 500).json({ error: err.message, data: err.response?.data });
+    }
+  });
+
+  app.get("/api/anikoto/status", async (req, res) => {
+    try {
+      const settings = await getAnikotoSyncSettings();
+      return res.json({
+        success: true,
+        isSyncInProgress: isAnikotoSyncing,
+        settings
+      });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post("/api/anikoto/settings", async (req, res) => {
+    try {
+      const { autoSyncEnabled, intervalMinutes } = req.body;
+      const updateData: any = {};
+      if (typeof autoSyncEnabled === 'boolean') updateData.autoSyncEnabled = autoSyncEnabled;
+      if (typeof intervalMinutes === 'number') updateData.intervalMinutes = intervalMinutes;
+
+      await saveAnikotoSyncSettings(updateData);
+      const settings = await getAnikotoSyncSettings();
+      return res.json({ success: true, settings });
+    } catch (err: any) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  app.post("/api/anikoto/sync-now", async (req, res) => {
+    if (isAnikotoSyncing) {
+      return res.status(409).json({
+        success: false,
+        message: "A sync process is already running. Please wait for it to complete."
+      });
+    }
+
+    try {
+      isAnikotoSyncing = true;
+      const page = Number(req.query.page) || 1;
+      const perPage = Number(req.query.perPage) || 20;
+      console.log(`[Anikoto Sync] Starting manual sync (Page ${page}, Limit ${perPage})...`);
+      const result = await runAnikotoRecentSync({
+        page,
+        perPage,
+        onLog: (msg, type) => console.log(`[Manual Anikoto Sync ${type}] ${msg}`)
+      });
+      return res.json(result);
+    } catch (err: any) {
+      console.error("[Anikoto Sync] Error:", err);
+      return res.status(500).json({ success: false, error: err.message });
+    } finally {
+      isAnikotoSyncing = false;
     }
   });
 

@@ -4,8 +4,8 @@ import { AnimeCard } from '../components/AnimeCard';
 import { ContinueWatchingCard } from '../components/ContinueWatchingCard';
 import { SkeletonAnimeCard } from '../components/SkeletonAnimeCard';
 import { Anime } from '../types';
-import { getTrendingAnime, getAllAnime, getWatchHistory, clearWatchHistory, removeWatchHistoryItem } from '../lib/data';
-import { ChevronRight, Trash2 } from 'lucide-react';
+import { getTrendingAnime, getAllAnime, getRecentlyAddedAnime, getWatchHistory, clearWatchHistory, removeWatchHistoryItem } from '../lib/data';
+import { ChevronRight, Trash2, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -24,6 +24,7 @@ export const Home = () => {
   const { user } = useAuth();
   const [trending, setTrending] = useState<Anime[]>([]);
   const [latest, setLatest] = useState<Anime[]>([]);
+  const [recentlyAdded, setRecentlyAdded] = useState<Anime[]>([]);
   const [watchHistory, setWatchHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isClearing, setIsClearing] = useState(false);
@@ -31,11 +32,13 @@ export const Home = () => {
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
-      const [trendingData, allData] = await Promise.all([
+      const [trendingData, allData, recentData] = await Promise.all([
         getTrendingAnime(),
-        getAllAnime()
+        getAllAnime(),
+        getRecentlyAddedAnime(18)
       ]);
       setTrending(trendingData);
+      setRecentlyAdded(recentData);
       
       // Ensure Latest Releases is distinct from Trending Now (sorted chronologically)
       const sortedLatest = [...allData]
@@ -192,6 +195,26 @@ export const Home = () => {
                   </motion.div>
                 ))}
               </AnimatePresence>
+            </div>
+          </section>
+        )}
+
+        {/* Recently Added Section */}
+        {recentlyAdded.length > 0 && (
+          <section id="recently-added-section">
+            <SectionHeader title="Recently Added" linkTo="/browse" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+              {recentlyAdded.map((anime, index) => (
+                <motion.div
+                  key={anime.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.4) }}
+                >
+                  <AnimeCard anime={anime} />
+                </motion.div>
+              ))}
             </div>
           </section>
         )}

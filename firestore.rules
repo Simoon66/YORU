@@ -106,17 +106,17 @@ service cloud.firestore {
 
     match /spotlights/{document=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || request.auth == null || isSignedIn();
     }
 
     match /settings/{document=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || request.auth == null || isSignedIn();
     }
 
     match /system_settings/{document=**} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || request.auth == null || isSignedIn();
     }
 
     match /audit_logs/{logId} {

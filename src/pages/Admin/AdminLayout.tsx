@@ -1,13 +1,17 @@
 import React from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LayoutDashboard, Film, Plus, LogOut, DownloadCloud, Sparkles, Shield, Radio } from 'lucide-react';
+import { LayoutDashboard, Film, Plus, LogOut, DownloadCloud, Sparkles, Shield, Radio, RotateCw } from 'lucide-react';
 import { Logo } from '../../components/Navigation';
 import { isSuperAdmin } from '../../lib/admin';
+import { useAnikotoAutoSync } from '../../hooks/useAnikotoAutoSync';
 
 export const AdminLayout = () => {
   const { profile, loading } = useAuth();
   const location = useLocation();
+
+  // Run 24x daily auto-sync silently in the background while authenticated admin is active
+  useAnikotoAutoSync();
 
   if (loading) return <div className="min-h-screen bg-yoru-bg" />;
   
@@ -19,6 +23,7 @@ export const AdminLayout = () => {
 
   const allNavItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { name: 'Recent Anime Sync', path: '/admin/recent-sync', icon: RotateCw },
     { name: 'Spotlight Sliders', path: '/admin/spotlights', icon: Sparkles },
     { name: 'Anime Library', path: '/admin/anime', icon: Film },
     { name: 'Add Anime', path: '/admin/anime/new', icon: Plus },

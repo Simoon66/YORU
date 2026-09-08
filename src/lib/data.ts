@@ -140,6 +140,25 @@ export async function getAllAnime(): Promise<Anime[]> {
   }
 }
 
+export async function getRecentlyAddedAnime(maxCount = 18): Promise<Anime[]> {
+  try {
+    const q = query(collection(db, 'anime'), where('published', '==', true));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) return mockAnimeList;
+    const all = querySnapshot.docs.map(doc => doc.data() as Anime);
+    // Sort descending by recentlyAddedAt, or updatedAt, or createdAt
+    all.sort((a, b) => {
+      const timeA = a.recentlyAddedAt || a.updatedAt || a.createdAt || 0;
+      const timeB = b.recentlyAddedAt || b.updatedAt || b.createdAt || 0;
+      return timeB - timeA;
+    });
+    return all.slice(0, maxCount);
+  } catch (e) {
+    console.warn("Failed to fetch recently added from Firebase", e);
+    return mockAnimeList;
+  }
+}
+
 
 export interface HistoryItem {
   animeId: string;

@@ -23,6 +23,7 @@ import { AutoImport } from './pages/Admin/AutoImport';
 import { SpotlightManager } from './pages/Admin/SpotlightManager';
 import { CommunityManager } from './pages/Admin/CommunityManager';
 import { EmbedSyncManager } from './pages/Admin/EmbedSyncManager';
+import { RecentAnimeSync } from './pages/Admin/RecentAnimeSync';
 import ScrollToTop from './components/ScrollToTop';
 
 function AppLayout() {
@@ -69,6 +70,7 @@ export default function App() {
           {/* Admin App */}
           <Route path="/admin" element={<AdminLayout />}>
              <Route index element={<Dashboard />} />
+             <Route path="recent-sync" element={<RecentAnimeSync />} />
              <Route path="spotlights" element={<SpotlightManager />} />
              <Route path="community" element={<CommunityManager />} />
              <Route path="anime" element={<AnimeList />} />
