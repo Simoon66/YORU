@@ -31,7 +31,6 @@ function AppLayout() {
       <Navigation />
       <main className="flex-1">
         <Routes>
-          <Route path="/" element={<Landing />} />
           <Route path="/home" element={<Home />} />
           <Route path="/browse" element={<Search />} />
           <Route path="/genres" element={<Search />} />
@@ -62,6 +61,8 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Routes>
+          <Route path="/" element={<Landing />} />
+          
           {/* Public App */}
           <Route path="/*" element={<AppLayout />} />
           
