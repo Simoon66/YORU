@@ -4,6 +4,7 @@ import axios from "axios";
 import { createServer as createViteServer } from "vite";
 import { handleEmbedSync, verifySecretKey } from "./src/lib/syncService";
 import { runAnikotoRecentSync, getAnikotoSyncSettings, saveAnikotoSyncSettings } from "./src/lib/anikotoSyncService";
+import { fetchMultiServerDataset } from "./src/lib/multiServerService";
 
 async function startServer() {
   const app = express();
@@ -64,18 +65,18 @@ async function startServer() {
   app.post("/api/sync/dispatch", handleSyncRequest);
 
   // MultiServer Manager Direct Sync Connectors
-  app.get("/api/manager/sync/full", async (req, res) => {
+  app.get(["/api/manager/sync/full", "/api/multiserver/set"], async (req, res) => {
     try {
-      const apiKey = req.headers["x-api-key"] || req.query.key || "mse_sync_secret_key_2026";
-      const managerUrl = "https://multiserver.pages.dev/api/sync/full";
-      
-      const response = await axios.get(managerUrl, {
-        headers: { "x-api-key": apiKey as string, "Accept": "application/json" },
-        timeout: 15000,
-        validateStatus: () => true
+      const dataset = await fetchMultiServerDataset(true);
+      return res.json({
+        status: "success",
+        source: "https://multiserver.pages.dev/set",
+        totalAnime: dataset.anime.length,
+        anime: dataset.anime,
+        episodes: dataset.episodesByAnimeId,
+        franchises: dataset.franchises,
+        updatedAt: dataset.timestamp
       });
-
-      return res.status(response.status).json(response.data);
     } catch (err: any) {
       return res.status(500).json({ success: false, error: err.message || "Failed to contact MultiServer Manager" });
     }

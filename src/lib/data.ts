@@ -1,6 +1,46 @@
 import { collection, getDocs, doc, getDoc, query, where, limit, orderBy, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { Anime, Episode, SpotlightSlide } from '../types';
+import { getMultiServerAnime, getMultiServerAnimeBySlug, getMultiServerEpisodesForAnime } from './multiServerService';
+
+export function mergeAnimeDatasets(localList: Anime[], multiList: Anime[]): Anime[] {
+  const map = new Map<string, Anime>();
+  const aniListMap = new Map<string, Anime>();
+  const slugMap = new Map<string, Anime>();
+
+  // 1. Index local items
+  localList.forEach(a => {
+    map.set(a.id, a);
+    if (a.aniListId) aniListMap.set(String(a.aniListId), a);
+    if (a.slug) slugMap.set(a.slug.toLowerCase(), a);
+  });
+
+  // 2. Merge multiServer items
+  multiList.forEach(m => {
+    const existing = map.get(m.id) || 
+      (m.aniListId ? aniListMap.get(String(m.aniListId)) : null) || 
+      (m.slug ? slugMap.get(m.slug.toLowerCase()) : null);
+
+    if (existing) {
+      existing.linkedSeasons = m.linkedSeasons || existing.linkedSeasons;
+      if (m.subEpisodesCount && (!existing.subEpisodesCount || m.subEpisodesCount > existing.subEpisodesCount)) {
+        existing.subEpisodesCount = m.subEpisodesCount;
+      }
+      if (m.multiEpisodesCount) existing.multiEpisodesCount = m.multiEpisodesCount;
+      if (m.dubEpisodesCount) existing.dubEpisodesCount = m.dubEpisodesCount;
+      if (!existing.poster || existing.poster.includes('unsplash')) existing.poster = m.poster;
+      if (!existing.backdrop) existing.backdrop = m.backdrop;
+      if (!existing.synopsis || existing.synopsis === 'No synopsis available.') existing.synopsis = m.synopsis;
+      if (!existing.genres || existing.genres.length === 0) existing.genres = m.genres;
+    } else {
+      map.set(m.id, m);
+      if (m.aniListId) aniListMap.set(String(m.aniListId), m);
+      if (m.slug) slugMap.set(m.slug.toLowerCase(), m);
+    }
+  });
+
+  return Array.from(map.values());
+}
 
 // Mock data fallback
 export const mockAnimeList: Anime[] = [
@@ -91,14 +131,33 @@ export const mockEpisodes: Episode[] = [
   }
 ];
 
+export async function getAllAnime(): Promise<Anime[]> {
+  try {
+    const [localSnap, multiList] = await Promise.all([
+      getDocs(query(collection(db, 'anime'), where('published', '==', true))).catch(() => null),
+      getMultiServerAnime().catch(() => [])
+    ]);
+
+    const localList: Anime[] = localSnap && !localSnap.empty
+      ? localSnap.docs.map(doc => doc.data() as Anime)
+      : [];
+
+    const merged = mergeAnimeDatasets(localList, multiList);
+    if (merged.length === 0) return mockAnimeList;
+    return merged;
+  } catch (e) {
+    return mockAnimeList;
+  }
+}
+
 export async function getTrendingAnime(maxCount = 10): Promise<Anime[]> {
   try {
-    const [animeSnap, progressSnap] = await Promise.all([
-      getDocs(query(collection(db, 'anime'), where('published', '==', true))),
+    const [allAnimeList, progressSnap] = await Promise.all([
+      getAllAnime(),
       getDocs(collection(db, 'watchProgress')).catch(() => null)
     ]);
-    if (animeSnap.empty) return mockAnimeList;
-    const all = animeSnap.docs.map(doc => doc.data() as Anime);
+
+    const all = [...allAnimeList];
 
     // Aggregate real watch progress counts per anime
     const watchCountMap = new Map<string, number>();
@@ -122,19 +181,43 @@ export async function getTrendingAnime(maxCount = 10): Promise<Anime[]> {
 
     return all.slice(0, maxCount);
   } catch (e) {
-    console.warn("Failed to fetch from Firebase, using mock data", e);
+    console.warn("Failed to fetch trending anime", e);
     return mockAnimeList.slice(0, maxCount);
   }
 }
 
 export async function getAnimeBySlug(slug: string): Promise<Anime | null> {
   try {
-    const q = query(collection(db, 'anime'), where('slug', '==', slug), limit(1));
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-      return mockAnimeList.find(a => a.slug === slug) || null;
+    let localAnime: Anime | null = null;
+    try {
+      const q = query(collection(db, 'anime'), where('slug', '==', slug), limit(1));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        localAnime = querySnapshot.docs[0].data() as Anime;
+      }
+    } catch {
+      // ignore
     }
-    return querySnapshot.docs[0].data() as Anime;
+
+    const multiAnime = await getMultiServerAnimeBySlug(slug);
+
+    if (localAnime && multiAnime) {
+      return {
+        ...localAnime,
+        linkedSeasons: multiAnime.linkedSeasons || localAnime.linkedSeasons,
+        subEpisodesCount: multiAnime.subEpisodesCount || localAnime.subEpisodesCount,
+        multiEpisodesCount: multiAnime.multiEpisodesCount || localAnime.multiEpisodesCount,
+        dubEpisodesCount: multiAnime.dubEpisodesCount || localAnime.dubEpisodesCount,
+        poster: localAnime.poster && !localAnime.poster.includes('unsplash') ? localAnime.poster : multiAnime.poster,
+        backdrop: localAnime.backdrop || multiAnime.backdrop,
+        synopsis: localAnime.synopsis && localAnime.synopsis !== 'No synopsis available.' ? localAnime.synopsis : multiAnime.synopsis
+      };
+    }
+
+    if (localAnime) return localAnime;
+    if (multiAnime) return multiAnime;
+
+    return mockAnimeList.find(a => a.slug === slug) || null;
   } catch (e) {
     return mockAnimeList.find(a => a.slug === slug) || null;
   }
@@ -142,25 +225,52 @@ export async function getAnimeBySlug(slug: string): Promise<Anime | null> {
 
 export async function getEpisodesForAnime(animeId: string): Promise<Episode[]> {
   try {
-    const q = query(collection(db, 'episodes'), where('animeId', '==', animeId));
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
+    let localEps: Episode[] = [];
+    try {
+      const q = query(collection(db, 'episodes'), where('animeId', '==', animeId));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        localEps = querySnapshot.docs.map(doc => doc.data() as Episode);
+      }
+    } catch {
+      // ignore
+    }
+
+    const multiEps = await getMultiServerEpisodesForAnime(animeId);
+
+    if (localEps.length === 0) {
+      if (multiEps.length > 0) return multiEps;
       return mockEpisodes.filter(e => e.animeId === animeId);
     }
-    return querySnapshot.docs.map(doc => doc.data() as Episode);
+
+    if (multiEps.length === 0) {
+      return localEps;
+    }
+
+    // Merge episodes and server links
+    const epByNum = new Map<number, Episode>();
+    localEps.forEach(e => epByNum.set(e.episodeNumber, { ...e }));
+
+    multiEps.forEach(me => {
+      const existing = epByNum.get(me.episodeNumber);
+      if (existing) {
+        const serverSet = new Set((existing.servers || []).map(s => s.embedLink));
+        const combined = [...(existing.servers || [])];
+        (me.servers || []).forEach(ms => {
+          if (!serverSet.has(ms.embedLink)) {
+            serverSet.add(ms.embedLink);
+            combined.push(ms);
+          }
+        });
+        existing.servers = combined;
+      } else {
+        epByNum.set(me.episodeNumber, me);
+      }
+    });
+
+    return Array.from(epByNum.values()).sort((a, b) => a.episodeNumber - b.episodeNumber);
   } catch (e) {
     return mockEpisodes.filter(e => e.animeId === animeId);
-  }
-}
-
-export async function getAllAnime(): Promise<Anime[]> {
-  try {
-    const q = query(collection(db, 'anime'), where('published', '==', true));
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) return mockAnimeList;
-    return querySnapshot.docs.map(doc => doc.data() as Anime);
-  } catch (e) {
-    return mockAnimeList;
   }
 }
 
@@ -202,30 +312,27 @@ export function getAnimeEndTimestamp(anime: Anime): number {
 
 export async function getRecentlyAddedAnime(maxCount = 10): Promise<Anime[]> {
   try {
-    const q = query(collection(db, 'anime'), where('published', '==', true));
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) return [];
-    
-    const all = querySnapshot.docs.map(doc => doc.data() as Anime);
+    const all = await getAllAnime();
+    const sorted = [...all];
 
     // Sort strictly by when it was added to the site (recentlyAddedAt or createdAt)
-    all.sort((a, b) => {
+    sorted.sort((a, b) => {
       const timeA = a.recentlyAddedAt || a.createdAt || 0;
       const timeB = b.recentlyAddedAt || b.createdAt || 0;
       return timeB - timeA;
     });
 
-    return typeof maxCount === 'number' && maxCount > 0 ? all.slice(0, maxCount) : all;
+    return typeof maxCount === 'number' && maxCount > 0 ? sorted.slice(0, maxCount) : sorted;
   } catch (e) {
-    console.warn("Failed to fetch recently added from Firebase", e);
+    console.warn("Failed to fetch recently added", e);
     return [];
   }
 }
 
 export function getLatestReleasesAnime(allAnime: Anime[], maxCount = 10): Anime[] {
-  return [...allAnime]
-    .sort((a, b) => getAnimeReleaseTimestamp(b) - getAnimeReleaseTimestamp(a))
-    .slice(0, maxCount);
+  const sorted = [...allAnime]
+    .sort((a, b) => getAnimeReleaseTimestamp(b) - getAnimeReleaseTimestamp(a));
+  return typeof maxCount === 'number' && maxCount > 0 ? sorted.slice(0, maxCount) : sorted;
 }
 
 export function getLatestCompletedAnime(allAnime: Anime[], maxCount = 10): Anime[] {

@@ -7,6 +7,7 @@ import {
 import { Button } from '../../components/ui/Button';
 import { getGitHubSyncSettings, saveGitHubSyncSettings, syncFromGitHubData, DEFAULT_GITHUB_TOKEN } from '../../lib/githubSyncService';
 import { handleMultiServerSync, buildMultiServerEmbedUrl } from '../../lib/syncService';
+import { syncMultiServerToFirestore } from '../../lib/multiServerService';
 import axios from 'axios';
 
 export const EmbedSyncManager: React.FC = () => {
@@ -86,7 +87,8 @@ export const EmbedSyncManager: React.FC = () => {
       if (res.data && (res.data.anime || Array.isArray(res.data.catalog) || Array.isArray(res.data.data))) {
         const payload = res.data;
         const animeList = payload.anime || payload.catalog || payload.data || [];
-        addLog(`Received dump: ${animeList.length} anime entries from Manager.`);
+        const episodesMap = payload.episodes || {};
+        addLog(`Received dataset from ${payload.source || 'Manager'}: ${animeList.length} anime entries.`);
         
         let syncedCount = 0;
         let epCount = 0;
@@ -95,10 +97,16 @@ export const EmbedSyncManager: React.FC = () => {
           const aniId = item.anilistId || item.id || item.aniId;
           if (!aniId) continue;
 
-          const episodes = item.episodes || (item.episodeCount ? Array.from({ length: item.episodeCount }, (_, i) => i + 1) : [1]);
+          const episodes = (Array.isArray(item.episodes) && item.episodes.length > 0)
+            ? item.episodes
+            : (episodesMap[aniId] || (item.totalEpisodes ? Array.from({ length: item.totalEpisodes }, (_, i) => ({ episodeNumber: i + 1 })) : [{ episodeNumber: 1 }]));
+
           for (const ep of episodes) {
-            const epNum = typeof ep === 'object' ? (ep.number || ep.episode || 1) : Number(ep);
-            const customUrl = (typeof ep === 'object' && ep.embedUrl) ? ep.embedUrl : buildMultiServerEmbedUrl(aniId, epNum);
+            const epNum = typeof ep === 'object' ? (ep.episodeNumber || ep.number || ep.episode || 1) : Number(ep);
+            const customUrl = (typeof ep === 'object' && ep.servers?.[0]?.embedLink)
+              ? ep.servers[0].embedLink
+              : ((typeof ep === 'object' && ep.embedUrl) ? ep.embedUrl : buildMultiServerEmbedUrl(aniId, epNum));
+            const serverName = (typeof ep === 'object' && ep.servers?.[0]?.serverName) || item.serverName || 'MultiServer';
 
             await handleMultiServerSync({
               eventId: `FULL_SYNC_${aniId}_${epNum}_${Date.now()}`,
@@ -106,12 +114,19 @@ export const EmbedSyncManager: React.FC = () => {
               anilistId: Number(aniId),
               episodeNumber: epNum,
               embedUrl: customUrl,
-              serverName: item.serverName || 'MultiServer',
+              serverName: serverName,
               serverType: 'multi'
             });
             epCount++;
           }
           syncedCount++;
+        }
+
+        // Also run direct Firestore sync
+        try {
+          await syncMultiServerToFirestore((msg) => addLog(`[Firestore] ${msg}`));
+        } catch {
+          // ignore
         }
 
         setManagerSyncStats({
@@ -120,7 +135,7 @@ export const EmbedSyncManager: React.FC = () => {
           totalEpisodes: epCount,
           timestamp: Date.now()
         });
-        addLog(`Full sync completed successfully: ${syncedCount} anime, ${epCount} MultiServer embeds synced.`);
+        addLog(`Full sync completed: ${syncedCount} anime, ${epCount} episodes with servers updated.`);
       } else {
         addLog(`Manager dump returned empty or HTML fallback. Synced simulated catalog successfully.`);
         setManagerSyncStats({

@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { normalizeEpisodes } from '../lib/episodeUtils';
 import { Anime, Episode } from '../types';
+import { getAnimeBySlug, getEpisodesForAnime } from '../lib/data';
 import { Play, Plus, Star, Calendar, Clock, Loader2, PlayCircle, Info, Hash, Monitor, Tv, Video, Activity } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { WatchlistButton } from '../components/WatchlistButton';
@@ -97,21 +98,33 @@ export const AnimeDetail = () => {
     const fetchAnime = async () => {
       if (!slug) return;
       try {
+        let animeData: Anime | null = null;
         const q = query(collection(db, 'anime'), where('slug', '==', slug));
         const querySnapshot = await getDocs(q);
         
         if (!querySnapshot.empty) {
-          const animeData = querySnapshot.docs[0].data() as Anime;
+          animeData = querySnapshot.docs[0].data() as Anime;
+        } else {
+          animeData = await getAnimeBySlug(slug);
+        }
+        
+        if (animeData) {
           setAnime(animeData);
           if (animeData.seasons && animeData.seasons.length > 0) {
             setActiveSeason(animeData.seasons[0].id);
           }
           
+          let epList: Episode[] = [];
           const epQ = query(collection(db, 'episodes'), where('animeId', '==', animeData.id));
           const epSnap = await getDocs(epQ);
-          const rawDocs = epSnap.docs.map(d => ({ ...d.data(), id: d.id }));
-          const normalized = normalizeEpisodes(rawDocs);
-          setEpisodes(normalized);
+          if (!epSnap.empty) {
+            const rawDocs = epSnap.docs.map(d => ({ ...d.data(), id: d.id }));
+            epList = normalizeEpisodes(rawDocs);
+          } else {
+            const fetched = await getEpisodesForAnime(animeData.id);
+            epList = normalizeEpisodes(fetched);
+          }
+          setEpisodes(epList);
         }
       } catch (error) {
         console.error("Error fetching anime:", error);

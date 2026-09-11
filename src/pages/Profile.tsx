@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Anime } from '../types';
+import { getAllAnime } from '../lib/data';
 import { AnimeCard } from '../components/AnimeCard';
 import { Button } from '../components/ui/Button';
 import { UserBadgeDisplay } from '../components/UserBadgeDisplay';
@@ -117,9 +118,8 @@ export const ProfilePage: React.FC = () => {
         const watchlistSnap = await getDocs(watchlistQ);
         const animeIds = watchlistSnap.docs.map(d => d.data().animeId);
 
-        const animeSnap = await getDocs(collection(db, 'anime'));
-        const allAnime = animeSnap.docs.map(d => ({ id: d.id, ...d.data() } as Anime));
-        const userWatchlist = allAnime.filter(a => animeIds.includes(a.id));
+        const allAnime = await getAllAnime();
+        const userWatchlist = allAnime.filter(a => animeIds.includes(a.id) || (a.aniListId && animeIds.includes(a.aniListId)));
         setWatchlistItems(userWatchlist);
 
         // 2. Fetch Watched Episodes count

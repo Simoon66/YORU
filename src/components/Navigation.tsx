@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { signInWithGoogle, logout, db } from '../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Anime } from '../types';
+import { getAllAnime } from '../lib/data';
 import { Button } from './ui/Button';
 import { cn, is18PlusAnime } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -77,15 +78,15 @@ export const Navigation = () => {
       }
       setIsSearching(true);
       try {
-        const q = query(collection(db, 'anime'), where('published', '==', true));
-        const snap = await getDocs(q);
-        const results = snap.docs
-          .map(d => d.data() as Anime)
+        const all = await getAllAnime();
+        const term = searchQuery.toLowerCase().trim();
+        const results = all
           .filter(a => 
-            a.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-            a.nativeTitle?.toLowerCase().includes(searchQuery.toLowerCase())
+            a.title?.toLowerCase().includes(term) || 
+            a.nativeTitle?.toLowerCase().includes(term) ||
+            a.slug?.toLowerCase().includes(term)
           )
-          .slice(0, 5);
+          .slice(0, 6);
         setSearchResults(results);
       } catch (e) {
         console.error(e);

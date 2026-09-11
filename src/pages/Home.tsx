@@ -213,7 +213,7 @@ export const Home = () => {
         {/* 1. Latest Releases (sorted by release date) */}
         {latestReleases.length > 0 && (
           <section id="latest-releases-section">
-            <SectionHeader title="Latest Releases" linkTo="/browse?sort=release" />
+            <SectionHeader title="Latest Releases" linkTo="/recent" />
             <HorizontalAnimeRow animeList={latestReleases} maxItems={10} />
           </section>
         )}
@@ -229,7 +229,7 @@ export const Home = () => {
         {/* 3. Recently Added (recently added to the site) */}
         {recentlyAdded.length > 0 && (
           <section id="recently-added-section">
-            <SectionHeader title="Recently Added" linkTo="/recent" />
+            <SectionHeader title="Recently Added" linkTo="/recent?tab=added" />
             <HorizontalAnimeRow animeList={recentlyAdded} maxItems={10} />
           </section>
         )}

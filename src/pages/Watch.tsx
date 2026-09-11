@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, setDoc, getDoc } from 'firebase/firestore';
 import { Anime, Episode } from '../types';
+import { getAnimeBySlug, getEpisodesForAnime } from '../lib/data';
 import { useAuth } from '../contexts/AuthContext';
 import { Maximize, SkipBack, SkipForward, Server, Flag, Lightbulb, PlayCircle, Loader2, Check, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
@@ -78,19 +79,29 @@ export const Watch = () => {
       if (!slug) return;
       try {
         getServerConfig().then(cfg => setServerConfig(cfg)).catch(() => {});
+        let animeData: Anime | null = null;
         const q = query(collection(db, 'anime'), where('slug', '==', slug));
         const querySnapshot = await getDocs(q);
         
         if (!querySnapshot.empty) {
-          const animeData = querySnapshot.docs[0].data() as Anime;
+          animeData = querySnapshot.docs[0].data() as Anime;
+        } else {
+          animeData = await getAnimeBySlug(slug);
+        }
+        
+        if (animeData) {
           setAnime(animeData);
           
+          let allEps: Episode[] = [];
           const epQ = query(collection(db, 'episodes'), where('animeId', '==', animeData.id));
           const epSnap = await getDocs(epQ);
-          const rawDocs = epSnap.docs.map(d => ({ ...d.data(), id: d.id }));
-          
-          // Normalize and deduplicate all episodes and their server links
-          const allEps = normalizeEpisodes(rawDocs);
+          if (!epSnap.empty) {
+            const rawDocs = epSnap.docs.map(d => ({ ...d.data(), id: d.id }));
+            allEps = normalizeEpisodes(rawDocs);
+          } else {
+            const fetched = await getEpisodesForAnime(animeData.id);
+            allEps = normalizeEpisodes(fetched);
+          }
           setEpisodes(allEps);
           
           // Determine best active season

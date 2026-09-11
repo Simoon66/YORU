@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Anime } from '../types';
+import { getAllAnime } from '../lib/data';
 import { AnimeCard } from '../components/AnimeCard';
 import { SkeletonAnimeCard } from '../components/SkeletonAnimeCard';
 import { Bookmark, Search } from 'lucide-react';
@@ -27,10 +28,8 @@ export const Watchlist = () => {
         const snap = await getDocs(q);
         const animeIds = snap.docs.map(d => d.data().animeId);
         
-        const allAnimeSnap = await getDocs(collection(db, 'anime'));
-        const allAnime = allAnimeSnap.docs.map(d => ({ id: d.id, ...d.data() } as Anime));
-        
-        const myAnime = allAnime.filter(a => animeIds.includes(a.id));
+        const allAnime = await getAllAnime();
+        const myAnime = allAnime.filter(a => animeIds.includes(a.id) || (a.aniListId && animeIds.includes(a.aniListId)));
         setWatchlist(myAnime);
       } catch (e) {
         console.error("Error loading watchlist", e);
