@@ -349,7 +349,7 @@ export const AnimeDetail = () => {
                           key={`${s.animeId}-${idx}`}
                           className="px-4 py-2.5 text-[10px] md:text-xs font-bold uppercase tracking-widest bg-white text-[#030407] rounded-lg shadow-md whitespace-nowrap"
                         >
-                          Season {s.seasonNumber}
+                          {s.seasonName || s.title || `Season ${s.seasonNumber}`}
                         </span>
                       ) : (
                         <Link
@@ -357,7 +357,7 @@ export const AnimeDetail = () => {
                           to={`/anime/${s.slug}`}
                           className="px-4 py-2.5 text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-lg whitespace-nowrap text-yoru-text-muted hover:text-white hover:bg-white/5"
                         >
-                          Season {s.seasonNumber}
+                          {s.seasonName || s.title || `Season ${s.seasonNumber}`}
                         </Link>
                       );
                     })}

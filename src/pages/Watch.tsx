@@ -675,7 +675,7 @@ export const Watch = () => {
                         .sort((a, b) => (a.seasonNumber || 1) - (b.seasonNumber || 1))
                         .map((s, idx) => (
                           <option key={`${s.animeId}-${idx}`} value={s.animeId} className="bg-[#0F1117] text-white">
-                            Season {s.seasonNumber}: {s.title}
+                            {s.seasonName || s.title || `Season ${s.seasonNumber}`}
                           </option>
                         ))}
                     </select>
