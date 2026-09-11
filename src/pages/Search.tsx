@@ -12,11 +12,15 @@ import { cn } from '../lib/utils';
 type SortOption = 'relevance' | 'score' | 'newest' | 'release';
 
 export const Search = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get('q') || searchParams.get('search') || '';
+  const initialFormat = searchParams.get('format');
+  const initialStatus = searchParams.get('status');
+  const initialSort = (searchParams.get('sort') as SortOption) || 'relevance';
+  
   const [query, setQuery] = useState(initialQuery);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<SortOption>('relevance');
+  const [sortBy, setSortBy] = useState<SortOption>(initialSort);
 
   useEffect(() => {
     const qParam = searchParams.get('q') || searchParams.get('search');
@@ -58,6 +62,18 @@ export const Search = () => {
 
   useEffect(() => {
     let filtered = [...allAnime];
+    
+    // Apply URL param filters
+    const filterFormat = searchParams.get('format');
+    const filterStatus = searchParams.get('status');
+
+    if (filterFormat) {
+      filtered = filtered.filter(a => a.format?.toLowerCase() === filterFormat.toLowerCase());
+    }
+
+    if (filterStatus) {
+      filtered = filtered.filter(a => a.status?.toLowerCase() === filterStatus.toLowerCase());
+    }
     
     if (query.trim()) {
       const lowerQ = query.toLowerCase();

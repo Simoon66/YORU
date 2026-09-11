@@ -10,6 +10,7 @@ const ANILIST_QUERY = `
 query ($id: Int, $search: String) {
   Media (id: $id, search: $search, type: ANIME) {
     id
+    isAdult
     title { english romaji native }
     format
     episodes
@@ -98,6 +99,7 @@ export const AnimeEditor = () => {
     backdrop: '',
     synopsis: '',
     seasons: [{ id: 's1', name: 'Season 1', order: 1 }],
+    isAdult: false,
     published: false,
   });
 
@@ -248,6 +250,7 @@ export const AnimeEditor = () => {
         averageScore: media.averageScore ? `${media.averageScore}%` : '',
         studios: media.studios?.nodes?.[0]?.name || '',
         genres: media.genres || [],
+        isAdult: Boolean(media.isAdult || media.genres?.some((g: string) => ['Hentai', 'Adult', '18+'].includes(g))),
         poster: media.coverImage?.extraLarge || '',
         backdrop: media.bannerImage || '',
         synopsis: media.description?.replace(/<br><br>/g, '\n').replace(/<[^>]*>?/gm, '') || ''
@@ -616,16 +619,31 @@ export const AnimeEditor = () => {
           </div>
         )}
 
-        <div className="pt-6 border-t border-yoru-border flex items-center justify-between">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input 
-              type="checkbox" 
-              checked={formData.published} 
-              onChange={e => setFormData({...formData, published: e.target.checked})}
-              className="w-4 h-4 bg-yoru-bg border-yoru-border text-yoru-accent focus:ring-yoru-accent focus:ring-offset-yoru-surface"
-            />
-            <span className="text-sm font-bold uppercase tracking-widest text-yoru-text-muted">Publish Immediately</span>
-          </label>
+        <div className="pt-6 border-t border-yoru-border flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-6">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={formData.published} 
+                onChange={e => setFormData({...formData, published: e.target.checked})}
+                className="w-4 h-4 bg-yoru-bg border-yoru-border text-yoru-accent focus:ring-yoru-accent focus:ring-offset-yoru-surface"
+              />
+              <span className="text-sm font-bold uppercase tracking-widest text-yoru-text-muted">Publish Immediately</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border border-red-500/30 bg-red-950/20 hover:bg-red-950/40 transition-colors">
+              <input 
+                type="checkbox" 
+                checked={Boolean(formData.isAdult)} 
+                onChange={e => setFormData({...formData, isAdult: e.target.checked})}
+                className="w-4 h-4 bg-yoru-bg border-red-500/50 text-red-600 focus:ring-red-500 rounded"
+              />
+              <span className="text-sm font-bold uppercase tracking-wider text-red-400 flex items-center gap-1.5">
+                <span className="px-1.5 py-0.2 bg-red-600 text-white rounded text-[10px] font-black">18+</span>
+                Adult / 18+ Content
+              </span>
+            </label>
+          </div>
           <button 
             type="submit"
             disabled={isSaving}

@@ -11,6 +11,7 @@ import { WatchlistButton } from '../components/WatchlistButton';
 import { CommentSection } from '../components/CommentSection';
 import { normalizeEpisodes } from '../lib/episodeUtils';
 import { getServerConfig, applyDynamicDomainOverride, ServerConfig } from '../lib/serverSettings';
+import { is18PlusAnime } from '../lib/utils';
 
 export const Watch = () => {
   const { slug, episodeNum } = useParams();
@@ -519,6 +520,11 @@ export const Watch = () => {
           <div className="w-full max-w-[1100px] mx-auto px-4 md:px-0 mt-4 md:mt-5 mb-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <div className="flex items-center gap-2 text-xs font-semibold text-yoru-text-muted">
+                {is18PlusAnime(anime) && (
+                  <span className="px-1.5 py-0.5 rounded bg-red-600/95 text-white text-[10px] font-black uppercase tracking-wider shadow-sm">
+                    18+
+                  </span>
+                )}
                 <span>{anime.title}</span>
                 {anime.seasonNumber ? (
                   <>

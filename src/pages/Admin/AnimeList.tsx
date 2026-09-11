@@ -4,6 +4,7 @@ import { Anime } from '../../types';
 import { collection, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Plus, Edit, Trash2, Eye, EyeOff, Search } from 'lucide-react';
+import { is18PlusAnime } from '../../lib/utils';
 
 export const AnimeList = () => {
   const [animes, setAnimes] = useState<Anime[]>([]);
@@ -99,9 +100,23 @@ export const AnimeList = () => {
                 <tr key={anime.id} className="hover:bg-yoru-surface-elevated/50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
-                      <img src={anime.poster} alt="" className="w-10 h-14 object-cover border border-yoru-border" />
+                      <div className="relative shrink-0">
+                        <img src={anime.poster} alt="" className="w-10 h-14 object-cover border border-yoru-border" />
+                        {is18PlusAnime(anime) && (
+                          <span className="absolute top-0.5 left-0.5 px-1 py-0.2 bg-red-600 text-white text-[8px] font-black rounded shadow">
+                            18+
+                          </span>
+                        )}
+                      </div>
                       <div>
-                        <div className="font-bold text-white">{anime.title}</div>
+                        <div className="font-bold text-white flex items-center gap-2">
+                          {anime.title}
+                          {is18PlusAnime(anime) && (
+                            <span className="px-1.5 py-0.2 rounded bg-red-600/90 text-white text-[9px] font-black uppercase tracking-wider">
+                              18+
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs text-yoru-text-muted">{anime.format} • {anime.season}</div>
                       </div>
                     </div>

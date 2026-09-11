@@ -164,6 +164,7 @@ export const AutoImport = () => {
         Media (id: $id, type: ANIME) {
           id
           idMal
+          isAdult
           title {
             romaji
             english
@@ -381,6 +382,11 @@ export const AutoImport = () => {
             published: true
           };
 
+          const isAdult = Boolean(meta.isAdult || meta.genres?.some((g: string) => ['Hentai', 'Adult', '18+'].includes(g)));
+          if (isAdult) {
+            newAnime.isAdult = true;
+          }
+
           if (item.seasonGroupId) {
             newAnime.seasonGroupId = item.seasonGroupId;
             newAnime.seasonNumber = item.seasonNumber || 1;
@@ -397,6 +403,9 @@ export const AutoImport = () => {
             totalEpisodes: totalEpisodes,
             status: meta.status || 'FINISHED'
           };
+          if (meta.isAdult !== undefined) {
+            updateData.isAdult = Boolean(meta.isAdult || meta.genres?.some((g: string) => ['Hentai', 'Adult', '18+'].includes(g)));
+          }
           if (item.seasonGroupId) {
             updateData.seasonGroupId = item.seasonGroupId;
             updateData.seasonNumber = item.seasonNumber || 1;

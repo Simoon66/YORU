@@ -5,7 +5,17 @@ import { ContinueWatchingCard } from '../components/ContinueWatchingCard';
 import { SkeletonAnimeCard } from '../components/SkeletonAnimeCard';
 import { HorizontalAnimeRow } from '../components/HorizontalAnimeRow';
 import { Anime } from '../types';
-import { getTrendingAnime, getAllAnime, getRecentlyAddedAnime, getWatchHistory, clearWatchHistory, removeWatchHistoryItem } from '../lib/data';
+import { 
+  getTrendingAnime, 
+  getAllAnime, 
+  getRecentlyAddedAnime, 
+  getLatestReleasesAnime, 
+  getLatestCompletedAnime, 
+  getLatestMovies, 
+  getWatchHistory, 
+  clearWatchHistory, 
+  removeWatchHistoryItem 
+} from '../lib/data';
 import { ChevronRight, Trash2, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,9 +33,11 @@ interface HistoryItem {
 
 export const Home = () => {
   const { user } = useAuth();
+  const [latestReleases, setLatestReleases] = useState<Anime[]>([]);
   const [trending, setTrending] = useState<Anime[]>([]);
-  const [latest, setLatest] = useState<Anime[]>([]);
   const [recentlyAdded, setRecentlyAdded] = useState<Anime[]>([]);
+  const [latestCompleted, setLatestCompleted] = useState<Anime[]>([]);
+  const [latestMovies, setLatestMovies] = useState<Anime[]>([]);
   const [watchHistory, setWatchHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isClearing, setIsClearing] = useState(false);
@@ -33,24 +45,21 @@ export const Home = () => {
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
-      const [trendingData, allData, recentData] = await Promise.all([
-        getTrendingAnime(),
+      const [allData, trendingData, recentData] = await Promise.all([
         getAllAnime(),
+        getTrendingAnime(10),
         getRecentlyAddedAnime(10)
       ]);
+
+      const releases = getLatestReleasesAnime(allData, 10);
+      const completed = getLatestCompletedAnime(allData, 10);
+      const movies = getLatestMovies(allData, 10);
+
+      setLatestReleases(releases);
       setTrending(trendingData);
       setRecentlyAdded(recentData);
-      
-      // Ensure Latest Releases is distinct from Trending Now (sorted chronologically)
-      const sortedLatest = [...allData]
-        .sort((a, b) => {
-          const dateA = a.createdAt || (a.startDate ? new Date(a.startDate).getTime() : 0);
-          const dateB = b.createdAt || (b.startDate ? new Date(b.startDate).getTime() : 0);
-          return dateB - dateA;
-        })
-        .filter(anime => !trendingData.slice(0, 3).some(t => t.id === anime.id));
-
-      setLatest(sortedLatest.length > 0 ? sortedLatest : allData.slice().reverse());
+      setLatestCompleted(completed);
+      setLatestMovies(movies);
       
       try {
         if (user) {
@@ -200,7 +209,23 @@ export const Home = () => {
           </section>
         )}
 
-        {/* Recently Added Section */}
+        {/* 1. Latest Releases (sorted by release date) */}
+        {latestReleases.length > 0 && (
+          <section id="latest-releases-section">
+            <SectionHeader title="Latest Releases" linkTo="/browse?sort=release" />
+            <HorizontalAnimeRow animeList={latestReleases} maxItems={10} />
+          </section>
+        )}
+
+        {/* 2. Trending (Top 10 most watched, Netflix style numbers, no view more) */}
+        {trending.length > 0 && (
+          <section id="trending-section">
+            <SectionHeader title="Trending" />
+            <HorizontalAnimeRow animeList={trending} maxItems={10} showRank={true} />
+          </section>
+        )}
+
+        {/* 3. Recently Added (recently added to the site) */}
         {recentlyAdded.length > 0 && (
           <section id="recently-added-section">
             <SectionHeader title="Recently Added" linkTo="/recent" />
@@ -208,17 +233,21 @@ export const Home = () => {
           </section>
         )}
 
-        {/* Trending Section */}
-        <section>
-          <SectionHeader title="Trending Now" linkTo="/browse" />
-          <HorizontalAnimeRow animeList={trending} maxItems={10} />
-        </section>
+        {/* 4. Latest Completed (finished TV series, sorted by finish date) */}
+        {latestCompleted.length > 0 && (
+          <section id="latest-completed-section">
+            <SectionHeader title="Latest Completed" linkTo="/browse?status=finished&format=tv" />
+            <HorizontalAnimeRow animeList={latestCompleted} maxItems={10} />
+          </section>
+        )}
 
-        {/* Latest Releases Section */}
-        <section>
-          <SectionHeader title="Latest Releases" linkTo="/browse" />
-          <HorizontalAnimeRow animeList={latest} maxItems={10} />
-        </section>
+        {/* 5. Latest Movie (latest added movies) */}
+        {latestMovies.length > 0 && (
+          <section id="latest-movies-section">
+            <SectionHeader title="Latest Movie" linkTo="/browse?format=movie" />
+            <HorizontalAnimeRow animeList={latestMovies} maxItems={10} />
+          </section>
+        )}
         
       </div>
     </main>

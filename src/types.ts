@@ -127,6 +127,8 @@ export interface Anime {
   averageScore: string; // e.g., '91%'
   studios: string; // e.g., 'MADHOUSE'
   genres: string[];
+  isAdult?: boolean;
+  is18Plus?: boolean;
   poster: string;
   backdrop: string;
   synopsis: string;

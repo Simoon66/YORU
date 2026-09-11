@@ -38,3 +38,36 @@ export function normalizeTitle(title: string): string {
   }
   return title;
 }
+
+export function is18PlusAnime(anime?: {
+  isAdult?: boolean;
+  is18Plus?: boolean;
+  genres?: string[];
+  title?: string;
+  rating?: string;
+} | null): boolean {
+  if (!anime) return false;
+  if (anime.is18Plus || anime.isAdult) return true;
+
+  if (Array.isArray(anime.genres)) {
+    const adultKeywords = ['hentai', 'ecchi', '18+', 'adult', 'erotica', 'r18', 'mature'];
+    if (anime.genres.some(g => typeof g === 'string' && adultKeywords.includes(g.trim().toLowerCase()))) {
+      return true;
+    }
+  }
+
+  if (typeof anime.rating === 'string') {
+    const ratingLower = anime.rating.toLowerCase();
+    if (ratingLower.includes('18+') || ratingLower.includes('rx') || ratingLower.includes('r18') || ratingLower.includes('hentai')) {
+      return true;
+    }
+  }
+
+  if (typeof anime.title === 'string') {
+    if (/\b18\+\b/i.test(anime.title) || /\bR-?18\b/i.test(anime.title)) {
+      return true;
+    }
+  }
+
+  return false;
+}

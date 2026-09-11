@@ -91,15 +91,39 @@ export const mockEpisodes: Episode[] = [
   }
 ];
 
-export async function getTrendingAnime(): Promise<Anime[]> {
+export async function getTrendingAnime(maxCount = 10): Promise<Anime[]> {
   try {
-    const q = query(collection(db, 'anime'), where('published', '==', true), limit(10));
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) return mockAnimeList;
-    return querySnapshot.docs.map(doc => doc.data() as Anime);
+    const [animeSnap, progressSnap] = await Promise.all([
+      getDocs(query(collection(db, 'anime'), where('published', '==', true))),
+      getDocs(collection(db, 'watchProgress')).catch(() => null)
+    ]);
+    if (animeSnap.empty) return mockAnimeList;
+    const all = animeSnap.docs.map(doc => doc.data() as Anime);
+
+    // Aggregate real watch progress counts per anime
+    const watchCountMap = new Map<string, number>();
+    if (progressSnap && !progressSnap.empty) {
+      progressSnap.docs.forEach(d => {
+        const data = d.data();
+        if (data.animeId) {
+          watchCountMap.set(data.animeId, (watchCountMap.get(data.animeId) || 0) + 1);
+        }
+      });
+    }
+
+    all.sort((a, b) => {
+      const countA = watchCountMap.get(a.id) || 0;
+      const countB = watchCountMap.get(b.id) || 0;
+      if (countB !== countA) return countB - countA;
+      const scoreA = parseFloat(a.averageScore || '0') || 0;
+      const scoreB = parseFloat(b.averageScore || '0') || 0;
+      return scoreB - scoreA;
+    });
+
+    return all.slice(0, maxCount);
   } catch (e) {
     console.warn("Failed to fetch from Firebase, using mock data", e);
-    return mockAnimeList;
+    return mockAnimeList.slice(0, maxCount);
   }
 }
 
@@ -130,7 +154,7 @@ export async function getEpisodesForAnime(animeId: string): Promise<Episode[]> {
 }
 
 export async function getAllAnime(): Promise<Anime[]> {
-   try {
+  try {
     const q = query(collection(db, 'anime'), where('published', '==', true));
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) return mockAnimeList;
@@ -140,23 +164,40 @@ export async function getAllAnime(): Promise<Anime[]> {
   }
 }
 
-export function isRecentRelease(anime: Anime): boolean {
-  // Extract release year from startDate (e.g. "2003", "2003-10-03") or season (e.g. "Fall 2003")
-  let releaseYear: number | null = null;
+export function getAnimeReleaseTimestamp(anime: Anime): number {
   if (anime.startDate) {
-    const match = anime.startDate.match(/\b(19\d\d|20\d\d)\b/);
-    if (match) releaseYear = parseInt(match[1], 10);
+    const parsed = Date.parse(anime.startDate);
+    if (!isNaN(parsed)) return parsed;
+    const yearMatch = anime.startDate.match(/\b(19\d\d|20\d\d)\b/);
+    if (yearMatch) {
+      return new Date(parseInt(yearMatch[1], 10), 0, 1).getTime();
+    }
   }
-  if (!releaseYear && anime.season) {
-    const match = anime.season.match(/\b(19\d\d|20\d\d)\b/);
-    if (match) releaseYear = parseInt(match[1], 10);
+  if (anime.season) {
+    const yearMatch = anime.season.match(/\b(19\d\d|20\d\d)\b/);
+    if (yearMatch) {
+      const year = parseInt(yearMatch[1], 10);
+      const isWinter = /winter/i.test(anime.season);
+      const isSpring = /spring/i.test(anime.season);
+      const isSummer = /summer/i.test(anime.season);
+      const isFall = /fall/i.test(anime.season);
+      const month = isFall ? 9 : isSummer ? 6 : isSpring ? 3 : 0;
+      return new Date(year, month, 1).getTime();
+    }
   }
+  return anime.createdAt || 0;
+}
 
-  // If the anime has a vintage release year (e.g., 2003, older catalog before 2024), it's not a recent release
-  if (releaseYear && releaseYear < 2024) {
-    return false;
+export function getAnimeEndTimestamp(anime: Anime): number {
+  if (anime.endDate) {
+    const parsed = Date.parse(anime.endDate);
+    if (!isNaN(parsed)) return parsed;
+    const yearMatch = anime.endDate.match(/\b(19\d\d|20\d\d)\b/);
+    if (yearMatch) {
+      return new Date(parseInt(yearMatch[1], 10), 11, 31).getTime();
+    }
   }
-  return true;
+  return getAnimeReleaseTimestamp(anime);
 }
 
 export async function getRecentlyAddedAnime(maxCount = 10): Promise<Anime[]> {
@@ -165,31 +206,48 @@ export async function getRecentlyAddedAnime(maxCount = 10): Promise<Anime[]> {
     const querySnapshot = await getDocs(q);
     if (querySnapshot.empty) return [];
     
-    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const all = querySnapshot.docs.map(doc => doc.data() as Anime);
 
-    // Strictly filter:
-    // 1. Added within the last 1 week (createdAt or recentlyAddedAt >= oneWeekAgo) - NOT updatedAt!
-    // 2. Not an old catalog anime (e.g. release year from 2003)
-    const recentWeekly = all.filter(anime => {
-      const addedTime = anime.recentlyAddedAt || anime.createdAt || 0;
-      const isAddedWithinOneWeek = addedTime >= oneWeekAgo;
-      const notVintage = isRecentRelease(anime);
-      return isAddedWithinOneWeek && notVintage;
-    });
-
-    // Sort descending by creation/addition time
-    recentWeekly.sort((a, b) => {
+    // Sort strictly by when it was added to the site (recentlyAddedAt or createdAt)
+    all.sort((a, b) => {
       const timeA = a.recentlyAddedAt || a.createdAt || 0;
       const timeB = b.recentlyAddedAt || b.createdAt || 0;
       return timeB - timeA;
     });
 
-    return typeof maxCount === 'number' && maxCount > 0 ? recentWeekly.slice(0, maxCount) : recentWeekly;
+    return typeof maxCount === 'number' && maxCount > 0 ? all.slice(0, maxCount) : all;
   } catch (e) {
     console.warn("Failed to fetch recently added from Firebase", e);
     return [];
   }
+}
+
+export function getLatestReleasesAnime(allAnime: Anime[], maxCount = 10): Anime[] {
+  return [...allAnime]
+    .sort((a, b) => getAnimeReleaseTimestamp(b) - getAnimeReleaseTimestamp(a))
+    .slice(0, maxCount);
+}
+
+export function getLatestCompletedAnime(allAnime: Anime[], maxCount = 10): Anime[] {
+  return [...allAnime]
+    .filter(a => {
+      const isFinished = (a.status || '').toLowerCase() === 'finished';
+      const isTV = (a.format || 'TV').toUpperCase() === 'TV';
+      return isFinished && isTV;
+    })
+    .sort((a, b) => getAnimeEndTimestamp(b) - getAnimeEndTimestamp(a))
+    .slice(0, maxCount);
+}
+
+export function getLatestMovies(allAnime: Anime[], maxCount = 10): Anime[] {
+  return [...allAnime]
+    .filter(a => (a.format || '').toUpperCase() === 'MOVIE')
+    .sort((a, b) => {
+      const timeA = a.recentlyAddedAt || a.createdAt || getAnimeReleaseTimestamp(a);
+      const timeB = b.recentlyAddedAt || b.createdAt || getAnimeReleaseTimestamp(b);
+      return timeB - timeA;
+    })
+    .slice(0, maxCount);
 }
 
 

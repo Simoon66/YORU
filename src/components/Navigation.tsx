@@ -6,7 +6,7 @@ import { signInWithGoogle, logout, db } from '../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Anime } from '../types';
 import { Button } from './ui/Button';
-import { cn } from '../lib/utils';
+import { cn, is18PlusAnime } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { AuthModal } from './AuthModal';
 
@@ -242,7 +242,14 @@ export const Navigation = () => {
                                   focusedIndex === idx ? "bg-white/10" : "hover:bg-white/5"
                                 )}
                               >
-                                <img src={anime.poster} alt={anime.title} className="w-10 h-14 object-cover rounded shadow-sm group-hover:shadow-md transition-shadow" />
+                                <div className="relative shrink-0">
+                                  <img src={anime.poster} alt={anime.title} className="w-10 h-14 object-cover rounded shadow-sm group-hover:shadow-md transition-shadow" />
+                                  {is18PlusAnime(anime) && (
+                                    <span className="absolute top-0.5 left-0.5 px-1 py-0.2 bg-red-600/95 text-white text-[8px] font-black rounded shadow">
+                                      18+
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="flex-1 min-w-0">
                                   <h4 className={cn(
                                     "text-sm font-bold truncate transition-colors",

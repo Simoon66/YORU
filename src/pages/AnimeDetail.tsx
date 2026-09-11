@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button';
 import { WatchlistButton } from '../components/WatchlistButton';
 import { motion } from 'motion/react';
 import clsx from 'clsx';
+import { is18PlusAnime } from '../lib/utils';
 
 interface EpisodeCardProps {
   ep: Episode;
@@ -184,9 +185,14 @@ export const AnimeDetail = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 ring-1 ring-white/5 aspect-[2/3] w-full"
+                className="relative rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 ring-1 ring-white/5 aspect-[2/3] w-full"
               >
                 <img src={anime.poster} alt={anime.title} className="w-full h-full object-cover" />
+                {is18PlusAnime(anime) && (
+                  <div className="absolute top-2.5 left-2.5 z-20 px-2 py-0.5 rounded bg-red-600/95 text-white text-[11px] font-black uppercase tracking-wider shadow-[0_4px_14px_rgba(220,38,38,0.6)] border border-red-500/60 backdrop-blur-md">
+                    18+
+                  </div>
+                )}
               </motion.div>
             </div>
 
@@ -199,6 +205,11 @@ export const AnimeDetail = () => {
             >
               {/* Badges */}
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 sm:gap-3 text-xs sm:text-sm font-bold uppercase tracking-wider">
+                {is18PlusAnime(anime) && (
+                  <span className="px-3.5 py-1.5 rounded-lg bg-red-600/95 text-white border border-red-500/60 flex items-center gap-1 font-black shadow-[0_0_12px_rgba(220,38,38,0.4)]">
+                    18+
+                  </span>
+                )}
                 <span className="px-3.5 py-1.5 rounded-lg bg-white/15 backdrop-blur-md text-white border border-white/20 shadow-sm">
                   {anime.format || 'TV'}
                 </span>

@@ -324,6 +324,10 @@ export async function runAnikotoRecentSync(options?: {
           averageScore: item.score ? `${Math.round(parseFloat(item.score) * 10)}%` : '84%',
           studios: item.terms_by_type?.studios?.join(', ') || 'Unknown Studio',
           genres: item.terms_by_type?.genre?.length ? item.terms_by_type.genre : ['Anime', 'Action'],
+          isAdult: Boolean(
+            item.terms_by_type?.genre?.some((g: string) => ['Hentai', 'Adult', '18+', 'Ecchi'].includes(g)) ||
+            /\b18\+\b/i.test(item.title)
+          ) || undefined,
           poster: item.poster || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&q=80&w=600',
           backdrop: item.background_image || item.poster || '',
           synopsis: item.description || `Watch ${item.title} online with English Sub and Dub on YORU.`,
