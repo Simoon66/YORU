@@ -356,7 +356,7 @@ export const AutoImport = () => {
           animeDocRef = doc(collection(db, 'anime'));
           animeId = animeDocRef.id;
           
-          const newAnime: Anime = {
+          const newAnime: Partial<Anime> = {
             id: animeId,
             title: title,
             nativeTitle: meta.title.native || meta.title.romaji || '',
@@ -376,12 +376,15 @@ export const AutoImport = () => {
             episodeDuration: meta.duration ? `${meta.duration} mins` : '',
             totalEpisodes: totalEpisodes,
             seasons: [{ id: 's1', name: 'Season 1', order: 1 }],
-            seasonGroupId: item.seasonGroupId || undefined,
-            seasonNumber: item.seasonNumber || undefined,
             createdAt: now,
             updatedAt: now,
             published: true
           };
+
+          if (item.seasonGroupId) {
+            newAnime.seasonGroupId = item.seasonGroupId;
+            newAnime.seasonNumber = item.seasonNumber || 1;
+          }
 
           await setDoc(animeDocRef, newAnime);
         } else {
