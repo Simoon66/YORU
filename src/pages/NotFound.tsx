@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Home } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { motion } from 'framer-motion';
 
 export const NotFound: React.FC = () => {
   return (
@@ -11,7 +12,16 @@ export const NotFound: React.FC = () => {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-[100px]" />
       </div>
       
-      <div className="relative z-10 space-y-6 max-w-md">
+      <div className="relative z-10 flex flex-col items-center space-y-6 max-w-md mt-12">
+        {/* Zoro Image from User */}
+        <motion.div 
+          className="relative w-72 h-72 -mb-8 pointer-events-none"
+          animate={{ y: [0, -15, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <img src="/image.png" alt="Zoro Lost" className="w-full h-full object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" />
+        </motion.div>
+
         <h1 className="text-8xl font-black text-white tracking-widest drop-shadow-2xl">
           404
         </h1>
