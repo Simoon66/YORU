@@ -4,6 +4,7 @@ import { AnimeCard } from '../components/AnimeCard';
 import { ContinueWatchingCard } from '../components/ContinueWatchingCard';
 import { SkeletonAnimeCard } from '../components/SkeletonAnimeCard';
 import { HorizontalAnimeRow } from '../components/HorizontalAnimeRow';
+import { TrendingRow } from '../components/TrendingRow';
 import { Anime } from '../types';
 import { 
   getTrendingAnime, 
@@ -221,7 +222,7 @@ export const Home = () => {
         {trending.length > 0 && (
           <section id="trending-section">
             <SectionHeader title="Trending" />
-            <HorizontalAnimeRow animeList={trending} maxItems={10} showRank={true} />
+            <TrendingRow animeList={trending} maxItems={10} />
           </section>
         )}
 

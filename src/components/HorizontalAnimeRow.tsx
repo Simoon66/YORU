@@ -7,13 +7,11 @@ import { motion } from 'motion/react';
 interface HorizontalAnimeRowProps {
   animeList: Anime[];
   maxItems?: number;
-  showRank?: boolean;
 }
 
 export const HorizontalAnimeRow: React.FC<HorizontalAnimeRowProps> = ({ 
   animeList, 
-  maxItems = 10,
-  showRank = false 
+  maxItems = 10
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isMouseDown, setIsMouseDown] = useState(false);
@@ -104,73 +102,27 @@ export const HorizontalAnimeRow: React.FC<HorizontalAnimeRowProps> = ({
           touchAction: 'pan-x'
         }}
       >
-        {items.map((anime, index) => {
-          if (showRank) {
-            const isDoubleDigit = index + 1 >= 10;
-            return (
-              <div
-                key={anime.id}
-                className="flex items-end shrink-0 snap-start w-[185px] xs:w-[210px] sm:w-[240px] md:w-[265px] lg:w-[285px] relative select-none"
-                onClickCapture={(e) => {
-                  if (hasDragged) {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }
-                }}
-              >
-                {/* Poster Card */}
-                <div className="flex-1 min-w-0 z-10 w-[145px] xs:w-[160px] sm:w-[185px] md:w-[205px] lg:w-[220px]">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.4) }}
-                  >
-                    <AnimeCard anime={anime} />
-                  </motion.div>
-                </div>
-
-                {/* Netflix Stylized Giant Rank Number (Moved to Right Side, Outline Only) */}
-                <div className={`relative shrink-0 select-none pointer-events-none z-0 pb-4 sm:pb-6 ${
-                  isDoubleDigit ? '-ml-12 sm:-ml-16 md:-ml-20' : '-ml-8 sm:-ml-12 md:-ml-16'
-                }`}>
-                  <span 
-                    className="font-black text-[110px] sm:text-[140px] md:text-[160px] leading-none tracking-tighter block select-none"
-                    style={{
-                      fontFamily: "'Impact', 'Arial Black', sans-serif",
-                      WebkitTextStroke: '2px rgba(255, 255, 255, 0.4)',
-                      color: 'transparent',
-                      filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.5))',
-                    }}
-                  >
-                    {index + 1}
-                  </span>
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <div
-              key={anime.id}
-              className="w-[145px] xs:w-[160px] sm:w-[185px] md:w-[205px] lg:w-[220px] shrink-0 snap-start"
-              onClickCapture={(e) => {
-                // Prevent click on AnimeCard if user was actively dragging
-                if (hasDragged) {
-                  e.stopPropagation();
-                  e.preventDefault();
-                }
-              }}
+        {items.map((anime, index) => (
+          <div
+            key={anime.id}
+            className="w-[145px] xs:w-[160px] sm:w-[185px] md:w-[205px] lg:w-[220px] shrink-0 snap-start"
+            onClickCapture={(e) => {
+              // Prevent click on AnimeCard if user was actively dragging
+              if (hasDragged) {
+                e.stopPropagation();
+                e.preventDefault();
+              }
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.4) }}
             >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.4) }}
-              >
-                <AnimeCard anime={anime} />
-              </motion.div>
-            </div>
-          );
-        })}
+              <AnimeCard anime={anime} />
+            </motion.div>
+          </div>
+        ))}
       </div>
     </div>
   );
