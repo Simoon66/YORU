@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Anime } from '../types';
 import { Link } from 'react-router-dom';
 import { Play, Plus, Mic } from 'lucide-react';
@@ -16,26 +17,50 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
   const [isHovered, setIsHovered] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const [floatingPos, setFloatingPos] = useState<{ x: 'left' | 'right', y: 'top' | 'bottom' | 'center' }>({ x: 'right', y: 'center' });
+  const [coords, setCoords] = useState<{ left: number; top: number; transform: string } | null>(null);
   const counts = useAnimeEpisodeCounts(anime);
 
   const handleMouseEnter = () => {
     setIsHovered(true);
     if (cardRef.current) {
       const rect = cardRef.current.getBoundingClientRect();
-      const isCloseToRightEdge = window.innerWidth - rect.right < 360;
-      const isCloseToBottomEdge = window.innerHeight - rect.bottom < 150;
-      const isCloseToTopEdge = rect.top < 150;
-      
-      let y: 'top' | 'bottom' | 'center' = 'center';
-      if (isCloseToBottomEdge) y = 'bottom';
-      else if (isCloseToTopEdge) y = 'top';
+      const isCloseToRightEdge = window.innerWidth - rect.right < 320;
+      let xDir: 'left' | 'right' = isCloseToRightEdge ? 'left' : 'right';
 
-      setFloatingPos({
-        x: isCloseToRightEdge ? 'left' : 'right',
-        y
+      // Sit exactly 12px next to the poster boundary
+      const left = xDir === 'right' 
+        ? rect.right + 12 
+        : rect.left - 290 - 12;
+
+      // The poster height is roughly width * 1.5 because of 2:3 ratio
+      const posterHeight = rect.width * 1.5;
+      const posterCenterY = rect.top + (posterHeight / 2);
+
+      // Clamping within viewport heights (assuming 360px maximum tooltip height for robust safety)
+      const tooltipHeight = 360;
+      const topEdge = posterCenterY - (tooltipHeight / 2);
+      const maxTopEdge = window.innerHeight - tooltipHeight - 16;
+      const clampedTopEdge = Math.max(16, Math.min(maxTopEdge, topEdge));
+
+      setFloatingPos({ x: xDir, y: 'center' });
+      setCoords({
+        left,
+        top: clampedTopEdge,
+        transform: ''
       });
     }
   };
+
+  useEffect(() => {
+    if (!isHovered) return;
+    const handleScroll = () => {
+      setIsHovered(false);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [isHovered]);
 
   const displayTitle = normalizeTitle(anime.title);
 
@@ -129,61 +154,95 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
         </div>
       </Link>
 
-      <AnimatePresence>
-        {isHovered && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98, x: floatingPos.x === 'right' ? -10 : 10 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            exit={{ opacity: 0, scale: 0.98, x: floatingPos.x === 'right' ? -10 : 10 }}
-            transition={{ duration: 0.15 }}
-            className={cn(
-              "absolute w-[320px] bg-yoru-surface/95 backdrop-blur-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)] rounded-xl p-5 z-[100] hidden lg:block",
-              floatingPos.x === 'right' ? "left-full ml-1" : "right-full mr-1",
-              floatingPos.y === 'center' ? "top-1/2 -translate-y-1/2" : floatingPos.y === 'top' ? "top-0" : "bottom-0"
-            )}
-          >
-            <div className="flex flex-col gap-4">
-              <h3 className="text-lg font-semibold text-white leading-tight line-clamp-2">
-                {anime.title}
-              </h3>
-              
-              <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
-                {is18PlusAnime(anime) && (
-                  <span className="px-2 py-1 rounded bg-red-600/95 text-white font-black shadow-sm border border-red-500/50">
-                    18+
+      {createPortal(
+        <AnimatePresence>
+          {isHovered && coords && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98, x: floatingPos.x === 'right' ? -10 : 10 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.98, x: floatingPos.x === 'right' ? -10 : 10 }}
+              transition={{ duration: 0.15 }}
+              style={{
+                position: 'fixed',
+                left: coords.left,
+                top: coords.top,
+                width: '290px',
+                zIndex: 9999
+              }}
+              className="bg-zinc-950/90 backdrop-blur-md border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85)] rounded-2xl p-4.5 hidden lg:block cursor-default"
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+            >
+              <div className="flex flex-col gap-3">
+                <h3 className="text-base font-extrabold text-white leading-snug line-clamp-2">
+                  {anime.title}
+                </h3>
+                
+                <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-zinc-400">
+                  <span className="flex items-center gap-0.5 text-yellow-500 font-extrabold">
+                    ⭐ {anime.averageScore ? (anime.averageScore / 10).toFixed(1) : '8.5'}
                   </span>
-                )}
-                {anime.format && !['TV', 'HD'].includes(anime.format.toUpperCase()) && (
-                  <span className="px-2 py-1 rounded bg-yoru-accent text-yoru-accent-content shadow-sm">{anime.format}</span>
-                )}
-                <span className="px-2 py-1 rounded border border-white/20 text-white flex items-center gap-1">
-                  ⭐ {anime.averageScore || 'N/A'}
-                </span>
-              </div>
+                  {anime.format && (
+                    <span className="px-1.5 py-0.5 rounded bg-white/10 text-white font-semibold text-[10px] uppercase">
+                      {anime.format}
+                    </span>
+                  )}
+                  {counts.sub > 0 && (
+                    <span className="px-1.5 py-0.5 rounded bg-white/10 text-white font-semibold text-[10px] flex items-center gap-1">
+                      <svg aria-hidden="true" className="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="2" y="4" width="20" height="16" rx="3" />
+                        <path d="M10 10H8.5a1.5 1.5 0 0 0-1.5 1.5v1A1.5 1.5 0 0 0 8.5 15H10" />
+                        <path d="M17 10h-1.5a1.5 1.5 0 0 0-1.5 1.5v1a1.5 1.5 0 0 0 1.5 1.5H17" />
+                      </svg>
+                      <span>{counts.sub}</span>
+                    </span>
+                  )}
+                  {counts.dub > 0 && (
+                    <span className="px-1.5 py-0.5 rounded bg-white/10 text-white font-semibold text-[10px] flex items-center gap-1">
+                      <Mic className="w-3 h-3 shrink-0" />
+                      <span>{counts.dub}</span>
+                    </span>
+                  )}
+                  {counts.multi > 0 && (
+                    <span className="px-1.5 py-0.5 rounded bg-white/10 text-white font-semibold text-[10px] flex items-center gap-1">
+                      <svg aria-hidden="true" className="h-3 w-3 text-yoru-accent shrink-0" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="m13 19 3.5-9 3.5 9m-6.125-2h5.25M3 7h7m0 0h2m-2 0c0 1.63-.793 3.926-2.239 5.655M7.5 6.818V5m.261 7.655C6.79 13.82 5.521 14.725 4 15m3.761-2.345L5 10m2.761 2.655L10.2 15" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5"/>
+                      </svg>
+                      <span>{counts.multi}</span>
+                    </span>
+                  )}
+                </div>
 
-              <p className="text-sm text-yoru-text-muted line-clamp-4 leading-relaxed mt-1">
-                {anime.synopsis}
-              </p>
+                <p className="text-[11.5px] text-zinc-400 line-clamp-3 leading-relaxed mt-0.5">
+                  {anime.synopsis}
+                </p>
 
-              <div className="space-y-2 text-xs mt-2 text-yoru-text-muted">
-                <div className="flex"><span className="w-24 opacity-70">Japanese:</span><span className="text-white truncate flex-1">{anime.nativeTitle || '-'}</span></div>
-                <div className="flex"><span className="w-24 opacity-70">Aired:</span><span className="text-white">{anime.startDate?.substring(0,4) || 'N/A'}</span></div>
-                <div className="flex"><span className="w-24 opacity-70">Status:</span><span className="text-white">{anime.status}</span></div>
-                <div className="flex"><span className="w-24 opacity-70">Genres:</span><span className="text-white truncate flex-1">{anime.genres?.slice(0,3).join(', ')}</span></div>
+                <div className="space-y-1 text-[11px] mt-1 text-zinc-500 border-t border-white/5 pt-2.5">
+                  <div className="flex"><span className="w-16 font-medium text-zinc-400 shrink-0">Aired:</span><span className="text-zinc-300 truncate flex-1">{anime.startDate?.substring(0,4) || 'N/A'}</span></div>
+                  <div className="flex"><span className="w-16 font-medium text-zinc-400 shrink-0">Status:</span><span className="text-zinc-300">{anime.status || 'Finished'}</span></div>
+                  <div className="flex"><span className="w-16 font-medium text-zinc-400 shrink-0">Genres:</span><span className="text-zinc-300 truncate flex-1">{anime.genres?.slice(0,3).join(', ')}</span></div>
+                </div>
+                
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5">
+                  <Link to={`/watch/${anime.slug}/1`} className="flex-1">
+                    <Button variant="primary" className="w-full gap-1.5 py-2 text-xs rounded-full">
+                      <Play className="w-3.5 h-3.5 fill-current ml-0.5" /> Watch Now
+                    </Button>
+                  </Link>
+                  <WatchlistButton 
+                    animeId={anime.id!} 
+                    variant="secondary" 
+                    size="icon" 
+                    showText={false} 
+                    className="shrink-0 rounded-full w-9 h-9 border border-white/10 hover:bg-white hover:text-black hover:border-transparent transition-all" 
+                  />
+                </div>
               </div>
-              
-              <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/5">
-                <Link to={`/watch/${anime.slug}/1`} className="flex-1">
-                  <Button variant="primary" className="w-full gap-2">
-                    <Play className="w-4 h-4 fill-current" /> Watch Now
-                  </Button>
-                </Link>
-                <WatchlistButton animeId={anime.id!} variant="secondary" size="icon" showText={false} className="shrink-0 rounded-full w-10 h-10" />
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };

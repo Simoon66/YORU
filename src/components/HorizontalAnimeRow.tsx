@@ -1,8 +1,9 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React from 'react';
 import { Anime } from '../types';
 import { AnimeCard } from './AnimeCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useFramerDragScroll } from '../hooks/useFramerDragScroll';
 
 interface HorizontalAnimeRowProps {
   animeList: Anime[];
@@ -13,56 +14,19 @@ export const HorizontalAnimeRow: React.FC<HorizontalAnimeRowProps> = ({
   animeList, 
   maxItems = 10
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isMouseDown, setIsMouseDown] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeftState, setScrollLeftState] = useState(0);
-  const [hasDragged, setHasDragged] = useState(false);
-
   // Take up to maxItems items strictly as requested
   const items = animeList.slice(0, maxItems);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!containerRef.current) return;
-    setIsMouseDown(true);
-    setHasDragged(false);
-    setStartX(e.clientX);
-    setScrollLeftState(containerRef.current.scrollLeft);
-  };
-
-  useEffect(() => {
-    if (!isMouseDown) return;
-
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current) return;
-      const walk = (e.clientX - startX) * 1.4;
-      if (Math.abs(walk) > 6) {
-        setHasDragged(true);
-      }
-      containerRef.current.scrollLeft = scrollLeftState - walk;
-    };
-
-    const handleGlobalMouseUp = () => {
-      setIsMouseDown(false);
-      setTimeout(() => setHasDragged(false), 100);
-    };
-
-    window.addEventListener('mousemove', handleGlobalMouseMove);
-    window.addEventListener('mouseup', handleGlobalMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', handleGlobalMouseMove);
-      window.removeEventListener('mouseup', handleGlobalMouseUp);
-    };
-  }, [isMouseDown, startX, scrollLeftState]);
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (!containerRef.current) return;
-    const scrollDistance = containerRef.current.clientWidth * 0.75;
-    containerRef.current.scrollBy({
-      left: direction === 'left' ? -scrollDistance : scrollDistance,
-      behavior: 'smooth'
-    });
-  };
+  const {
+    containerRef,
+    innerRef,
+    constraints,
+    x,
+    isDragging,
+    scroll,
+    handleDragStart,
+    handleDragEnd
+  } = useFramerDragScroll(items.length);
 
   if (items.length === 0) return null;
 
@@ -88,41 +52,43 @@ export const HorizontalAnimeRow: React.FC<HorizontalAnimeRowProps> = ({
         <ChevronRight className="w-5 h-5" />
       </button>
 
-      {/* Single Horizontal Row with Drag and Touch Swipe */}
+      {/* Single Horizontal Row with Framer Motion Drag and Touch Swipe */}
       <div
         ref={containerRef}
-        onMouseDown={handleMouseDown}
-        className={`flex overflow-x-auto snap-x snap-mandatory gap-3 sm:gap-4 md:gap-5 pb-4 pt-1 hide-scrollbar select-none active:cursor-grabbing ${
-          isMouseDown ? 'cursor-grabbing' : 'cursor-grab'
-        }`}
-        style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-          WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-x'
-        }}
+        className="w-full overflow-hidden"
       >
-        {items.map((anime, index) => (
-          <div
-            key={anime.id}
-            className="w-[145px] xs:w-[160px] sm:w-[185px] md:w-[205px] lg:w-[220px] shrink-0 snap-start"
-            onClickCapture={(e) => {
-              // Prevent click on AnimeCard if user was actively dragging
-              if (hasDragged) {
-                e.stopPropagation();
-                e.preventDefault();
-              }
-            }}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.4) }}
+        <motion.div
+          ref={innerRef}
+          drag="x"
+          dragConstraints={constraints}
+          dragElastic={0.15}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          style={{ x }}
+          className="flex gap-3 sm:gap-4 md:gap-5 pb-4 pt-1 cursor-grab active:cursor-grabbing select-none"
+        >
+          {items.map((anime, index) => (
+            <div
+              key={anime.id}
+              className="w-[145px] xs:w-[160px] sm:w-[185px] md:w-[205px] lg:w-[220px] shrink-0"
+              onClickCapture={(e) => {
+                // Prevent click on AnimeCard if user was actively dragging
+                if (isDragging) {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }
+              }}
             >
-              <AnimeCard anime={anime} />
-            </motion.div>
-          </div>
-        ))}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.4) }}
+              >
+                <AnimeCard anime={anime} />
+              </motion.div>
+            </div>
+          ))}
+        </motion.div>
       </div>
     </div>
   );
