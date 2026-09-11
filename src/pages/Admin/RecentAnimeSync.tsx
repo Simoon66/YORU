@@ -20,6 +20,7 @@ import {
   runAnikotoRecentSync,
   cleanupEmptyAnime
 } from '../../lib/anikotoSyncService';
+import { fetchMultiServerDataset } from '../../lib/multiServerService';
 import { AnikotoSyncSettings, AnikotoSyncStats } from '../../types';
 import axios from 'axios';
 
@@ -148,6 +149,20 @@ export const RecentAnimeSync: React.FC = () => {
     }
   };
 
+  const handleSyncMultiServer = async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    addLog('Initiating MultiServer dataset fetch & cache update...', 'info');
+    try {
+      const data = await fetchMultiServerDataset(true);
+      addLog(`MultiServer sync successful. Loaded ${data.anime.length} franchise groups into cache.`, 'success');
+    } catch (e: any) {
+      addLog(`MultiServer sync failed: ${e.message}`, 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const stats = settings.lastSyncStats;
 
   return (
@@ -178,7 +193,16 @@ export const RecentAnimeSync: React.FC = () => {
         </div>
 
         {/* Sync Now Trigger */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            onClick={handleSyncMultiServer}
+            disabled={isSyncing}
+            className="flex items-center gap-2 bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 font-semibold"
+            title="Fetches and caches the latest MultiServer dataset"
+          >
+            <Database className={`w-4 h-4 ${isSyncing ? 'animate-pulse' : ''}`} />
+            <span>Sync MultiServer</span>
+          </Button>
           <Button
             onClick={handleRunCleanup}
             disabled={isSyncing}

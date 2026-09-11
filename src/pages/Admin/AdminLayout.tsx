@@ -28,7 +28,6 @@ export const AdminLayout = () => {
     { name: 'Anime Library', path: '/admin/anime', icon: Film },
     { name: 'Add Anime', path: '/admin/anime/new', icon: Plus },
     { name: 'Auto Import', path: '/admin/auto-import', icon: DownloadCloud },
-    { name: 'Embed Sync Webhook', path: '/admin/sync', icon: Radio },
     { name: 'Community', path: '/admin/community', icon: Shield },
   ];
 

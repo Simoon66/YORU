@@ -46,7 +46,10 @@ export const Watchlist = () => {
           <Bookmark className="w-8 h-8 text-white/40" />
         </div>
         <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Sign In Required</h2>
-        <p className="text-yoru-text-muted max-w-sm">You need to sign in to view and manage your personal watchlist.</p>
+        <p className="text-yoru-text-muted max-w-sm mb-6">You need to sign in to view and manage your personal watchlist.</p>
+        <Button onClick={() => window.dispatchEvent(new CustomEvent('open-auth-modal'))} variant="primary" className="px-8 rounded-full">
+          Sign In
+        </Button>
       </div>
     );
   }

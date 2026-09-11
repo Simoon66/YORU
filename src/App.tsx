@@ -22,9 +22,9 @@ import { EpisodeManager } from './pages/Admin/EpisodeManager';
 import { AutoImport } from './pages/Admin/AutoImport';
 import { SpotlightManager } from './pages/Admin/SpotlightManager';
 import { CommunityManager } from './pages/Admin/CommunityManager';
-import { EmbedSyncManager } from './pages/Admin/EmbedSyncManager';
 import { RecentAnimeSync } from './pages/Admin/RecentAnimeSync';
 import { RecentAnime } from './pages/RecentAnime';
+import { NotFound } from './pages/NotFound';
 import ScrollToTop from './components/ScrollToTop';
 
 function AppLayout() {
@@ -51,6 +51,7 @@ function AppLayout() {
           <Route path="/community/post/:postId" element={<CommunityPostPage />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/members" element={<MembersDirectory />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />
@@ -78,7 +79,6 @@ export default function App() {
              <Route path="anime" element={<AnimeList />} />
              <Route path="anime/new" element={<AnimeEditor />} />
              <Route path="auto-import" element={<AutoImport />} />
-             <Route path="sync" element={<EmbedSyncManager />} />
              <Route path="anime/:id/edit" element={<AnimeEditor />} />
              <Route path="anime/:id/episodes" element={<EpisodeManager />} />
           </Route>

@@ -44,7 +44,7 @@ export function useWatchlist(animeId?: string) {
 
   const toggleWatchlist = useCallback(async () => {
     if (!user) {
-      alert("Please login to use watchlist");
+      window.dispatchEvent(new CustomEvent('open-auth-modal'));
       return;
     }
     if (!animeId) return;

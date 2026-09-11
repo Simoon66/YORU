@@ -477,11 +477,11 @@ export const Search = () => {
     }
   };
 
-  const selectStyle = "w-full bg-[#131b26] hover:bg-[#182333] border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-white/90 focus:outline-none focus:border-cyan-400 transition-colors appearance-none cursor-pointer pr-6";
-  const selectOptionStyle = "bg-[#0f1520] text-white py-1";
+  const selectStyle = "w-full bg-yoru-surface hover:bg-yoru-surface-elevated border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-white/90 focus:outline-none focus:border-yoru-accent transition-colors appearance-none cursor-pointer pr-6";
+  const selectOptionStyle = "bg-yoru-surface-elevated text-white py-1";
 
   return (
-    <div className="min-h-screen bg-[#0b0e14] text-white pt-20 pb-20 px-3 sm:px-4 md:px-6 max-w-[1720px] mx-auto">
+    <div className="min-h-screen bg-yoru-bg text-white pt-20 pb-20 px-3 sm:px-4 md:px-6 max-w-[1720px] mx-auto">
       
       {/* 2-Column Responsive Layout: Left (Main Content & Grid), Right (Top Rated Sidebar) */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
@@ -507,7 +507,7 @@ export const Search = () => {
                   value={formFilters.title}
                   onChange={(e) => handleInputChange('title', e.target.value)}
                   placeholder="title"
-                  className="w-full bg-[#131b26] border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-cyan-400 transition-colors"
+                  className="w-full bg-yoru-surface border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-yoru-accent transition-colors"
                 />
               </div>
 
@@ -781,7 +781,7 @@ export const Search = () => {
                 onClick={() => setViewMode('grid-6')}
                 className={cn(
                   "p-1 rounded hover:text-white transition-colors cursor-pointer",
-                  viewMode === 'grid-6' ? "text-cyan-400" : "text-white/40"
+                  viewMode === 'grid-6' ? "text-yoru-accent" : "text-white/40"
                 )}
                 title="6 Columns Grid"
               >
@@ -792,7 +792,7 @@ export const Search = () => {
                 onClick={() => setViewMode('grid-4')}
                 className={cn(
                   "p-1 rounded hover:text-white transition-colors cursor-pointer",
-                  viewMode === 'grid-4' ? "text-cyan-400" : "text-white/40"
+                  viewMode === 'grid-4' ? "text-yoru-accent" : "text-white/40"
                 )}
                 title="4 Columns Grid"
               >
@@ -803,7 +803,7 @@ export const Search = () => {
                 onClick={() => setViewMode('list')}
                 className={cn(
                   "p-1 rounded hover:text-white transition-colors cursor-pointer",
-                  viewMode === 'list' ? "text-cyan-400" : "text-white/40"
+                  viewMode === 'list' ? "text-yoru-accent" : "text-white/40"
                 )}
                 title="Compact List"
               >
@@ -911,7 +911,7 @@ export const Search = () => {
             </div>
           ) : (
             /* Empty State */
-            <div className="py-14 text-center bg-[#131b26]/40 border border-white/5 rounded-xl px-6 my-4">
+            <div className="py-14 text-center bg-yoru-surface/40 border border-white/5 rounded-xl px-6 my-4">
               <h3 className="text-base font-bold text-white mb-1">
                 No anime found
               </h3>
@@ -949,7 +949,7 @@ export const Search = () => {
                   <Link
                     key={anime.id}
                     to={`/anime/${anime.id}`}
-                    className="flex items-center gap-3 p-2 rounded-lg bg-[#121924]/70 hover:bg-[#182333] border border-white/5 hover:border-white/10 transition-all group cursor-pointer"
+                    className="flex items-center gap-3 p-2 rounded-lg bg-[#121924]/70 hover:bg-yoru-surface-elevated border border-white/5 hover:border-white/10 transition-all group cursor-pointer"
                   >
                     {/* Poster thumbnail */}
                     <img
@@ -961,7 +961,7 @@ export const Search = () => {
 
                     {/* Meta info */}
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors line-clamp-2 leading-tight">
+                      <h4 className="text-xs font-bold text-white group-hover:text-yoru-accent transition-colors line-clamp-2 leading-tight">
                         {anime.title}
                       </h4>
                       <div className="flex items-center gap-2 text-[11px] text-white/50 mt-1">

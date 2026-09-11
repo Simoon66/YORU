@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, User, LogIn, Home, Compass, Bookmark, Settings, X, Loader2 } from 'lucide-react';
+import { Search, User, LogIn, Home, Compass, Bookmark, Settings, X, Loader2, Filter, Shuffle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { signInWithGoogle, logout, db } from '../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -106,6 +106,12 @@ export const Navigation = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    const handleOpenAuth = () => setIsAuthModalOpen(true);
+    window.addEventListener('open-auth-modal', handleOpenAuth);
+    return () => window.removeEventListener('open-auth-modal', handleOpenAuth);
+  }, []);
+
   const navLinks = [
     { name: 'Home', path: '/home' },
     { name: 'Recent', path: '/recent' },
@@ -141,46 +147,50 @@ export const Navigation = () => {
               <Link to="/home">
                 <Logo />
               </Link>
-              
-              <div className="hidden md:flex items-center gap-8">
-                {navLinks.map((link) => {
-                  const isActive = location.pathname === link.path;
-                  return (
-                    <Link 
-                      key={link.name} 
-                      to={link.path}
-                      className="relative group"
-                    >
-                      <span className={cn(
-                        "text-xs font-bold uppercase tracking-widest transition-colors duration-300",
-                        isActive ? "text-white" : "text-yoru-text-muted group-hover:text-white"
-                      )}>
-                        {link.name}
-                      </span>
-                      {isActive && (
-                        <motion.div
-                          layoutId="nav-indicator"
-                          className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-yoru-accent rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"
-                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        />
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
             </div>
 
-            <div className="hidden md:flex items-center gap-8 relative">
-              <div ref={searchRef} className="relative">
-                <button 
-                  onClick={() => setIsSearchOpen(!isSearchOpen)}
-                  className="text-yoru-text-muted hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full group relative"
-                >
-                  <Search className="w-5 h-5" />
-                  <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-white/10 text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                    Press S
-                  </span>
-                </button>
+            <div className="hidden md:flex flex-1 max-w-2xl mx-8 items-center gap-2">
+              <div ref={searchRef} className="relative flex-1">
+                <div className="flex items-center bg-yoru-surface-elevated/50 border border-white/10 rounded-full px-4 py-2 focus-within:border-yoru-accent transition-colors backdrop-blur-md">
+                  <Search className="w-4 h-4 text-yoru-text-muted shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Search anime..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setIsSearchOpen(true);
+                    }}
+                    onFocus={() => setIsSearchOpen(true)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        setIsSearchOpen(false);
+                      } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setFocusedIndex(prev => (prev < searchResults.length - 1 ? prev + 1 : prev));
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setFocusedIndex(prev => (prev > -1 ? prev - 1 : -1));
+                      } else if (e.key === 'Enter') {
+                        if (focusedIndex >= 0 && focusedIndex < searchResults.length) {
+                          setIsSearchOpen(false);
+                          navigate(`/anime/${searchResults[focusedIndex].slug}`);
+                        } else if (searchQuery) {
+                          setIsSearchOpen(false);
+                          navigate('/search', { state: { query: searchQuery } });
+                        }
+                      }
+                    }}
+                    className="w-full bg-transparent border-none text-white text-sm focus:outline-none focus:ring-0 placeholder-white/30 ml-3"
+                  />
+                  {isSearching ? (
+                     <Loader2 className="w-4 h-4 text-yoru-accent animate-spin shrink-0" />
+                  ) : searchQuery ? (
+                    <button onClick={() => setSearchQuery('')} className="text-white/30 hover:text-white">
+                      <X className="w-4 h-4" />
+                    </button>
+                  ) : null}
+                </div>
                 
                 <AnimatePresence>
                   {isSearchOpen && (
@@ -189,46 +199,8 @@ export const Navigation = () => {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute top-full right-0 mt-4 w-96 bg-yoru-surface-elevated/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_30px_60px_rgba(0,0,0,0.6)] overflow-hidden z-50"
+                      className="absolute top-full left-0 right-0 mt-2 bg-yoru-surface-elevated/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_30px_60px_rgba(0,0,0,0.6)] overflow-hidden z-50"
                     >
-                      <div className="p-3 border-b border-white/10 flex items-center gap-3">
-                        <Search className="w-4 h-4 text-yoru-text-muted shrink-0" />
-                        <input 
-                          type="text" 
-                          autoFocus
-                          placeholder="Search anime..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Escape') {
-                              setIsSearchOpen(false);
-                            } else if (e.key === 'ArrowDown') {
-                              e.preventDefault();
-                              setFocusedIndex(prev => (prev < searchResults.length - 1 ? prev + 1 : prev));
-                            } else if (e.key === 'ArrowUp') {
-                              e.preventDefault();
-                              setFocusedIndex(prev => (prev > -1 ? prev - 1 : -1));
-                            } else if (e.key === 'Enter') {
-                              if (focusedIndex >= 0 && focusedIndex < searchResults.length) {
-                                setIsSearchOpen(false);
-                                navigate(`/anime/${searchResults[focusedIndex].slug}`);
-                              } else if (searchQuery) {
-                                setIsSearchOpen(false);
-                                navigate('/search', { state: { query: searchQuery } });
-                              }
-                            }
-                          }}
-                          className="w-full bg-transparent border-none text-white text-sm focus:outline-none focus:ring-0 placeholder-white/30"
-                        />
-                        {isSearching ? (
-                           <Loader2 className="w-4 h-4 text-yoru-accent animate-spin shrink-0" />
-                        ) : searchQuery ? (
-                          <button onClick={() => setSearchQuery('')} className="text-white/30 hover:text-white">
-                            <X className="w-4 h-4" />
-                          </button>
-                        ) : null}
-                      </div>
-                      
                       <div className="max-h-96 overflow-y-auto">
                         {searchResults.length > 0 ? (
                           <div className="p-2 space-y-1">
@@ -283,7 +255,36 @@ export const Navigation = () => {
                   )}
                 </AnimatePresence>
               </div>
-              
+
+              <Link
+                to="/search"
+                className="p-2.5 text-yoru-text-muted hover:text-white bg-yoru-surface-elevated/50 border border-white/10 rounded-full hover:border-yoru-accent transition-all shrink-0"
+                title="Filter Anime"
+              >
+                <Filter className="w-5 h-5" />
+              </Link>
+
+              <button
+                onClick={async () => {
+                  try {
+                    const all = await getAllAnime();
+                    const published = all.filter(a => a.published);
+                    if (published.length > 0) {
+                      const random = published[Math.floor(Math.random() * published.length)];
+                      navigate(`/anime/${random.slug}`);
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className="p-2.5 text-yoru-text-muted hover:text-yoru-accent bg-yoru-surface-elevated/50 border border-white/10 rounded-full hover:border-yoru-accent transition-all shrink-0"
+                title="Random Anime"
+              >
+                <Shuffle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="hidden md:flex items-center gap-8 relative">
               {user ? (
                 <div className="flex items-center gap-8">
                   <Link to="/watchlist" className="relative group">
