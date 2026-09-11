@@ -11,9 +11,10 @@ import { useAnimeEpisodeCounts } from '../hooks/useAnimeEpisodeCounts';
 
 interface AnimeCardProps {
   anime: Anime;
+  showTitle?: boolean;
 }
 
-export const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
+export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, showTitle = true }) => {
   const [isHovered, setIsHovered] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const [floatingPos, setFloatingPos] = useState<{ x: 'left' | 'right', y: 'top' | 'bottom' | 'center' }>({ x: 'right', y: 'center' });
@@ -137,21 +138,23 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime }) => {
           </div>
         </div>
         
-        <div className="mt-2.5 space-y-1 flex flex-col justify-between">
-          <h3 className="text-[13px] md:text-sm font-semibold leading-tight line-clamp-2 text-white group-hover:text-yoru-accent transition-colors duration-300">
-            {displayTitle}
-          </h3>
-          <div className="flex gap-2 items-center text-xs font-medium text-yoru-text-muted mt-1">
-            {anime.status && anime.status !== 'FINISHED' && (
-              <span className="px-1.5 py-0.5 rounded bg-white/10 text-white text-[10px] font-semibold tracking-wider">
-                {anime.status}
-              </span>
-            )}
-            {(anime.startDate?.substring(0, 4) || anime.season) && (
-              <span className="text-[11px] text-yoru-text-muted">{anime.startDate?.substring(0, 4) || anime.season}</span>
-            )}
+        {showTitle && (
+          <div className="mt-2.5 space-y-1 flex flex-col justify-between">
+            <h3 className="text-[13px] md:text-sm font-semibold leading-tight line-clamp-2 text-white group-hover:text-yoru-accent transition-colors duration-300">
+              {displayTitle}
+            </h3>
+            <div className="flex gap-2 items-center text-xs font-medium text-yoru-text-muted mt-1">
+              {anime.status && anime.status !== 'FINISHED' && (
+                <span className="px-1.5 py-0.5 rounded bg-white/10 text-white text-[10px] font-semibold tracking-wider">
+                  {anime.status}
+                </span>
+              )}
+              {(anime.startDate?.substring(0, 4) || anime.season) && (
+                <span className="text-[11px] text-yoru-text-muted">{anime.startDate?.substring(0, 4) || anime.season}</span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </Link>
 
       {createPortal(
