@@ -300,12 +300,23 @@ export const AnimeEditor = () => {
   if (isLoading) return <div className="text-white">Loading...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-20">
-      <div className="flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="p-2 text-yoru-text-muted hover:text-white transition-colors">
-          <ArrowLeft className="w-5 h-5" />
+    <div className="max-w-4xl mx-auto space-y-6 pb-20 relative">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 z-50 bg-yoru-bg/95 backdrop-blur-sm py-4 border-b border-yoru-border/50 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex items-center gap-4">
+          <button type="button" onClick={() => navigate(-1)} className="p-2 text-yoru-text-muted hover:text-white bg-white/5 rounded-full transition-colors shrink-0">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight truncate">{id ? 'Edit Anime' : 'Add Anime'}</h1>
+        </div>
+        
+        <button 
+          form="anime-editor-form"
+          type="submit"
+          disabled={isSaving}
+          className="bg-yoru-accent hover:bg-yoru-accent/90 disabled:opacity-50 text-yoru-bg px-6 py-2.5 text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-colors rounded-lg shadow-lg shrink-0 w-full sm:w-auto"
+        >
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Changes
         </button>
-        <h1 className="text-2xl font-bold text-white tracking-tight">{id ? 'Edit Anime' : 'Add Anime'}</h1>
       </div>
 
       {!id && (
@@ -367,7 +378,7 @@ export const AnimeEditor = () => {
         </div>
       )}
 
-      <form onSubmit={handleSave} className="bg-yoru-surface border border-yoru-border p-6 space-y-6">
+      <form id="anime-editor-form" onSubmit={handleSave} className="bg-yoru-surface border border-yoru-border p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-1">
             <label className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted">Title</label>

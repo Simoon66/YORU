@@ -374,7 +374,7 @@ export const EpisodeManager = () => {
     <div className="flex-1 p-6 md:p-8 overflow-x-hidden">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sticky top-0 z-50 bg-yoru-bg/95 backdrop-blur-sm py-4 border-b border-yoru-border/50 -mx-4 px-4 sm:mx-0 sm:px-0">
           <div className="flex items-center gap-4">
             <Link to="/admin" className="p-2 bg-yoru-surface border border-yoru-border rounded-lg hover:border-yoru-accent transition-colors">
               <ArrowLeft className="w-5 h-5 text-yoru-text" />

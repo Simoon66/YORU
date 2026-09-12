@@ -5,7 +5,8 @@ import axios from 'axios';
 
 const SETTINGS_DOC_ID = 'anikoto_sync';
 const LOCAL_STORAGE_KEY = 'yoru_anikoto_sync_settings';
-const ANIKOTO_BASE_URL = 'https://anikotoapi.site';
+const isNode = typeof window === 'undefined';
+const ANIKOTO_BASE_URL = isNode ? 'https://anikotoapi.site' : '/api/anikoto/proxy';
 
 export interface AnikotoRecentItem {
   id: number;
@@ -182,7 +183,8 @@ export async function runAnikotoRecentSync(options?: {
       params: { page, per_page: perPage },
       timeout: 15000,
       headers: {
-        Accept: 'application/json'
+        Accept: 'application/json',
+        ...(isNode && { 'User-Agent': 'curl/7.88.1' })
       },
     });
 
@@ -249,7 +251,10 @@ export async function runAnikotoRecentSync(options?: {
       try {
         const seriesRes = await axios.get<AnikotoSeriesResponse>(`${ANIKOTO_BASE_URL}/series/${item.id}`, {
           timeout: 15000,
-          headers: { Accept: 'application/json' },
+          headers: { 
+            Accept: 'application/json',
+            ...(isNode && { 'User-Agent': 'curl/7.88.1' })
+          },
         });
         episodesFromApi = seriesRes.data?.data?.episodes || seriesRes.data?.episodes || [];
       } catch (err: any) {

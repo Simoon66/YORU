@@ -181,8 +181,8 @@ export const AnimeList = () => {
         </Link>
       </div>
 
-      <div className="bg-yoru-surface border border-yoru-border rounded-xl overflow-hidden shadow-lg relative">
-        <div className="p-4 border-b border-yoru-border flex flex-col md:flex-row md:items-center justify-between gap-4 bg-yoru-surface-elevated/30 sticky top-0 z-20">
+      <div className="bg-yoru-surface border border-yoru-border rounded-xl shadow-lg relative">
+        <div className="p-4 border-b border-yoru-border flex flex-col md:flex-row md:items-center justify-between gap-4 bg-yoru-surface-elevated/30 sticky top-0 z-20 rounded-t-xl backdrop-blur-sm">
           
           {/* Tabs */}
           <div className="flex bg-yoru-bg/50 p-1 rounded-lg border border-yoru-border/50 self-start md:self-auto overflow-x-auto w-full md:w-auto">
@@ -255,7 +255,7 @@ export const AnimeList = () => {
           </div>
         )}
 
-        <div className="overflow-x-auto min-h-[400px]">
+        <div className="overflow-x-auto min-h-[400px] rounded-b-xl">
           <table className="w-full text-left text-sm text-yoru-text">
             <thead className="bg-yoru-surface/80 text-xs uppercase tracking-widest text-yoru-text-muted border-b border-yoru-border relative z-10">
               <tr>
