@@ -22,7 +22,7 @@ export function mergeAnimeDatasets(localList: Anime[], multiList: Anime[]): Anim
       (m.slug ? slugMap.get(m.slug.toLowerCase()) : null);
 
     if (existing) {
-      existing.linkedSeasons = m.linkedSeasons || existing.linkedSeasons;
+      existing.linkedSeasons = (existing.linkedSeasons && existing.linkedSeasons.length > 0) ? existing.linkedSeasons : m.linkedSeasons;
       if (m.subEpisodesCount && (!existing.subEpisodesCount || m.subEpisodesCount > existing.subEpisodesCount)) {
         existing.subEpisodesCount = m.subEpisodesCount;
       }
@@ -134,7 +134,7 @@ export const mockEpisodes: Episode[] = [
 export async function getAllAnime(): Promise<Anime[]> {
   try {
     const [localSnap, multiList] = await Promise.all([
-      getDocs(query(collection(db, 'anime'), where('published', '==', true))).catch(() => null),
+      getDocs(collection(db, 'anime')).catch(() => null),
       getMultiServerAnime().catch(() => [])
     ]);
 
@@ -143,8 +143,9 @@ export async function getAllAnime(): Promise<Anime[]> {
       : [];
 
     const merged = mergeAnimeDatasets(localList, multiList);
-    if (merged.length === 0) return mockAnimeList;
-    return merged;
+    const filtered = merged.filter(a => a.published && !a.isBanned);
+    if (filtered.length === 0) return mockAnimeList;
+    return filtered;
   } catch (e) {
     return mockAnimeList;
   }

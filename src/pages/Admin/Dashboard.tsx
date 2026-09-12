@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { collection, getCountFromServer, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Film, ListVideo, Users, Activity, History, RotateCw, Clock, ExternalLink } from 'lucide-react';
-import { AbyssDomainManager } from '../../components/admin/AbyssDomainManager';
-import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { getAnikotoSyncSettings, saveAnikotoSyncSettings, runAnikotoRecentSync } from '../../lib/anikotoSyncService';
 import { AnikotoSyncSettings } from '../../types';
 
@@ -173,7 +172,7 @@ export const Dashboard = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-8">
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-white">
             <History className="w-5 h-5 text-yoru-accent" />
@@ -200,13 +199,6 @@ export const Dashboard = () => {
             )}
           </div>
         </div>
-
-        {/* Global Abyss Domain Manager & Replacer - Admin Only */}
-        {profile?.role === 'admin' && (
-          <div>
-            <AbyssDomainManager />
-          </div>
-        )}
       </div>
     </div>
   );

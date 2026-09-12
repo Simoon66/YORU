@@ -477,17 +477,17 @@ export const Search = () => {
     }
   };
 
-  const selectStyle = "w-full bg-yoru-surface hover:bg-yoru-surface-elevated border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-white/90 focus:outline-none focus:border-yoru-accent transition-colors appearance-none cursor-pointer pr-6";
+  const selectStyle = "w-full min-w-0 bg-yoru-surface hover:bg-yoru-surface-elevated border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-white/90 focus:outline-none focus:border-yoru-accent transition-colors appearance-none cursor-pointer pr-6 truncate";
   const selectOptionStyle = "bg-yoru-surface-elevated text-white py-1";
 
   return (
-    <div className="min-h-screen bg-yoru-bg text-white pt-20 pb-20 px-3 sm:px-4 md:px-6 max-w-[1720px] mx-auto">
+    <div className="min-h-screen bg-yoru-bg text-white pt-20 pb-20 px-3 sm:px-4 md:px-6 max-w-[1720px] mx-auto overflow-x-hidden">
       
       {/* 2-Column Responsive Layout: Left (Main Content & Grid), Right (Top Rated Sidebar) */}
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
         
         {/* Left / Main Section */}
-        <div className="w-full lg:flex-1 min-w-0">
+        <div className="w-full lg:flex-1 min-w-0 max-w-full">
           
           {/* Section Title: "Filter" exactly as in screenshot */}
           <h1 className="text-xl sm:text-2xl font-bold text-white mb-2.5">
@@ -495,24 +495,24 @@ export const Search = () => {
           </h1>
 
           {/* Ultra-Compact Filter Bar (2 rows of 6 controls, exactly matching reference image) */}
-          <form onSubmit={handleApplyFilters} className="space-y-2 mb-3">
+          <form onSubmit={handleApplyFilters} className="space-y-2 mb-3 w-full">
             
             {/* Row 1: title, Select genre, Select season, Select year, Select type, Select status */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 w-full">
               
               {/* 1. Title Input */}
-              <div className="relative">
+              <div className="relative min-w-0">
                 <input
                   type="text"
                   value={formFilters.title}
                   onChange={(e) => handleInputChange('title', e.target.value)}
                   placeholder="title"
-                  className="w-full bg-yoru-surface border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-yoru-accent transition-colors"
+                  className="w-full min-w-0 bg-yoru-surface border border-white/10 rounded-md px-2.5 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-yoru-accent transition-colors truncate"
                 />
               </div>
 
               {/* 2. Select Genre */}
-              <div className="relative">
+              <div className="relative min-w-0">
                 <select
                   value={formFilters.genre}
                   onChange={(e) => handleInputChange('genre', e.target.value)}
@@ -529,7 +529,7 @@ export const Search = () => {
               </div>
 
               {/* 3. Select Season */}
-              <div className="relative">
+              <div className="relative min-w-0">
                 <select
                   value={formFilters.season}
                   onChange={(e) => handleInputChange('season', e.target.value)}
@@ -545,7 +545,7 @@ export const Search = () => {
               </div>
 
               {/* 4. Select Year */}
-              <div className="relative">
+              <div className="relative min-w-0">
                 <select
                   value={formFilters.year}
                   onChange={(e) => handleInputChange('year', e.target.value)}
@@ -571,7 +571,7 @@ export const Search = () => {
               </div>
 
               {/* 5. Select Type */}
-              <div className="relative">
+              <div className="relative min-w-0">
                 <select
                   value={formFilters.type}
                   onChange={(e) => handleInputChange('type', e.target.value)}
@@ -588,7 +588,7 @@ export const Search = () => {
               </div>
 
               {/* 6. Select Status */}
-              <div className="relative">
+              <div className="relative min-w-0">
                 <select
                   value={formFilters.status}
                   onChange={(e) => handleInputChange('status', e.target.value)}
@@ -605,10 +605,10 @@ export const Search = () => {
             </div>
 
             {/* Row 2: Select language, Select rating, Select source, Episode range, Default, Exclude list */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 w-full">
               
               {/* 7. Select Language */}
-              <div className="relative">
+              <div className="relative min-w-0">
                 <select
                   value={formFilters.language}
                   onChange={(e) => handleInputChange('language', e.target.value)}
@@ -623,7 +623,7 @@ export const Search = () => {
               </div>
 
               {/* 8. Select Rating */}
-              <div className="relative">
+              <div className="relative min-w-0">
                 <select
                   value={formFilters.rating}
                   onChange={(e) => handleInputChange('rating', e.target.value)}
@@ -639,7 +639,7 @@ export const Search = () => {
               </div>
 
               {/* 9. Select Source */}
-              <div className="relative">
+              <div className="relative min-w-0">
                 <select
                   value={formFilters.source}
                   onChange={(e) => handleInputChange('source', e.target.value)}
@@ -657,7 +657,7 @@ export const Search = () => {
               </div>
 
               {/* 10. Episode Range */}
-              <div className="relative">
+              <div className="relative min-w-0">
                 <select
                   value={formFilters.episodeRange}
                   onChange={(e) => handleInputChange('episodeRange', e.target.value)}
@@ -674,7 +674,7 @@ export const Search = () => {
               </div>
 
               {/* 11. Default (Sort By) */}
-              <div className="relative">
+              <div className="relative min-w-0">
                 <select
                   value={formFilters.sort}
                   onChange={(e) => handleInputChange('sort', e.target.value)}
@@ -692,7 +692,7 @@ export const Search = () => {
               </div>
 
               {/* 12. Exclude List */}
-              <div className="relative">
+              <div className="relative min-w-0">
                 <select
                   value={formFilters.exclude}
                   onChange={(e) => handleInputChange('exclude', e.target.value)}
@@ -709,9 +709,9 @@ export const Search = () => {
             </div>
 
             {/* Row 3: Action Buttons & A to Z Alphabet bar inline */}
-            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1 min-w-0 w-full">
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 {/* Cyan Filter Button matching reference screenshot */}
                 <button
                   type="submit"
@@ -735,7 +735,7 @@ export const Search = () => {
               </div>
 
               {/* Compact A to Z Alphabet Bar (slim, no vertical space wasted) */}
-              <div className="flex items-center gap-1 overflow-x-auto py-0.5 max-w-full scrollbar-none">
+              <div className="flex items-center gap-1 overflow-x-auto py-0.5 min-w-0 flex-1 w-full scrollbar-none">
                 {ALPHABET_LIST.map(letter => {
                   const isActive = selectedLetter === letter;
                   return (
@@ -770,6 +770,7 @@ export const Search = () => {
                 <span>
                   Found <strong className="text-white">{totalItems}</strong> titles
                   {selectedLetter !== 'ALL' && ` starting with "${selectedLetter}"`}
+                  <span className="opacity-50 ml-1"> (Total available: {allAnime.length})</span>
                 </span>
               )}
             </div>

@@ -124,6 +124,11 @@ service cloud.firestore {
       allow create: if isAdmin() || isModerator();
     }
 
+    match /reports/{reportId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if isSignedIn();
+    }
+
     match /watchProgress/{progressId} {
       allow get: if isSignedIn() && (progressId.split('_')[0] == request.auth.uid || resource == null || resource.data.userId == request.auth.uid);
       allow list: if isSignedIn() && resource.data.userId == request.auth.uid;

@@ -5,6 +5,7 @@ import { collection, doc, getDoc, getDocs, setDoc, updateDoc, query, where } fro
 import { db } from '../../lib/firebase';
 import { ArrowLeft, Save, Search, DownloadCloud, Loader2, Link2, Unlink, Plus, Layers } from 'lucide-react';
 import { syncSeasonGroup, unlinkAnimeFromGroup, linkAnimeToGroup } from '../../lib/seasonGroupService';
+import { getMultiServerAnime } from '../../lib/multiServerService';
 
 const ANILIST_QUERY = `
 query ($id: Int, $search: String) {
@@ -104,6 +105,7 @@ export const AnimeEditor = () => {
   });
 
   const [allAnimeList, setAllAnimeList] = useState<Anime[]>([]);
+  const [multiServerGroups, setMultiServerGroups] = useState<Anime[]>([]);
   const [selectedAnimeToLink, setSelectedAnimeToLink] = useState('');
   const [linkSeasonNumber, setLinkSeasonNumber] = useState(2);
   const [isLinkingGroup, setIsLinkingGroup] = useState(false);
@@ -113,6 +115,7 @@ export const AnimeEditor = () => {
       const list = snap.docs.map(d => ({ ...(d.data() as Anime), id: d.id }));
       setAllAnimeList(list);
     });
+    getMultiServerAnime().then(list => setMultiServerGroups(list)).catch(e => console.error(e));
   }, [id]);
 
   useEffect(() => {
@@ -499,25 +502,61 @@ export const AnimeEditor = () => {
               Link distinct anime together (e.g. Naruto & Naruto Shippuden) so viewers can switch between seasons on the watch and detail pages, while maintaining separate catalog and search entries.
             </p>
 
-            {/* Current anime season number */}
-            <div className="flex items-center gap-3 p-3 bg-yoru-bg rounded-lg border border-yoru-border/60">
-              <span className="text-xs font-bold text-white uppercase tracking-wider">This Anime's Season Number:</span>
-              <input
-                type="number"
-                min={1}
-                value={formData.seasonNumber || 1}
-                onChange={e => {
-                  const val = parseInt(e.target.value, 10);
-                  if (!Number.isNaN(val) && val >= 1) {
-                    setFormData(prev => ({ ...prev, seasonNumber: val }));
-                    if (formData.seasonGroupId) {
-                      handleSeasonNumberChange(id, val);
+            {/* Current anime season number & Group ID */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-1 items-center gap-3 p-3 bg-yoru-bg rounded-lg border border-yoru-border/60">
+                <span className="text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Group ID:</span>
+                <input
+                  type="text"
+                  value={formData.seasonGroupId || ''}
+                  onChange={e => setFormData(prev => ({ ...prev, seasonGroupId: e.target.value }))}
+                  placeholder="e.g. sg_123 or multiserver_group_id"
+                  className="w-full bg-yoru-surface border border-yoru-border px-3 py-1 text-sm text-white rounded focus:outline-none focus:border-yoru-accent"
+                />
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-yoru-bg rounded-lg border border-yoru-border/60">
+                <span className="text-xs font-bold text-white uppercase tracking-wider whitespace-nowrap">Season Number:</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={formData.seasonNumber || 1}
+                  onChange={e => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!Number.isNaN(val) && val >= 1) {
+                      setFormData(prev => ({ ...prev, seasonNumber: val }));
+                      if (formData.seasonGroupId) {
+                        handleSeasonNumberChange(id, val);
+                      }
                     }
-                  }
-                }}
-                className="w-16 bg-yoru-surface border border-yoru-border px-2 py-1 text-sm text-white rounded text-center focus:outline-none focus:border-yoru-accent"
-              />
+                  }}
+                  className="w-16 bg-yoru-surface border border-yoru-border px-2 py-1 text-sm text-white rounded text-center focus:outline-none focus:border-yoru-accent"
+                />
+              </div>
             </div>
+
+            {/* List of existing multi-server groups if none is set */}
+            {!formData.seasonGroupId && multiServerGroups.length > 0 && (
+              <div className="pt-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-yoru-text-muted mb-2 block">
+                  Or pick existing MultiServer Group ID:
+                </label>
+                <select
+                  onChange={e => {
+                    if (e.target.value) {
+                      setFormData(prev => ({ ...prev, seasonGroupId: e.target.value }));
+                    }
+                  }}
+                  className="w-full bg-yoru-bg border border-yoru-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-yoru-accent"
+                >
+                  <option value="">-- Select an existing group --</option>
+                  {multiServerGroups.map(g => (
+                    <option key={g.id} value={g.id}>
+                      {g.title} ({g.id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* List of currently linked seasons */}
             {formData.linkedSeasons && formData.linkedSeasons.length > 0 ? (

@@ -271,7 +271,7 @@ export const Navigation = () => {
               </div>
 
               <Link
-                to="/search"
+                to={`/search${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`}
                 className="p-2.5 text-yoru-text-muted hover:text-white bg-yoru-surface-elevated/50 border border-white/10 rounded-full hover:border-yoru-accent transition-all shrink-0"
                 title="Filter Anime"
               >
@@ -389,6 +389,13 @@ export const Navigation = () => {
                       </button>
                     ) : null}
                   </div>
+                  <Link
+                    to={`/search${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`}
+                    onClick={() => setIsSearchOpen(false)}
+                    className="p-1.5 text-yoru-text-muted hover:text-white bg-white/5 border border-white/10 rounded-full transition-all shrink-0 ml-1"
+                  >
+                    <Filter className="w-4 h-4" />
+                  </Link>
                 </div>
               ) : (
                 <>

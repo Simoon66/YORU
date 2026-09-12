@@ -143,6 +143,7 @@ export interface Anime {
   createdAt: number;
   updatedAt: number;
   published: boolean;
+  isBanned?: boolean;
 }
 
 export interface AnikotoSyncStats {

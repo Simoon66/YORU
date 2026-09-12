@@ -272,7 +272,7 @@ export const Home = () => {
         {/* 1. Latest Releases (sorted by release date) */}
         {latestReleases.length > 0 && (
           <section id="latest-releases-section">
-            <SectionHeader title="Latest Releases" linkTo="/recent" />
+            <SectionHeader title="Latest Releases" linkTo="/section/latest-releases" />
             <HorizontalAnimeRow animeList={latestReleases} maxItems={10} />
           </section>
         )}
@@ -288,7 +288,7 @@ export const Home = () => {
         {/* 3. Recently Added (recently added to the site) */}
         {recentlyAdded.length > 0 && (
           <section id="recently-added-section">
-            <SectionHeader title="Recently Added" linkTo="/recent?tab=added" />
+            <SectionHeader title="Recently Added" linkTo="/section/recently-added" />
             <HorizontalAnimeRow animeList={recentlyAdded} maxItems={10} />
           </section>
         )}
@@ -296,7 +296,7 @@ export const Home = () => {
         {/* 4. Latest Completed (finished TV series, sorted by finish date) */}
         {latestCompleted.length > 0 && (
           <section id="latest-completed-section">
-            <SectionHeader title="Latest Completed" linkTo="/browse?status=finished&format=tv" />
+            <SectionHeader title="Latest Completed" linkTo="/section/latest-completed" />
             <HorizontalAnimeRow animeList={latestCompleted} maxItems={10} />
           </section>
         )}
@@ -304,7 +304,7 @@ export const Home = () => {
         {/* 5. Latest Movie (latest added movies) */}
         {latestMovies.length > 0 && (
           <section id="latest-movies-section">
-            <SectionHeader title="Latest Movie" linkTo="/browse?format=movie" />
+            <SectionHeader title="Latest Movie" linkTo="/section/latest-movies" />
             <HorizontalAnimeRow animeList={latestMovies} maxItems={10} />
           </section>
         )}

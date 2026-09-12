@@ -10,6 +10,7 @@ import clsx from 'clsx';
 import { Button } from '../components/ui/Button';
 import { WatchlistButton } from '../components/WatchlistButton';
 import { CommentSection } from '../components/CommentSection';
+import { ReportModal } from '../components/ReportModal';
 import { normalizeEpisodes } from '../lib/episodeUtils';
 import { getServerConfig, applyDynamicDomainOverride, ServerConfig } from '../lib/serverSettings';
 import { is18PlusAnime } from '../lib/utils';
@@ -41,6 +42,7 @@ export const Watch = () => {
     } catch { return true; }
   });
   const [isLightDimmed, setIsLightDimmed] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [watchedEpisodes, setWatchedEpisodes] = useState<string[]>([]);
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
@@ -391,6 +393,19 @@ export const Watch = () => {
         />
       )}
 
+      {/* Report Modal */}
+      {anime && currentEpisode && (
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          animeTitle={anime.title}
+          episodeNumber={currentEpisode.episodeNumber}
+          animeId={anime.id}
+          seasonId={currentSeasonId}
+          episodeId={currentEpisode.id}
+        />
+      )}
+
       <div className="w-full flex flex-col relative">
         
         {/* TOP SECTION: Player & Toolbar */}
@@ -517,6 +532,7 @@ export const Watch = () => {
                 </button>
                 
                 <button 
+                  onClick={() => setIsReportModalOpen(true)}
                   className="h-9 min-h-[36px] px-3 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium text-yoru-text-muted hover:text-white transition-colors hidden sm:flex items-center gap-1.5 cursor-pointer"
                   title="Report playback issue"
                   aria-label="Report playback issue"

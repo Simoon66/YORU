@@ -22,8 +22,10 @@ import { EpisodeManager } from './pages/Admin/EpisodeManager';
 import { AutoImport } from './pages/Admin/AutoImport';
 import { SpotlightManager } from './pages/Admin/SpotlightManager';
 import { CommunityManager } from './pages/Admin/CommunityManager';
+import { ReportManager } from './pages/Admin/ReportManager';
 import { RecentAnimeSync } from './pages/Admin/RecentAnimeSync';
 import { RecentAnime } from './pages/RecentAnime';
+import { SectionPage } from './pages/SectionPage';
 import { NotFound } from './pages/NotFound';
 import ScrollToTop from './components/ScrollToTop';
 
@@ -35,6 +37,7 @@ function AppLayout() {
         <Routes>
           <Route path="/home" element={<Home />} />
           <Route path="/recent" element={<RecentAnime />} />
+          <Route path="/section/:sectionId" element={<SectionPage />} />
           <Route path="/browse" element={<Search />} />
           <Route path="/genres" element={<Search />} />
           <Route path="/search" element={<Search />} />
@@ -75,6 +78,7 @@ export default function App() {
              <Route index element={<Dashboard />} />
              <Route path="recent-sync" element={<RecentAnimeSync />} />
              <Route path="spotlights" element={<SpotlightManager />} />
+             <Route path="reports" element={<ReportManager />} />
              <Route path="community" element={<CommunityManager />} />
              <Route path="anime" element={<AnimeList />} />
              <Route path="anime/new" element={<AnimeEditor />} />

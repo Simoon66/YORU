@@ -5,7 +5,7 @@ import axios from 'axios';
 
 const SETTINGS_DOC_ID = 'anikoto_sync';
 const LOCAL_STORAGE_KEY = 'yoru_anikoto_sync_settings';
-const ANIKOTO_BASE_URL = '/api/anikoto/proxy';
+const ANIKOTO_BASE_URL = 'https://anikotoapi.site';
 
 export interface AnikotoRecentItem {
   id: number;
@@ -186,7 +186,15 @@ export async function runAnikotoRecentSync(options?: {
       },
     });
 
-    const recentData: AnikotoRecentItem[] = recentRes.data?.data || [];
+    let recentData: AnikotoRecentItem[] = [];
+    if (Array.isArray(recentRes.data)) {
+      recentData = recentRes.data;
+    } else if (Array.isArray(recentRes.data?.data)) {
+      recentData = recentRes.data.data;
+    } else if (Array.isArray(recentRes.data?.anime)) {
+      recentData = recentRes.data.anime;
+    }
+    
     if (!recentData || recentData.length === 0) {
       log('No recent anime returned from Anikoto API.', 'warning');
       return {
