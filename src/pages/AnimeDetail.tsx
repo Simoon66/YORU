@@ -180,7 +180,7 @@ export const AnimeDetail = () => {
       <div className="relative w-full min-h-[60vh] md:min-h-[75vh] flex flex-col">
         <div className="absolute inset-0 w-full h-full">
           <img 
-            src={anime.backdrop} 
+            src={anime.bannerImage || anime.backdrop} 
             alt={anime.title}
             className="w-full h-full object-cover"
           />
@@ -200,7 +200,7 @@ export const AnimeDetail = () => {
                 transition={{ duration: 0.6, ease: "easeOut" }}
                 className="relative rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 ring-1 ring-white/5 aspect-[2/3] w-full"
               >
-                <img src={anime.poster} alt={anime.title} className="w-full h-full object-cover" />
+                <img src={anime.coverImage || anime.poster} alt={anime.title} className="w-full h-full object-cover" />
                 {is18PlusAnime(anime) && (
                   <div className="absolute top-2.5 left-2.5 z-20 px-2 py-0.5 rounded bg-red-600/95 text-white text-[11px] font-black uppercase tracking-wider shadow-[0_4px_14px_rgba(220,38,38,0.6)] border border-red-500/60 backdrop-blur-md">
                     18+
@@ -298,26 +298,58 @@ export const AnimeDetail = () => {
       <div className="max-w-[1440px] mx-auto px-4 md:px-6 lg:px-8 mt-12 md:mt-24 grid grid-cols-1 lg:grid-cols-12 gap-12">
         {/* Left Column: Metadata */}
         <div className="lg:col-span-3 space-y-8">
-          <div className="glass-panel rounded-xl p-6 space-y-6">
+          <div className="glass-panel rounded-xl p-6 space-y-5">
             <div>
               <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">Native Title</span>
-              <span className="text-sm font-medium text-white">{anime.nativeTitle || '-'}</span>
+              <span className="text-sm font-medium text-white">{anime.japanese || anime.nativeTitle || '-'}</span>
+            </div>
+            {(anime.synonyms && (Array.isArray(anime.synonyms) ? anime.synonyms.length > 0 : true)) && (
+              <div>
+                <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">Synonyms</span>
+                <span className="text-sm font-medium text-white">
+                  {Array.isArray(anime.synonyms) ? anime.synonyms.join(', ') : anime.synonyms}
+                </span>
+              </div>
+            )}
+            <div>
+              <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">Aired</span>
+              <span className="text-sm font-medium text-white">{anime.aired || anime.startDate || '-'}</span>
             </div>
             <div>
-              <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">Studios</span>
-              <span className="text-sm font-medium text-white">{anime.studios || '-'}</span>
+              <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">Premiered</span>
+              <span className="text-sm font-medium text-white">{anime.premiered || anime.season || '-'}</span>
+            </div>
+            <div>
+              <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">Duration</span>
+              <span className="text-sm font-medium text-white">{anime.duration || anime.episodeDuration || '-'}</span>
             </div>
             <div>
               <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">Status</span>
               <span className="text-sm font-medium text-white">{anime.status || '-'}</span>
             </div>
             <div>
-              <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">Duration</span>
-              <span className="text-sm font-medium text-white">{anime.episodeDuration || '-'}</span>
+              <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">MAL Score</span>
+              <span className="text-sm font-medium text-white">{anime.malScore || anime.averageScore || '-'}</span>
             </div>
             <div>
-              <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">Total Episodes</span>
-              <span className="text-sm font-medium text-white">{anime.totalEpisodes || '-'}</span>
+              <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">Episodes</span>
+              <span className="text-sm font-medium text-white">{anime.episodes || anime.totalEpisodes || '-'}</span>
+            </div>
+            {(anime.country) && (
+              <div>
+                <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">Country</span>
+                <span className="text-sm font-medium text-white">{anime.country}</span>
+              </div>
+            )}
+            {(anime.source) && (
+              <div>
+                <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">Source</span>
+                <span className="text-sm font-medium text-white">{anime.source}</span>
+              </div>
+            )}
+            <div>
+              <span className="block text-[10px] font-bold uppercase tracking-widest text-yoru-text-muted mb-1">Genres</span>
+              <span className="text-sm font-medium text-white">{anime.genres?.join(', ') || '-'}</span>
             </div>
           </div>
         </div>
@@ -325,6 +357,67 @@ export const AnimeDetail = () => {
         {/* Right Column: Episodes */}
         <div className="lg:col-span-9 space-y-6 md:space-y-8">
           
+          {/* Franchise Watch Order */}
+          {anime.franchiseWatchOrder && anime.franchiseWatchOrder.length > 0 && (
+            <div className="mb-10">
+              <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest text-white flex items-center gap-2 pb-4 mb-6 border-b border-white/10">
+                <Video className="w-5 h-5 text-yoru-accent hidden sm:block" />
+                {anime.franchiseGroupName || 'Franchise Watch Order'}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {anime.franchiseWatchOrder.sort((a, b) => a.order - b.order).map((item, idx) => {
+                  const isCurrent = item.anime_id === anime.id || item.localAnimeId === anime.id || item.localSlug === anime.slug;
+                  return (
+                    <Link
+                      key={`${item.order}-${idx}`}
+                      to={item.localSlug ? `/anime/${item.localSlug}` : '#'}
+                      className={clsx(
+                        "group relative flex flex-col rounded-xl overflow-hidden bg-white/5 border transition-all duration-300",
+                        isCurrent 
+                          ? "border-yoru-accent shadow-[0_0_15px_rgba(255,255,255,0.1)] bg-white/10" 
+                          : "border-white/10 hover:border-white/30 hover:bg-white/10",
+                        !item.localSlug && "pointer-events-none opacity-60"
+                      )}
+                    >
+                      <div className="flex gap-4 p-3">
+                        <div className="w-16 md:w-20 aspect-[2/3] shrink-0 rounded-lg overflow-hidden bg-black/40">
+                          {(item.cover_image) ? (
+                            <img src={item.cover_image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-white/20">
+                              <Video className="w-6 h-6" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col justify-center flex-1 min-w-0 py-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-yoru-accent/20 text-yoru-accent border border-yoru-accent/30">
+                              #{item.order}
+                            </span>
+                            <span className="text-[10px] font-semibold text-yoru-text-muted uppercase tracking-wider">{item.type}</span>
+                            {isCurrent && (
+                              <span className="text-[9px] font-bold uppercase tracking-widest text-yoru-accent bg-yoru-accent/10 px-1.5 py-0.5 rounded">
+                                Current
+                              </span>
+                            )}
+                          </div>
+                          <h4 className={clsx("text-sm font-bold line-clamp-2 leading-snug", isCurrent ? "text-yoru-accent" : "text-white/90 group-hover:text-white")}>
+                            {item.title}
+                          </h4>
+                          {item.episodes_count ? (
+                            <div className="mt-2 text-[10px] font-bold text-yoru-text-muted uppercase tracking-widest">
+                              {item.episodes_count} Episodes
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-white/10">
             <div>
               <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest text-white flex items-center gap-2">

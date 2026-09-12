@@ -1,6 +1,7 @@
-import { Anime, Episode, LinkedSeason } from '../types';
+import { Anime, Episode, LinkedSeason, FranchiseGroup, FranchiseWatchOrderItem } from '../types';
+import { db } from './firebase';
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, collection, collectionGroup, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, collectionGroup, getDocs, doc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 
 export const MULTISERVER_FIREBASE_CONFIG = {
   projectId: "ai-studio-applet-webapp-da80e",
@@ -25,12 +26,26 @@ export interface MultiServerItem {
   total_episodes?: number;
   cover_image: string;
   backdrop_image?: string;
+  banner_image?: string;
   status?: string;
   format?: string;
   synopsis?: string;
   genres?: string[];
   studios?: string[];
   score?: string | number;
+  // 11 Rich Metadata Fields from Data Server
+  japanese?: string;
+  synonyms?: string[] | string;
+  aired?: string;
+  premiered?: string;
+  duration?: string;
+  mal_score?: string | number;
+  episodes?: number;
+  country?: string;
+  source?: string;
+  group_id?: string;
+  group_title?: string;
+  isCanon?: boolean;
 }
 
 export interface MultiServerGroup {
@@ -39,6 +54,8 @@ export interface MultiServerGroup {
   slug: string;
   is_franchise: boolean;
   total_entries: number;
+  cover_image?: string;
+  banner_image?: string;
   items: MultiServerItem[];
 }
 
@@ -166,6 +183,20 @@ export async function fetchMultiServerRawDataset(): Promise<{ groups: MultiServe
           ? String(it.seasonNumber).trim()
           : it.type === 'Movie' ? 'Movie' : it.type === 'Special' ? 'Special' : it.type === 'OVA' ? 'OVA' : '1';
 
+        const itemCover = animeData.coverImage || animeData.cover_image || animeData.poster || data.coverImage || '';
+        const itemBanner = animeData.bannerImage || animeData.banner_image || animeData.backdrop || data.bannerImage || itemCover;
+        const itemJapanese = animeData.japanese || animeData.animeInfo?.japanese || animeData.title?.native || '';
+        const itemSynonyms = animeData.synonyms || animeData.animeInfo?.synonyms || (animeData.title?.romaji ? [animeData.title.romaji] : []);
+        const itemAired = animeData.aired || animeData.animeInfo?.aired || (animeData.startDate ? `${animeData.startDate} to ${animeData.endDate || '?'}` : '');
+        const itemPremiered = animeData.premiered || animeData.animeInfo?.premiered || (animeData.season ? String(animeData.season) : '');
+        const itemDuration = animeData.duration || animeData.animeInfo?.duration || animeData.episodeDuration || '24m';
+        const itemStatus = animeData.status || animeData.animeInfo?.status || 'FINISHED';
+        const itemMalScore = animeData.malScore || animeData.mal_score || animeData.animeInfo?.malScore || animeData.averageScore || '';
+        const itemEpisodesCount = animeData.episodes || animeData.animeInfo?.episodes || animeData.totalEpisodes || epNums.length || 12;
+        const itemCountry = animeData.country || animeData.animeInfo?.country || 'Japan';
+        const itemSource = animeData.source || animeData.animeInfo?.source || 'Original';
+        const itemGenres = animeData.genres || animeData.animeInfo?.genres || ['Anime'];
+
         const itemObj: MultiServerItem = {
           order: Number(it.order) || idx + 1,
           type: it.type || 'Season',
@@ -174,17 +205,30 @@ export async function fetchMultiServerRawDataset(): Promise<{ groups: MultiServe
           anime_id: aId,
           anilist_id: animeData.anilistId || (isNaN(Number(aId)) ? aId : Number(aId)),
           mal_id: animeData.malId || '',
-          status: animeData.status || 'FINISHED',
+          status: itemStatus,
           format: animeData.format || (it.type === 'Movie' ? 'MOVIE' : 'TV'),
           episodes_available: epNums,
           episodes_count: epNums.length,
-          total_episodes: animeData.episodes || epNums.length,
-          cover_image: animeData.coverImage || data.coverImage || '',
-          backdrop_image: animeData.bannerImage || animeData.coverImage || data.coverImage || '',
+          total_episodes: itemEpisodesCount,
+          cover_image: itemCover,
+          backdrop_image: itemBanner,
+          banner_image: itemBanner,
           synopsis: animeData.description || '',
-          genres: animeData.genres || ['Anime'],
+          genres: itemGenres,
           studios: Array.isArray(animeData.studios) ? animeData.studios : [],
-          score: animeData.averageScore || '85%'
+          score: itemMalScore || animeData.averageScore || '85%',
+          japanese: itemJapanese,
+          synonyms: itemSynonyms,
+          aired: itemAired,
+          premiered: itemPremiered,
+          duration: itemDuration,
+          mal_score: itemMalScore,
+          episodes: itemEpisodesCount,
+          country: itemCountry,
+          source: itemSource,
+          group_id: String(data.slug || docSnap.id || `grp_${docSnap.id}`).trim().toLowerCase().replace(/\s+/g, '-'),
+          group_title: data.title || 'Untitled Franchise',
+          isCanon: it.isCanon !== undefined ? it.isCanon : true
         };
 
         items.push(itemObj);
@@ -199,6 +243,8 @@ export async function fetchMultiServerRawDataset(): Promise<{ groups: MultiServe
         slug: data.slug || docSnap.id,
         is_franchise: true,
         total_entries: items.length,
+        cover_image: data.coverImage || (items[0]?.cover_image || ''),
+        banner_image: data.bannerImage || (items[0]?.banner_image || ''),
         items
       });
     });
@@ -213,6 +259,20 @@ export async function fetchMultiServerRawDataset(): Promise<{ groups: MultiServe
           animeData.title?.native ||
           `Anime ${aId}`;
 
+        const itemCover = animeData.coverImage || animeData.cover_image || animeData.poster || '';
+        const itemBanner = animeData.bannerImage || animeData.banner_image || animeData.backdrop || itemCover;
+        const itemJapanese = animeData.japanese || animeData.animeInfo?.japanese || animeData.title?.native || '';
+        const itemSynonyms = animeData.synonyms || animeData.animeInfo?.synonyms || (animeData.title?.romaji ? [animeData.title.romaji] : []);
+        const itemAired = animeData.aired || animeData.animeInfo?.aired || (animeData.startDate ? `${animeData.startDate} to ${animeData.endDate || '?'}` : '');
+        const itemPremiered = animeData.premiered || animeData.animeInfo?.premiered || (animeData.season ? String(animeData.season) : '');
+        const itemDuration = animeData.duration || animeData.animeInfo?.duration || animeData.episodeDuration || '24m';
+        const itemStatus = animeData.status || animeData.animeInfo?.status || 'FINISHED';
+        const itemMalScore = animeData.malScore || animeData.mal_score || animeData.animeInfo?.malScore || animeData.averageScore || '';
+        const itemEpisodesCount = animeData.episodes || animeData.animeInfo?.episodes || animeData.totalEpisodes || epNums.length || 12;
+        const itemCountry = animeData.country || animeData.animeInfo?.country || 'Japan';
+        const itemSource = animeData.source || animeData.animeInfo?.source || 'Original';
+        const itemGenres = animeData.genres || animeData.animeInfo?.genres || ['Anime'];
+
         const itemObj: MultiServerItem = {
           order: 1,
           type: animeData.format === 'MOVIE' ? 'Movie' : 'Season',
@@ -221,17 +281,30 @@ export async function fetchMultiServerRawDataset(): Promise<{ groups: MultiServe
           anime_id: aId,
           anilist_id: animeData.anilistId || (isNaN(Number(aId)) ? aId : Number(aId)),
           mal_id: animeData.malId || '',
-          status: animeData.status || 'FINISHED',
+          status: itemStatus,
           format: animeData.format || 'TV',
           episodes_available: epNums,
           episodes_count: epNums.length,
-          total_episodes: animeData.episodes || epNums.length,
-          cover_image: animeData.coverImage || '',
-          backdrop_image: animeData.bannerImage || animeData.coverImage || '',
+          total_episodes: itemEpisodesCount,
+          cover_image: itemCover,
+          backdrop_image: itemBanner,
+          banner_image: itemBanner,
           synopsis: animeData.description || '',
-          genres: animeData.genres || ['Anime'],
+          genres: itemGenres,
           studios: Array.isArray(animeData.studios) ? animeData.studios : [],
-          score: animeData.averageScore || '85%'
+          score: itemMalScore || animeData.averageScore || '85%',
+          japanese: itemJapanese,
+          synonyms: itemSynonyms,
+          aired: itemAired,
+          premiered: itemPremiered,
+          duration: itemDuration,
+          mal_score: itemMalScore,
+          episodes: itemEpisodesCount,
+          country: itemCountry,
+          source: itemSource,
+          group_id: `single_${aId}`,
+          group_title: animeTitle,
+          isCanon: true
         };
 
         allItems.push(itemObj);
@@ -242,6 +315,8 @@ export async function fetchMultiServerRawDataset(): Promise<{ groups: MultiServe
           slug: `single-${aId}`,
           is_franchise: false,
           total_entries: 1,
+          cover_image: itemCover,
+          banner_image: itemBanner,
           items: [itemObj]
         });
       }
@@ -468,4 +543,122 @@ export async function fetchMultiServerRecentEpisodes(): Promise<MultiServerRecen
 
 export async function syncMultiServerToFirestore(onProgress?: (msg: string) => void): Promise<{ success: boolean; animeCount: number; epCount: number; error?: string }> {
   return { success: true, animeCount: 0, epCount: 0 };
+}
+
+/**
+ * Fetch franchise groups from the Data Server and map them with local Firestore anime
+ */
+export async function fetchFranchiseGroups(): Promise<FranchiseGroup[]> {
+  try {
+    const { groups } = await fetchMultiServerRawDataset();
+    // Only real franchise groups or groups with multiple entries
+    const franchiseGroups = groups.filter(g => g.is_franchise || g.items.length > 1);
+
+    // Query local anime to map matching local IDs and slugs
+    let localAnimeList: Anime[] = [];
+    try {
+      const snap = await getDocs(collection(db, 'anime'));
+      localAnimeList = snap.docs.map(d => ({ ...(d.data() as Anime), id: d.id }));
+    } catch (e) {
+      console.warn('Could not load local anime for franchise matching:', e);
+    }
+
+    const result: FranchiseGroup[] = franchiseGroups.map(g => {
+      const items: FranchiseWatchOrderItem[] = g.items.map(item => {
+        const aniIdStr = String(item.anilist_id || item.anime_id);
+        const malIdStr = item.mal_id ? String(item.mal_id) : '';
+        const itemSlug = (item.title || item.anime_id).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+        const matched = localAnimeList.find(local => 
+          (local.aniListId && String(local.aniListId) === aniIdStr) ||
+          (malIdStr && local.malId && String(local.malId) === malIdStr) ||
+          (local.id === `ms_${aniIdStr}` || local.id === item.anime_id) ||
+          (local.slug && local.slug.toLowerCase() === itemSlug) ||
+          (local.title && local.title.toLowerCase().trim() === item.title.toLowerCase().trim())
+        );
+
+        return {
+          order: item.order,
+          type: item.type || 'Season',
+          season: item.season,
+          anime_id: item.anime_id,
+          title: item.title,
+          cover_image: item.cover_image,
+          banner_image: item.banner_image,
+          episodes_available: item.episodes_available,
+          episodes_count: item.episodes_count,
+          localAnimeId: matched ? matched.id : undefined,
+          localSlug: matched ? matched.slug : undefined,
+          isCanon: item.isCanon !== undefined ? item.isCanon : true
+        };
+      });
+
+      return {
+        id: g.group_id,
+        group_id: g.group_id,
+        title: g.title,
+        name: g.title,
+        slug: g.slug,
+        cover_image: g.cover_image,
+        banner_image: g.banner_image,
+        total_entries: items.length,
+        items,
+        updatedAt: Date.now()
+      };
+    });
+
+    return result;
+  } catch (err) {
+    console.error('Error fetching franchise groups:', err);
+    return [];
+  }
+}
+
+/**
+ * Apply franchise watch order to local Firestore anime and update the franchise document
+ */
+export async function applyFranchiseWatchOrder(group: FranchiseGroup): Promise<{ updatedCount: number }> {
+  let updatedCount = 0;
+  const batch = writeBatch(db);
+
+  // 1. Save to franchises collection
+  const franchiseRef = doc(db, 'franchises', group.group_id);
+  batch.set(franchiseRef, {
+    ...group,
+    updatedAt: Date.now()
+  });
+
+  // 2. Update each matched local anime with the franchise watch order
+  for (const item of group.items) {
+    if (item.localAnimeId) {
+      const animeRef = doc(db, 'anime', item.localAnimeId);
+      batch.update(animeRef, {
+        franchiseGroupId: group.group_id,
+        franchiseGroupName: group.title,
+        franchiseWatchOrder: group.items,
+        updatedAt: Date.now()
+      });
+      updatedCount++;
+    }
+  }
+
+  await batch.commit();
+  return { updatedCount };
+}
+
+/**
+ * Auto-match all franchise groups from Data Server with local Firestore anime
+ */
+export async function autoMatchAllFranchiseGroups(onProgress?: (curr: number, total: number, name: string) => void): Promise<{ totalGroups: number; totalUpdatedAnime: number }> {
+  const groups = await fetchFranchiseGroups();
+  let totalUpdatedAnime = 0;
+
+  for (let i = 0; i < groups.length; i++) {
+    const grp = groups[i];
+    onProgress?.(i + 1, groups.length, grp.title);
+    const res = await applyFranchiseWatchOrder(grp);
+    totalUpdatedAnime += res.updatedCount;
+  }
+
+  return { totalGroups: groups.length, totalUpdatedAnime };
 }

@@ -111,6 +111,34 @@ export interface LinkedSeason {
   title: string;
 }
 
+export interface FranchiseWatchOrderItem {
+  order: number;
+  type: string; // 'Season', 'Movie', 'OVA', 'Special'
+  season?: string;
+  anime_id?: string;
+  title: string;
+  cover_image?: string;
+  banner_image?: string;
+  episodes_available?: (number | string)[];
+  episodes_count?: number;
+  localAnimeId?: string;
+  localSlug?: string;
+  isCanon?: boolean;
+}
+
+export interface FranchiseGroup {
+  id: string; // group_id (e.g. 'mushoku' or 'franchise_attack_on_titan')
+  group_id: string;
+  title: string;
+  name?: string;
+  slug?: string;
+  cover_image?: string;
+  banner_image?: string;
+  total_entries?: number;
+  items: FranchiseWatchOrderItem[];
+  updatedAt?: number;
+}
+
 export interface Anime {
   id: string;
   title: string;
@@ -145,6 +173,22 @@ export interface Anime {
   updatedAt: number;
   published: boolean;
   isBanned?: boolean;
+  // 11 Rich metadata fields from Data Server
+  coverImage?: string;
+  bannerImage?: string;
+  japanese?: string;
+  synonyms?: string[] | string;
+  aired?: string;
+  premiered?: string;
+  duration?: string;
+  malScore?: string | number;
+  episodes?: number;
+  country?: string;
+  source?: string;
+  // Franchise Watch Order Group
+  franchiseGroupId?: string;
+  franchiseGroupName?: string;
+  franchiseWatchOrder?: FranchiseWatchOrderItem[];
 }
 
 export interface AnikotoSyncStats {
