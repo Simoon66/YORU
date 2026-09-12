@@ -45,6 +45,7 @@ interface MultiServerCache {
   timestamp: number;
   anime: Anime[];
   episodesByAnimeId: Record<string, Episode[]>;
+  franchises?: MultiServerGroup[];
 }
 
 let inMemoryCache: MultiServerCache | null = null;
@@ -163,6 +164,10 @@ export async function fetchMultiServerDataset(forceRefresh = false): Promise<Mul
           status: 'Finished',
           studios: 'MultiServer',
           genres: ['Anime'],
+          startDate: '',
+          endDate: '',
+          season: 'UNKNOWN',
+          averageScore: '85%',
           poster: mainItem.cover_image || 'https://images.unsplash.com/photo-1542451313056-b7c8e626645f?auto=format&fit=crop&q=80&w=600',
           backdrop: mainItem.cover_image || '',
           synopsis: 'Imported from MultiServer.',

@@ -59,7 +59,7 @@ export const Watch = () => {
     try { localStorage.setItem('yoru_autonext', String(next)); } catch {}
   };
   
-  const CHUNK_SIZE = 50;
+  const CHUNK_SIZE = 100;
   const [selectedChunkIdx, setSelectedChunkIdx] = useState(0);
   const [jumpInput, setJumpInput] = useState('');
 
@@ -372,6 +372,8 @@ export const Watch = () => {
     if (!isNaN(num) && num >= 1 && num <= uniqueEpisodes.length) {
       const targetEp = uniqueEpisodes.find(ep => ep.episodeNumber === num);
       if (targetEp) {
+        const targetChunk = Math.max(0, Math.floor((num - 1) / CHUNK_SIZE));
+        setSelectedChunkIdx(targetChunk);
         navigate(`/watch/${anime.slug}/${targetEp.episodeNumber}?season=${currentSeasonId}`);
         setJumpInput('');
       }
@@ -608,25 +610,29 @@ export const Watch = () => {
                        <span className="text-xs font-semibold text-white/50 w-14 shrink-0 uppercase tracking-wide">
                          {type}:
                        </span>
-                       <div className="flex flex-wrap gap-2">
-                         {serversOfType.map(({ s: serverEp, originalIdx }) => {
-                           const isActive = activeServerIdx === originalIdx;
-                           return (
-                             <button
-                               key={`${type}-${originalIdx}-${serverEp.serverName}`}
-                               onClick={() => handleServerChange(originalIdx)}
-                               className={clsx(
-                                 "h-9 min-h-[36px] px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200 border flex items-center justify-center cursor-pointer",
-                                 isActive
-                                   ? "bg-yoru-accent text-[#030407] border-yoru-accent font-bold shadow-[0_0_12px_rgba(255,255,255,0.25)]"
-                                   : "bg-white/5 text-yoru-text-muted border-transparent hover:bg-white/10 hover:text-white"
-                               )}
-                             >
-                               {serverEp.serverName || `Server ${originalIdx + 1}`}
-                             </button>
-                           );
-                         })}
-                       </div>
+                        <div className="flex flex-wrap gap-2">
+                          {serversOfType.map(({ s: serverEp, originalIdx }) => {
+                            const isActive = activeServerIdx === originalIdx;
+                            const isMegaPlay = /megaplay/i.test(serverEp.serverName || '') || 
+                                               /megaplay\.buzz/i.test(serverEp.embedLink || '');
+                            const displayName = isMegaPlay ? 'VidStream-2' : (serverEp.serverName || `Server ${originalIdx + 1}`);
+
+                            return (
+                              <button
+                                key={`${type}-${originalIdx}-${serverEp.serverName}`}
+                                onClick={() => handleServerChange(originalIdx)}
+                                className={clsx(
+                                  "h-9 min-h-[36px] px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200 border flex items-center justify-center cursor-pointer",
+                                  isActive
+                                    ? "bg-yoru-accent text-[#030407] border-yoru-accent font-bold shadow-[0_0_12px_rgba(255,255,255,0.25)]"
+                                    : "bg-white/5 text-yoru-text-muted border-transparent hover:bg-white/10 hover:text-white"
+                                )}
+                              >
+                                {displayName}
+                              </button>
+                            );
+                          })}
+                        </div>
                      </div>
                    );
                  })}
@@ -772,8 +778,8 @@ export const Watch = () => {
                <div className="text-center py-12 text-yoru-text-muted text-xs font-medium">
                  No episodes found in this season.
                </div>
-             ) : isCompact ? (
-               <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 gap-2">
+              ) : isCompact ? (
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(38px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(42px,1fr))] gap-1.5">
                  {displayedEpisodes.map((ep) => {
                     const isActive = ep.episodeNumber === currentEpisode.episodeNumber;
                     const isWatched = watchedEpisodes.includes(ep.id) ||
@@ -794,9 +800,9 @@ export const Watch = () => {
                         aria-label={`Episode ${ep.episodeNumber}${ep.isFiller ? ' (Filler)' : ''}${isActive ? ' (Currently playing)' : isWatched ? ' (Watched)' : ''}`}
                         aria-current={isActive ? 'true' : undefined}
                         className={clsx(
-                          "aspect-square min-h-[38px] flex flex-col items-center justify-center rounded-lg text-xs font-bold transition-all duration-200 relative cursor-pointer",
+                          "aspect-square h-8 sm:h-9 max-h-[36px] sm:max-h-[38px] w-full flex flex-col items-center justify-center rounded-md text-[11px] sm:text-xs font-bold transition-all duration-150 relative cursor-pointer",
                           isActive
-                            ? "bg-yoru-accent text-[#030407] font-black shadow-[0_0_14px_rgba(255,255,255,0.4)] ring-2 ring-white/60 scale-105 z-10"
+                            ? "bg-yoru-accent text-[#030407] font-black shadow-[0_0_12px_rgba(255,255,255,0.4)] ring-2 ring-white/60 scale-105 z-10"
                             : isWatched
                               ? "bg-white/5 text-white/40 border border-white/5 hover:bg-white/10 hover:text-white"
                               : ep.isFiller
@@ -807,11 +813,11 @@ export const Watch = () => {
                         {/* Always display the episode number clearly */}
                         <span className="leading-none">{ep.episodeNumber}</span>
                         {isActive ? (
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#030407] mt-1" />
+                          <span className="w-1 h-1 rounded-full bg-[#030407] mt-0.5" />
                         ) : ep.isFiller ? (
-                          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-amber-400" />
+                          <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-amber-400" />
                         ) : isWatched ? (
-                          <span className="text-[8px] text-white/30 leading-none mt-0.5">✓</span>
+                          <span className="text-[7px] text-white/30 leading-none mt-0.5">✓</span>
                         ) : null}
                       </button>
                     );

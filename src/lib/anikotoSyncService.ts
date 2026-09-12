@@ -289,7 +289,7 @@ export async function runAnikotoRecentSync(options?: {
           const servers: ServerLink[] = [];
           if (ep.embed_url?.sub) {
             servers.push({
-              serverName: 'Megaplay Sub',
+              serverName: 'VidStream-2',
               embedLink: ep.embed_url.sub,
               serverType: 'sub',
             });
@@ -297,7 +297,7 @@ export async function runAnikotoRecentSync(options?: {
           }
           if (ep.embed_url?.dub) {
             servers.push({
-              serverName: 'Megaplay Dub',
+              serverName: 'VidStream-2',
               embedLink: ep.embed_url.dub,
               serverType: 'dub',
             });
@@ -395,14 +395,14 @@ export async function runAnikotoRecentSync(options?: {
             const servers: ServerLink[] = [];
             if (ep.embed_url?.sub) {
               servers.push({
-                serverName: 'Megaplay Sub',
+                serverName: 'VidStream-2',
                 embedLink: ep.embed_url.sub,
                 serverType: 'sub',
               });
             }
             if (ep.embed_url?.dub) {
               servers.push({
-                serverName: 'Megaplay Dub',
+                serverName: 'VidStream-2',
                 embedLink: ep.embed_url.dub,
                 serverType: 'dub',
               });
@@ -432,6 +432,14 @@ export async function runAnikotoRecentSync(options?: {
             let serversModified = false;
             const currentServers = [...(existingEp.servers || [])];
 
+            // Normalize any legacy Megaplay server names to VidStream-2
+            for (const s of currentServers) {
+              if (s.serverName === 'Megaplay Sub' || s.serverName === 'Megaplay Dub' || /megaplay/i.test(s.serverName || '')) {
+                s.serverName = 'VidStream-2';
+                serversModified = true;
+              }
+            }
+
             // 1. Check Sub
             if (ep.embed_url?.sub) {
               const hasSub = currentServers.some(
@@ -439,7 +447,7 @@ export async function runAnikotoRecentSync(options?: {
               );
               if (!hasSub) {
                 currentServers.push({
-                  serverName: 'Megaplay Sub',
+                  serverName: 'VidStream-2',
                   embedLink: ep.embed_url.sub,
                   serverType: 'sub',
                 });
@@ -455,7 +463,7 @@ export async function runAnikotoRecentSync(options?: {
               );
               if (!hasDub) {
                 currentServers.push({
-                  serverName: 'Megaplay Dub',
+                  serverName: 'VidStream-2',
                   embedLink: ep.embed_url.dub,
                   serverType: 'dub',
                 });

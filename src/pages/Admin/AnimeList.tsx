@@ -82,7 +82,7 @@ export const AnimeList = () => {
     try {
       const batch = writeBatch(db);
       
-      Array.from(selectedIds).forEach(id => {
+      Array.from(selectedIds).forEach((id: string) => {
         const ref = doc(db, 'anime', id);
         if (action === 'delete') {
           batch.delete(ref);
