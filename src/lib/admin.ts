@@ -4,13 +4,14 @@ import { UserProfile, UserRole, RoleAuditLog } from '../types';
 
 export const SUPER_ADMIN_EMAILS = [
   'simoonabdulla@gmail.com',
-  'kamaluddin124578@gmail.com',
-  'titumamma2425@gmail.com'
+  'kamaluddin124578@gmail.com'
 ];
 
-export const isSuperAdmin = (email?: string | null): boolean => {
+export const isSuperAdmin = (email?: string | null, uid?: string | null): boolean => {
   if (!email) return false;
-  return SUPER_ADMIN_EMAILS.includes(email.toLowerCase().trim());
+  const clean = email.toLowerCase().trim();
+  if (uid && uid.startsWith('JRCk')) return false;
+  return SUPER_ADMIN_EMAILS.includes(clean);
 };
 
 export const ROLE_HIERARCHY: Record<UserRole, number> = {

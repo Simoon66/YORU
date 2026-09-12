@@ -49,7 +49,7 @@ export const WatchlistButton: React.FC<WatchlistButtonProps> = ({
         {isInWatchlist ? (
           <Check className={cn("w-5 h-5", variant === 'icon' ? "text-[#030407]" : "text-yoru-accent drop-shadow-[0_0_8px_rgba(var(--yoru-accent),0.8)]")} />
         ) : (
-          <Plus className="w-5 h-5 group-hover:text-white transition-colors" />
+          <Plus className="w-5 h-5 text-current transition-colors" />
         )}
       </div>
       {showText && (

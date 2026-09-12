@@ -371,23 +371,23 @@ export const EpisodeManager = () => {
   }
 
   return (
-    <div className="flex-1 p-6 md:p-8 overflow-x-hidden">
+    <div className="flex-1 p-4 sm:p-6 md:p-8 relative">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sticky top-0 z-50 bg-yoru-bg/95 backdrop-blur-sm py-4 border-b border-yoru-border/50 -mx-4 px-4 sm:mx-0 sm:px-0">
-          <div className="flex items-center gap-4">
-            <Link to="/admin" className="p-2 bg-yoru-surface border border-yoru-border rounded-lg hover:border-yoru-accent transition-colors">
+        {/* Header - Sticky with solid opaque background */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sticky top-0 z-40 bg-[#0c0d12] border border-yoru-border rounded-xl p-4 shadow-2xl">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <Link to="/admin/anime" className="p-2 bg-yoru-surface border border-yoru-border rounded-lg hover:border-yoru-accent transition-colors shrink-0">
               <ArrowLeft className="w-5 h-5 text-yoru-text" />
             </Link>
-            <div>
-              <h1 className="text-2xl font-black uppercase tracking-widest text-white">Episodes</h1>
-              <p className="text-sm text-yoru-text-muted mt-1">{anime?.title}</p>
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-widest text-white truncate">Episodes</h1>
+              <p className="text-xs sm:text-sm text-yoru-text-muted mt-0.5 truncate">{anime?.title} ({episodes.length} total)</p>
             </div>
           </div>
           <button
             onClick={saveChanges}
             disabled={isSaving}
-            className="bg-yoru-accent hover:bg-yoru-accent/90 text-yoru-bg px-6 py-2.5 rounded-lg font-bold text-sm uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(226,232,240,0.15)] hover:shadow-[0_0_25px_rgba(226,232,240,0.3)] disabled:opacity-50 flex items-center gap-2"
+            className="w-full sm:w-auto bg-yoru-accent hover:bg-yoru-accent/90 text-yoru-bg px-6 py-2.5 rounded-lg font-bold text-sm uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_25px_rgba(255,255,255,0.35)] disabled:opacity-50 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {isSaving ? 'Saving...' : 'Save Changes'}
@@ -728,6 +728,17 @@ export const EpisodeManager = () => {
           </div>
         </div>
       )}
+      {/* Floating Save Changes Pill for effortless 1-click save anywhere while scrolling */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <button
+          onClick={saveChanges}
+          disabled={isSaving}
+          className="bg-yoru-accent hover:bg-yoru-accent/90 text-black px-5 py-2.5 rounded-full font-black text-xs sm:text-sm uppercase tracking-wider transition-all shadow-[0_4px_25px_rgba(255,255,255,0.35)] hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center gap-2 cursor-pointer border border-white/20"
+        >
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+        </button>
+      </div>
     </div>
   );
 };

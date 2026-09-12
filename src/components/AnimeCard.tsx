@@ -237,7 +237,7 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({ anime, showTitle = true })
                     variant="secondary" 
                     size="icon" 
                     showText={false} 
-                    className="shrink-0 rounded-full w-9 h-9 border border-white/10 hover:bg-white hover:text-black hover:border-transparent transition-all" 
+                    className="shrink-0 rounded-full w-9 h-9 border border-white/15 bg-white/5 text-zinc-300 hover:bg-white/20 hover:text-white hover:border-white/30 transition-all flex items-center justify-center" 
                   />
                 </div>
               </div>

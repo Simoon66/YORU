@@ -260,8 +260,8 @@ export const RecentAnimeSync: React.FC = () => {
               aria-checked={settings.autoSyncEnabled}
               disabled={isTogglingSwitch || isLoadingSettings}
               onClick={handleToggleAutoSync}
-              className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-yoru-accent focus:ring-offset-2 focus:ring-offset-yoru-bg ${
-                settings.autoSyncEnabled ? 'bg-yoru-accent' : 'bg-zinc-700'
+              className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-yoru-bg ${
+                settings.autoSyncEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
               }`}
             >
               <span

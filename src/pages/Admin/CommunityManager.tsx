@@ -487,7 +487,7 @@ export const CommunityManager: React.FC = () => {
                   <tbody className="divide-y divide-white/5">
                     {filteredUsers.map(u => {
                       const canManageThisUser = canActorManageTarget(actorRole, actorEmail, u.role, u.email);
-                      const isTargetSuperAdmin = isSuperAdmin(u.email);
+                      const isTargetSuperAdmin = isSuperAdmin(u.email, u.uid) && u.role === 'admin' && !u.uid?.startsWith('JRCk');
                       const isSelf = user?.uid === u.uid;
 
                       return (

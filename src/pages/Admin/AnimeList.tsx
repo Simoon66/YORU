@@ -182,91 +182,95 @@ export const AnimeList = () => {
       </div>
 
       <div className="bg-yoru-surface border border-yoru-border rounded-xl shadow-lg relative">
-        <div className="p-4 border-b border-yoru-border flex flex-col md:flex-row md:items-center justify-between gap-4 bg-yoru-surface-elevated/30 sticky top-0 z-20 rounded-t-xl backdrop-blur-sm">
-          
-          {/* Tabs */}
-          <div className="flex bg-yoru-bg/50 p-1 rounded-lg border border-yoru-border/50 self-start md:self-auto overflow-x-auto w-full md:w-auto">
-            {(['all', 'published', 'drafts', 'banned'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => { setActiveTab(tab); setSelectedIds(new Set()); }}
-                className={cn(
-                  "px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-md transition-all whitespace-nowrap",
-                  activeTab === tab 
-                    ? "bg-yoru-surface-elevated text-white shadow-sm border border-white/5" 
-                    : "text-yoru-text-muted hover:text-white"
-                )}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-            {/* Sort */}
-            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
-              <ArrowUpDown className="w-4 h-4 text-yoru-text-muted hidden sm:block" />
-              <select 
-                value={sortOrder}
-                onChange={e => setSortOrder(e.target.value as any)}
-                className="w-full sm:w-auto bg-yoru-bg border border-yoru-border px-3 py-2 text-sm text-white rounded-lg focus:outline-none focus:border-yoru-accent"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="az">A-Z</option>
-                <option value="za">Z-A</option>
-              </select>
+        {/* Sticky Control Header with Solid Opaque Background */}
+        <div className="sticky top-0 z-30 bg-[#0c0d12] border-b border-yoru-border shadow-xl rounded-t-xl">
+          <div className="p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+            
+            {/* Tabs */}
+            <div className="flex bg-yoru-bg p-1 rounded-lg border border-yoru-border self-start md:self-auto overflow-x-auto w-full md:w-auto">
+              {(['all', 'published', 'drafts', 'banned'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => { setActiveTab(tab); setSelectedIds(new Set()); }}
+                  className={cn(
+                    "px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest rounded-md transition-all whitespace-nowrap",
+                    activeTab === tab 
+                      ? "bg-yoru-surface-elevated text-white shadow-sm border border-white/10" 
+                      : "text-yoru-text-muted hover:text-white"
+                  )}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
 
-            {/* Search */}
-            <div className="relative w-full sm:w-64 shrink-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yoru-text-muted" />
-              <input 
-                type="text" 
-                placeholder="Search anime..." 
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full bg-yoru-bg border border-yoru-border pl-9 pr-4 py-2 text-sm text-white rounded-lg focus:outline-none focus:border-yoru-accent placeholder-zinc-600"
-              />
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+              {/* Sort */}
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                <ArrowUpDown className="w-4 h-4 text-yoru-text-muted hidden sm:block" />
+                <select 
+                  value={sortOrder}
+                  onChange={e => setSortOrder(e.target.value as any)}
+                  className="w-full sm:w-auto bg-yoru-bg border border-yoru-border px-3 py-2 text-sm text-white rounded-lg focus:outline-none focus:border-yoru-accent"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="az">A-Z</option>
+                  <option value="za">Z-A</option>
+                </select>
+              </div>
+
+              {/* Search */}
+              <div className="relative w-full sm:w-64 shrink-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-yoru-text-muted" />
+                <input 
+                  type="text" 
+                  placeholder="Search anime..." 
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="w-full bg-yoru-bg border border-yoru-border pl-9 pr-4 py-2 text-sm text-white rounded-lg focus:outline-none focus:border-yoru-accent placeholder-zinc-600"
+                />
+              </div>
             </div>
           </div>
+
+          {/* Sticky Bulk Actions Bar */}
+          {selectedIds.size > 0 && (
+            <div className="bg-yoru-accent/15 border-t border-yoru-accent/30 px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+              <span className="text-xs font-bold text-yoru-accent uppercase tracking-wider">{selectedIds.size} Anime Selected</span>
+              <div className="flex items-center gap-2 overflow-x-auto">
+                <button onClick={() => handleBulkAction('publish')} className="px-3 py-1 text-xs font-bold uppercase tracking-widest bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded transition-colors whitespace-nowrap">
+                  Publish
+                </button>
+                <button onClick={() => handleBulkAction('draft')} className="px-3 py-1 text-xs font-bold uppercase tracking-widest bg-white/10 hover:bg-white/20 text-white rounded transition-colors whitespace-nowrap">
+                  Draft
+                </button>
+                <button onClick={() => handleBulkAction('ban')} className="px-3 py-1 text-xs font-bold uppercase tracking-widest bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded transition-colors whitespace-nowrap">
+                  Ban
+                </button>
+                <button onClick={() => handleBulkAction('unban')} className="px-3 py-1 text-xs font-bold uppercase tracking-widest bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors whitespace-nowrap">
+                  Unban
+                </button>
+                <button onClick={() => handleBulkAction('delete')} className="px-3 py-1 text-xs font-bold uppercase tracking-widest bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded transition-colors whitespace-nowrap ml-1">
+                  Delete
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-
-        {selectedIds.size > 0 && (
-          <div className="bg-yoru-accent/10 border-b border-yoru-accent/20 px-4 py-3 flex items-center justify-between sticky top-[69px] md:top-[73px] z-20 backdrop-blur-sm">
-            <span className="text-sm font-bold text-yoru-accent">{selectedIds.size} Selected</span>
-            <div className="flex items-center gap-2 overflow-x-auto">
-              <button onClick={() => handleBulkAction('publish')} className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded transition-colors whitespace-nowrap">
-                Publish
-              </button>
-              <button onClick={() => handleBulkAction('draft')} className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest bg-white/10 hover:bg-white/20 text-white rounded transition-colors whitespace-nowrap">
-                Draft
-              </button>
-              <button onClick={() => handleBulkAction('ban')} className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 rounded transition-colors whitespace-nowrap">
-                Ban
-              </button>
-              <button onClick={() => handleBulkAction('unban')} className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors whitespace-nowrap">
-                Unban
-              </button>
-              <button onClick={() => handleBulkAction('delete')} className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded transition-colors whitespace-nowrap ml-2">
-                Delete
-              </button>
-            </div>
-          </div>
-        )}
 
         <div className="overflow-x-auto min-h-[400px] rounded-b-xl">
           <table className="w-full text-left text-sm text-yoru-text">
-            <thead className={cn("bg-yoru-surface/90 backdrop-blur-sm text-xs uppercase tracking-widest text-yoru-text-muted border-b border-yoru-border sticky z-10", selectedIds.size > 0 ? "top-[118px] md:top-[122px]" : "top-[69px] md:top-[73px]")}>
+            <thead className="bg-[#0e1017] text-xs uppercase tracking-widest text-yoru-text-muted border-b border-yoru-border sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-4 w-12 text-center">
+                <th className="px-4 py-3.5 w-12 text-center">
                   <input type="checkbox" checked={selectedIds.size === filteredAndSorted.length && filteredAndSorted.length > 0} onChange={toggleSelectAll} className="w-4 h-4 rounded bg-yoru-bg border-yoru-border text-yoru-accent focus:ring-yoru-accent" />
                 </th>
-                <th className="px-4 py-4 font-bold">Anime</th>
-                <th className="px-4 py-4 font-bold hidden sm:table-cell">Status</th>
-                <th className="px-4 py-4 font-bold hidden md:table-cell">Eps</th>
-                <th className="px-4 py-4 font-bold">State</th>
-                <th className="px-4 py-4 font-bold text-right">Actions</th>
+                <th className="px-4 py-3.5 font-bold">Anime & Actions</th>
+                <th className="px-4 py-3.5 font-bold hidden sm:table-cell">Status</th>
+                <th className="px-4 py-3.5 font-bold hidden md:table-cell">Eps</th>
+                <th className="px-4 py-3.5 font-bold">State</th>
+                <th className="px-4 py-3.5 font-bold text-right hidden sm:table-cell">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-yoru-border/50 relative z-0">
@@ -291,13 +295,13 @@ export const AnimeList = () => {
                 </tr>
               ) : filteredAndSorted.map(anime => (
                 <tr key={anime.id} className={cn("hover:bg-yoru-surface-elevated/30 transition-colors group", selectedIds.has(anime.id) && "bg-yoru-surface-elevated/20")}>
-                  <td className="px-4 py-4 text-center">
-                    <input type="checkbox" checked={selectedIds.has(anime.id)} onChange={() => toggleSelect(anime.id)} className="w-4 h-4 rounded bg-yoru-bg border-yoru-border text-yoru-accent focus:ring-yoru-accent" />
+                  <td className="px-4 py-4 text-center align-top sm:align-middle">
+                    <input type="checkbox" checked={selectedIds.has(anime.id)} onChange={() => toggleSelect(anime.id)} className="w-4 h-4 rounded bg-yoru-bg border-yoru-border text-yoru-accent focus:ring-yoru-accent mt-1 sm:mt-0" />
                   </td>
-                  <td className="px-4 sm:px-4 py-3">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="relative shrink-0 hidden sm:block">
-                        <img src={anime.poster} alt="" className="w-10 h-14 object-cover border border-yoru-border rounded bg-yoru-bg" loading="lazy" />
+                  <td className="px-4 py-3">
+                    <div className="flex items-start sm:items-center gap-3.5">
+                      <div className="relative shrink-0">
+                        <img src={anime.poster} alt="" className="w-12 h-16 object-cover border border-yoru-border rounded bg-yoru-bg shadow-sm" loading="lazy" />
                         {is18PlusAnime(anime) && (
                           <span className="absolute top-0.5 left-0.5 px-1 py-0.2 bg-red-600 text-white text-[8px] font-black rounded shadow">
                             18+
@@ -309,26 +313,55 @@ export const AnimeList = () => {
                           </div>
                         )}
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="font-bold text-white flex items-center gap-2 truncate">
-                          <span className={cn("truncate", anime.isBanned && "text-yoru-text-muted line-through")}>{anime.title}</span>
+                          <span className={cn("truncate text-sm sm:text-base", anime.isBanned && "text-yoru-text-muted line-through")}>{anime.title}</span>
                           {is18PlusAnime(anime) && (
-                            <span className="px-1.5 py-0.2 rounded bg-red-600/90 text-white text-[9px] font-black uppercase tracking-wider shrink-0 sm:hidden">
+                            <span className="px-1.5 py-0.2 rounded bg-red-600/90 text-white text-[9px] font-black uppercase tracking-wider shrink-0">
                               18+
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-yoru-text-muted mt-0.5 truncate">{anime.format} • {anime.season || 'Unknown Season'}</div>
+                        <div className="text-xs text-yoru-text-muted mt-0.5 truncate">
+                          {anime.format} • {anime.season || 'Unknown Season'} {anime.totalEpisodes ? `• ${anime.totalEpisodes} eps` : ''}
+                        </div>
+
+                        {/* Direct reach buttons right next to the poster/title */}
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                          <Link 
+                            to={`/admin/anime/${anime.id}/episodes`} 
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-md bg-yoru-accent/15 text-white border border-yoru-accent/30 hover:bg-yoru-accent hover:text-black transition-all shadow-sm"
+                            title="Manage & Add Episodes"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Episodes</span>
+                          </Link>
+                          <Link 
+                            to={`/admin/anime/${anime.id}/edit`} 
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-white/5 text-zinc-300 border border-white/10 hover:bg-white/15 hover:text-white transition-all"
+                            title="Edit Anime Details"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </Link>
+                          <button 
+                            onClick={() => setDeleteConfirmId(anime.id)} 
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all"
+                            title="Delete Anime"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-4 hidden sm:table-cell">
+                  <td className="px-4 py-4 hidden sm:table-cell align-middle">
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-white/5 border border-white/10 text-zinc-300">
                       {anime.status || 'Finished'}
                     </span>
                   </td>
-                  <td className="px-4 py-4 hidden md:table-cell text-zinc-400 font-mono text-xs">{anime.totalEpisodes || '-'}</td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-4 hidden md:table-cell text-zinc-400 font-mono text-xs align-middle">{anime.totalEpisodes || '-'}</td>
+                  <td className="px-4 py-4 align-middle">
                     {anime.isBanned ? (
                        <button 
                          onClick={() => toggleBan(anime)}
@@ -352,7 +385,7 @@ export const AnimeList = () => {
                       </button>
                     )}
                   </td>
-                  <td className="px-4 py-4 text-right whitespace-nowrap space-x-1 sm:space-x-2">
+                  <td className="px-4 py-4 text-right whitespace-nowrap space-x-1 sm:space-x-2 hidden sm:table-cell align-middle">
                     <Link to={`/admin/anime/${anime.id}/episodes`} className="inline-flex p-2 text-yoru-text-muted hover:text-white hover:bg-white/10 rounded transition-colors" title="Manage Episodes">
                       <Plus className="w-4 h-4" />
                     </Link>

@@ -127,7 +127,7 @@ export const Dashboard = () => {
             aria-checked={syncSettings?.autoSyncEnabled ?? true}
             onClick={handleToggleSwitch}
             className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              syncSettings?.autoSyncEnabled ? 'bg-yoru-accent' : 'bg-zinc-700'
+              syncSettings?.autoSyncEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
             }`}
           >
             <span
