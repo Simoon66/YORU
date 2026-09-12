@@ -257,7 +257,7 @@ export const AnimeList = () => {
 
         <div className="overflow-x-auto min-h-[400px] rounded-b-xl">
           <table className="w-full text-left text-sm text-yoru-text">
-            <thead className="bg-yoru-surface/80 text-xs uppercase tracking-widest text-yoru-text-muted border-b border-yoru-border relative z-10">
+            <thead className={cn("bg-yoru-surface/90 backdrop-blur-sm text-xs uppercase tracking-widest text-yoru-text-muted border-b border-yoru-border sticky z-10", selectedIds.size > 0 ? "top-[118px] md:top-[122px]" : "top-[69px] md:top-[73px]")}>
               <tr>
                 <th className="px-4 py-4 w-12 text-center">
                   <input type="checkbox" checked={selectedIds.size === filteredAndSorted.length && filteredAndSorted.length > 0} onChange={toggleSelectAll} className="w-4 h-4 rounded bg-yoru-bg border-yoru-border text-yoru-accent focus:ring-yoru-accent" />

@@ -1,5 +1,8 @@
 import { Anime, Episode, LinkedSeason } from '../types';
 
+const isNode = typeof window === 'undefined';
+const MULTISERVER_BASE_URL = isNode ? 'https://multiserver.pages.dev/api' : '/api/multiserver/proxy';
+
 export interface MultiServerItem {
   order: number;
   type: string;
@@ -92,7 +95,7 @@ export async function fetchMultiServerDataset(forceRefresh = false): Promise<Mul
 
   fetchPromise = (async () => {
     try {
-      const res = await fetch('https://multiserver.pages.dev/api/set');
+      const res = await fetch(`${MULTISERVER_BASE_URL}/set`);
       if (!res.ok) throw new Error('API fetch failed');
       const text = await res.text();
       let data: MultiServerGroup[];
@@ -263,7 +266,7 @@ export async function getMultiServerEpisodesForAnime(animeIdOrSlug: string): Pro
  */
 export async function fetchMultiServerRecentEpisodes(): Promise<MultiServerRecentEpisode[]> {
   try {
-    const res = await fetch('https://multiserver.pages.dev/api/recent');
+    const res = await fetch(`${MULTISERVER_BASE_URL}/recent`);
     if (!res.ok) return [];
     const text = await res.text();
     let data = JSON.parse(text);

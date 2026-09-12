@@ -211,6 +211,34 @@ async function startServer() {
   // Anikoto 24x Daily Auto-Sync API Routes
   let isAnikotoSyncing = false;
 
+  app.get("/api/multiserver/proxy/*all", async (req, res) => {
+    try {
+      const allParam = (req.params as any).all;
+      let targetPath = Array.isArray(allParam) ? allParam.join('/') : (allParam || req.params[0] || '');
+      if (typeof targetPath === 'string' && targetPath.startsWith('/')) {
+        targetPath = targetPath.substring(1);
+      }
+      const targetUrl = new URL(`https://multiserver.pages.dev/api/${targetPath}`);
+      for (const [key, value] of Object.entries(req.query)) {
+        targetUrl.searchParams.append(key, String(value));
+      }
+      console.log(`[MultiServer Proxy] Fetching: ${targetUrl.toString()}`);
+      
+      const response = await fetch(targetUrl.toString());
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        return res.json(data);
+      } else {
+        const text = await response.text();
+        return res.status(response.status).send(text);
+      }
+    } catch (err: any) {
+      console.error("[MultiServer Proxy] Error:", err);
+      res.status(500).json({ error: "MultiServer proxy failed", details: err.message });
+    }
+  });
+
   app.get("/api/anikoto/proxy/*all", async (req, res) => {
     try {
       const allParam = (req.params as any).all;
