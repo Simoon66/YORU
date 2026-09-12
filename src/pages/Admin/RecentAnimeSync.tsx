@@ -41,7 +41,7 @@ export const RecentAnimeSync: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [logs, setLogs] = useState<LogItem[]>([]);
-  const [perPageCount, setPerPageCount] = useState<number>(20);
+  const [perPageCount, setPerPageCount] = useState<number>(0);
   const logContainerRef = useRef<HTMLDivElement>(null);
 
   // Load initial settings
@@ -399,8 +399,9 @@ export const RecentAnimeSync: React.FC = () => {
             onChange={(e) => setPerPageCount(Number(e.target.value))}
             className="bg-yoru-bg border border-yoru-border text-white rounded px-2 py-1 text-xs focus:outline-none focus:border-yoru-accent"
           >
-            <option value={10}>10 items</option>
-            <option value={20}>20 items</option>
+            <option value={0}>Unlimited (Full Page / All)</option>
+            <option value={100}>100 items</option>
+            <option value={50}>50 items</option>
             <option value={30}>30 items</option>
           </select>
         </div>

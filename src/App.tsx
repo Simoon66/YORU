@@ -24,6 +24,7 @@ import { SpotlightManager } from './pages/Admin/SpotlightManager';
 import { CommunityManager } from './pages/Admin/CommunityManager';
 import { ReportManager } from './pages/Admin/ReportManager';
 import { RecentAnimeSync } from './pages/Admin/RecentAnimeSync';
+import { MultiServerSync } from './pages/Admin/MultiServerSync';
 import { RecentAnime } from './pages/RecentAnime';
 import { SectionPage } from './pages/SectionPage';
 import { NotFound } from './pages/NotFound';
@@ -76,6 +77,7 @@ export default function App() {
           {/* Admin App */}
           <Route path="/admin" element={<AdminLayout />}>
              <Route index element={<Dashboard />} />
+             <Route path="multiserver-sync" element={<MultiServerSync />} />
              <Route path="recent-sync" element={<RecentAnimeSync />} />
              <Route path="spotlights" element={<SpotlightManager />} />
              <Route path="reports" element={<ReportManager />} />

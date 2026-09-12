@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Anime } from '../types';
-import { getAllAnime, getAnimeReleaseTimestamp, getAnimeEndTimestamp } from '../lib/data';
+import { getAllAnime, getLatestReleasesAnime, getAnimeReleaseTimestamp, getAnimeEndTimestamp } from '../lib/data';
 import { AnimeCard } from '../components/AnimeCard';
 import { SkeletonAnimeCard } from '../components/SkeletonAnimeCard';
 import { Sparkles, ArrowRight, Film, Clock, Flame } from 'lucide-react';
@@ -49,15 +49,9 @@ export const SectionPage = () => {
     let list: Anime[] = [];
 
     if (sectionId === 'latest-releases') {
-      list = [...allAnime].filter(a => {
-        const ts = getAnimeReleaseTimestamp(a);
-        return ts >= now - SEVEN_DAYS_MS && ts <= now;
-      }).sort((a, b) => getAnimeReleaseTimestamp(b) - getAnimeReleaseTimestamp(a));
+      list = getLatestReleasesAnime(allAnime, 0);
     } else if (sectionId === 'recently-added') {
-      list = [...allAnime].filter(a => {
-        const ts = a.recentlyAddedAt || a.createdAt || 0;
-        return ts >= now - SEVEN_DAYS_MS && ts <= now + 86400000; // allow slightly future
-      }).sort((a, b) => {
+      list = [...allAnime].sort((a, b) => {
         const timeA = a.recentlyAddedAt || a.createdAt || 0;
         const timeB = b.recentlyAddedAt || b.createdAt || 0;
         return timeB - timeA;

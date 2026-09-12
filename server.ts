@@ -179,7 +179,8 @@ async function startServer() {
       const response = await axios.get(url, {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
-          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+          "Referer": "https://megaplay.buzz/"
         },
         timeout: 8000,
         validateStatus: (status) => true, // Don't throw on 4xx/5xx
@@ -190,14 +191,18 @@ async function startServer() {
       }
 
       const html = response.data.toString();
+      const lowerHtml = html.toLowerCase();
       const errorStrings = [
-        "Oops! Something went wrong",
-        "Error Code: 404",
-        "error - megaplay"
+        "oops! something went wrong",
+        "error code: 404",
+        "error code: 410",
+        "error code:",
+        "error - megaplay",
+        "error-container"
       ];
 
       for (const errStr of errorStrings) {
-        if (html.includes(errStr)) {
+        if (lowerHtml.includes(errStr)) {
           return res.json({ status: "dead", reason: `Found string: ${errStr}` });
         }
       }
@@ -311,11 +316,12 @@ async function startServer() {
     try {
       isAnikotoSyncing = true;
       const page = Number(req.query.page) || 1;
-      const perPage = Number(req.query.perPage) || 20;
-      console.log(`[Anikoto Sync] Starting manual sync (Page ${page}, Limit ${perPage})...`);
+      const perPage = req.query.perPage !== undefined ? Number(req.query.perPage) : 0;
+      console.log(`[Anikoto Sync] Starting manual sync (Page ${page}, Limit ${perPage === 0 ? 'Unlimited' : perPage})...`);
       const result = await runAnikotoRecentSync({
         page,
         perPage,
+        unlimited: perPage === 0,
         onLog: (msg, type) => console.log(`[Manual Anikoto Sync ${type}] ${msg}`)
       });
       return res.json(result);

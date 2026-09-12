@@ -331,8 +331,35 @@ export async function getRecentlyAddedAnime(maxCount = 10): Promise<Anime[]> {
 }
 
 export function getLatestReleasesAnime(allAnime: Anime[], maxCount = 10): Anime[] {
-  const sorted = [...allAnime]
-    .sort((a, b) => getAnimeReleaseTimestamp(b) - getAnimeReleaseTimestamp(a));
+  const now = Date.now();
+  // Old dates (> 1 year ago) are excluded
+  const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+  // Finished anime is excluded unless it ended recently (within last 120 days)
+  const RECENT_FINISHED_MS = 120 * 24 * 60 * 60 * 1000;
+
+  const filtered = allAnime.filter(a => {
+    const releaseTime = getAnimeReleaseTimestamp(a);
+    if (!releaseTime || isNaN(releaseTime)) return false;
+
+    // Exclude anime with old release dates
+    if (now - releaseTime > ONE_YEAR_MS) {
+      return false;
+    }
+
+    // Finished anime check: cannot be finished unless it ended recently
+    const isFinished = (a.status || '').toLowerCase() === 'finished';
+    if (isFinished) {
+      const endTime = getAnimeEndTimestamp(a);
+      const isRecentlyFinished = (now - endTime) <= RECENT_FINISHED_MS;
+      if (!isRecentlyFinished) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  const sorted = filtered.sort((a, b) => getAnimeReleaseTimestamp(b) - getAnimeReleaseTimestamp(a));
   return typeof maxCount === 'number' && maxCount > 0 ? sorted.slice(0, maxCount) : sorted;
 }
 

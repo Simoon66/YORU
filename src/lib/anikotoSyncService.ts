@@ -153,6 +153,7 @@ export async function saveAnikotoSyncSettings(
 export async function runAnikotoRecentSync(options?: {
   page?: number;
   perPage?: number;
+  unlimited?: boolean;
   onLog?: (message: string, type: 'info' | 'success' | 'warning' | 'error') => void;
   onProgress?: (current: number, total: number) => void;
 }): Promise<{
@@ -160,8 +161,9 @@ export async function runAnikotoRecentSync(options?: {
   message: string;
   stats: AnikotoSyncStats;
 }> {
+  const isUnlimited = options?.unlimited !== undefined ? options.unlimited : (options?.perPage === 0 || !options?.perPage);
   const page = options?.page || 1;
-  const perPage = options?.perPage || 20;
+  const perPage = isUnlimited ? 100 : (options?.perPage || 100);
   const log = options?.onLog || ((msg, type) => console.log(`[AnikotoSync ${type}] ${msg}`));
   const progress = options?.onProgress || (() => {});
 
@@ -176,25 +178,68 @@ export async function runAnikotoRecentSync(options?: {
   };
 
   try {
-    log(`Connecting to ${ANIKOTO_BASE_URL}/recent-anime (Page ${page}, limit ${perPage})...`, 'info');
-
-    // 1. Fetch recent anime from anikoto
-    const recentRes = await axios.get(`${ANIKOTO_BASE_URL}/recent-anime`, {
-      params: { page, per_page: perPage },
-      timeout: 15000,
-      headers: {
-        Accept: 'application/json',
-        ...(isNode && { 'User-Agent': 'curl/7.88.1' })
-      },
-    });
-
     let recentData: AnikotoRecentItem[] = [];
-    if (Array.isArray(recentRes.data)) {
-      recentData = recentRes.data;
-    } else if (Array.isArray(recentRes.data?.data)) {
-      recentData = recentRes.data.data;
-    } else if (Array.isArray(recentRes.data?.anime)) {
-      recentData = recentRes.data.anime;
+
+    if (isUnlimited) {
+      log(`Unlimited scan initiated. Fetching all available recent anime pages from ${ANIKOTO_BASE_URL}/recent-anime...`, 'info');
+      let currPage = 1;
+      let hasMore = true;
+
+      while (hasMore && currPage <= 5) {
+        try {
+          const pageRes = await axios.get(`${ANIKOTO_BASE_URL}/recent-anime`, {
+            params: { page: currPage, per_page: 100 },
+            timeout: 15000,
+            headers: {
+              Accept: 'application/json',
+              ...(isNode && { 'User-Agent': 'curl/7.88.1' })
+            },
+          });
+
+          let pageItems: AnikotoRecentItem[] = [];
+          if (Array.isArray(pageRes.data)) {
+            pageItems = pageRes.data;
+          } else if (Array.isArray(pageRes.data?.data)) {
+            pageItems = pageRes.data.data;
+          } else if (Array.isArray(pageRes.data?.anime)) {
+            pageItems = pageRes.data.anime;
+          }
+
+          if (!pageItems || pageItems.length === 0) {
+            hasMore = false;
+          } else {
+            recentData.push(...pageItems);
+            log(`Fetched page ${currPage}: ${pageItems.length} items (Total: ${recentData.length})...`, 'info');
+            if (pageItems.length < 100) {
+              hasMore = false;
+            } else {
+              currPage++;
+              await delay(200);
+            }
+          }
+        } catch (pageErr: any) {
+          log(`Finished pagination at page ${currPage}: ${pageErr.message}`, 'info');
+          hasMore = false;
+        }
+      }
+    } else {
+      log(`Connecting to ${ANIKOTO_BASE_URL}/recent-anime (Page ${page}, limit ${perPage})...`, 'info');
+      const recentRes = await axios.get(`${ANIKOTO_BASE_URL}/recent-anime`, {
+        params: { page, per_page: perPage },
+        timeout: 15000,
+        headers: {
+          Accept: 'application/json',
+          ...(isNode && { 'User-Agent': 'curl/7.88.1' })
+        },
+      });
+
+      if (Array.isArray(recentRes.data)) {
+        recentData = recentRes.data;
+      } else if (Array.isArray(recentRes.data?.data)) {
+        recentData = recentRes.data.data;
+      } else if (Array.isArray(recentRes.data?.anime)) {
+        recentData = recentRes.data.anime;
+      }
     }
     
     if (!recentData || recentData.length === 0) {

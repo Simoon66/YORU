@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LayoutDashboard, Film, Plus, LogOut, DownloadCloud, Sparkles, Shield, Radio, RotateCw, Flag, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Film, Plus, LogOut, DownloadCloud, Sparkles, Shield, Radio, RotateCw, Flag, Menu, X, Server } from 'lucide-react';
 import { Logo } from '../../components/Navigation';
 import { isSuperAdmin } from '../../lib/admin';
 import { useAnikotoAutoSync } from '../../hooks/useAnikotoAutoSync';
@@ -24,6 +24,7 @@ export const AdminLayout = () => {
 
   const allNavItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { name: 'MultiServer Sync', path: '/admin/multiserver-sync', icon: Server },
     { name: 'Recent Anime Sync', path: '/admin/recent-sync', icon: RotateCw },
     { name: 'User Reports', path: '/admin/reports', icon: Flag },
     { name: 'Spotlight Sliders', path: '/admin/spotlights', icon: Sparkles },

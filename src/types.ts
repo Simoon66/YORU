@@ -116,6 +116,7 @@ export interface Anime {
   title: string;
   nativeTitle: string;
   aniListId?: string;
+  malId?: string;
   slug: string;
   format: string; // 'TV', 'Movie', 'OVA', 'Special'
   totalEpisodes: number;

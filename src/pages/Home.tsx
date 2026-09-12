@@ -17,8 +17,7 @@ import {
   clearWatchHistory, 
   removeWatchHistoryItem 
 } from '../lib/data';
-import { fetchMultiServerRecentEpisodes, MultiServerRecentEpisode } from '../lib/multiServerService';
-import { ChevronRight, Trash2, Sparkles, PlayCircle } from 'lucide-react';
+import { ChevronRight, Trash2, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -42,18 +41,16 @@ export const Home = () => {
   const [latestCompleted, setLatestCompleted] = useState<Anime[]>([]);
   const [latestMovies, setLatestMovies] = useState<Anime[]>([]);
   const [watchHistory, setWatchHistory] = useState<HistoryItem[]>([]);
-  const [recentEpisodes, setRecentEpisodes] = useState<MultiServerRecentEpisode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isClearing, setIsClearing] = useState(false);
 
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
-      const [allData, trendingData, recentData, dailyEps] = await Promise.all([
+      const [allData, trendingData, recentData] = await Promise.all([
         getAllAnime(),
         getTrendingAnime(10),
-        getRecentlyAddedAnime(10),
-        fetchMultiServerRecentEpisodes()
+        getRecentlyAddedAnime(10)
       ]);
       const releases = getLatestReleasesAnime(allData, 10);
       const completed = getLatestCompletedAnime(allData, 10);
@@ -64,9 +61,7 @@ export const Home = () => {
       setRecentlyAdded(recentData);
       setLatestCompleted(completed);
       setLatestMovies(movies);
-      setRecentEpisodes(dailyEps);
 
-      
       try {
         if (user) {
           const h = await getWatchHistory(user.uid);
@@ -83,19 +78,6 @@ export const Home = () => {
     }
     loadData();
   }, [user]);
-
-  useEffect(() => {
-    // Polling logic for /recent every 5 minutes
-    const interval = setInterval(async () => {
-      try {
-        const eps = await fetchMultiServerRecentEpisodes();
-        setRecentEpisodes(eps);
-      } catch (e) {
-        console.warn("Failed polling recent episodes", e);
-      }
-    }, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const [isClearMode, setIsClearMode] = useState(false);
 
@@ -224,47 +206,6 @@ export const Home = () => {
                   </motion.div>
                 ))}
               </AnimatePresence>
-            </div>
-          </section>
-        )}
-
-        {/* 0. 🔥 New Episodes Today (fetched from /recent) */}
-        {recentEpisodes.length > 0 && (
-          <section id="new-episodes-section">
-            <h2 className="text-xl md:text-2xl font-black uppercase tracking-widest text-white mb-6 flex items-center gap-2">
-              <span>🔥 New Episodes Today</span>
-            </h2>
-            <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 md:gap-6 pb-6 hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {recentEpisodes.map((ep, idx) => (
-                <div 
-                  key={`${ep.anime_id}-${ep.latest_episode_number}-${idx}`}
-                  className="min-w-[280px] sm:min-w-[320px] snap-start relative group flex flex-col rounded-2xl overflow-hidden bg-[#121924] border border-white/5 hover:border-white/20 transition-all cursor-pointer"
-                  onClick={() => {
-                    if (ep.embed_url) {
-                      window.open(ep.embed_url, '_blank', 'noopener,noreferrer');
-                    } else {
-                      const slug = `${ep.group_id}-${ep.anime_id}`;
-                      navigate(`/watch/${slug}/${ep.latest_episode_number}`);
-                    }
-                  }}
-                >
-                  <div className="w-full aspect-video bg-[#14161F] relative overflow-hidden shrink-0">
-                    <img 
-                      src={`https://images.unsplash.com/photo-1542451313056-b7c8e626645f?auto=format&fit=crop&q=80&w=600`} // Use placeholder if there's no thumbnail in /recent, though ideally we could find the anime's poster.
-                      alt={ep.title}
-                      className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                      <PlayCircle className="w-12 h-12 text-white" />
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-white font-bold text-sm md:text-base line-clamp-1 mb-1">{ep.group_title || ep.title}</h3>
-                    <p className="text-yoru-text-muted text-xs font-medium">Episode {ep.latest_episode_number}</p>
-                    {ep.season && <p className="text-yoru-text-muted text-xs font-medium opacity-70">{ep.season}</p>}
-                  </div>
-                </div>
-              ))}
             </div>
           </section>
         )}
